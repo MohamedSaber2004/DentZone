@@ -1,0 +1,56 @@
+:root {
+  --dz-primary: #0d9488;
+  --dz-primary-strong: #0f766e;
+  --dz-primary-soft: #ccfbf1;
+  --dz-primary-faint: #f0fdfa;
+
+  --dz-accent: #06b6d4;
+  --dz-accent-soft: #cffafe;
+
+  --dz-gradient: linear-gradient(135deg, #0f766e 0%, #06b6d4 100%);
+  --dz-gradient-soft: linear-gradient(135deg, #ccfbf1 0%, #cffafe 100%);
+
+  --dz-ink: #0f172a;
+  --dz-ink-soft: #475569;
+  --dz-muted: #94a3b8;
+
+  --dz-white: #ffffff;
+  --dz-star: #f59e0b;
+  --dz-star-track: #e2e8f0;
+  --dz-hover-secondary: #99f6e4;
+
+  --dz-bg: #f6f9f9;
+  --dz-surface: #ffffff;
+  --dz-surface-soft: #f1f5f5;
+  --dz-border: #e2e8f0;
+  --dz-border-strong: #cbd5e1;
+
+  --dz-success: #16a34a;
+  --dz-success-soft: #dcfce7;
+  --dz-warning: #d97706;
+  --dz-warning-soft: #fef3c7;
+  --dz-danger: #dc2626;
+  --dz-danger-soft: #fee2e2;
+  --dz-violet: #7c3aed;
+  --dz-violet-soft: #ede9fe;
+
+  --dz-radius-sm: 8px;
+  --dz-radius: 12px;
+  --dz-radius-lg: 18px;
+  --dz-radius-full: 9999px;
+
+  --dz-shadow-sm: 0 1px 2px rgb(15 23 42 / 0.05);
+  --dz-shadow: 0 4px 18px rgb(15 23 42 / 0.08);
+  --dz-shadow-lg: 0 18px 44px rgb(15 23 42 / 0.12);
+  --dz-shadow-primary: 0 8px 22px rgb(13 148 136 / 0.35);
+
+  --dz-ring: 0 0 0 3px var(--dz-primary-soft);
+
+  --dz-font:
+    Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans',
+    'Droid Sans', 'Helvetica Neue', sans-serif;
+
+  --dz-max-width: 1200px;
+  --dz-header-height: 72px;
+  --dz-gutter: 1.5rem;
+}

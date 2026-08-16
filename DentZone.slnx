@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="DentZone/dentzone.esproj">
+    <Build />
+    <Deploy />
+  </Project>
+</Solution>
