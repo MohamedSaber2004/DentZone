@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { catalogService } from '../application/catalog.service'
 import { cartService } from '../application/cart.service'
 import { toastService } from '../application/toast.service'
+import { wishlistService } from '../application/wishlist.service'
 import { t } from '../i18n'
 import type { Product } from '../domain/models/product'
 import ProductImage from '../components/ui/ProductImage.vue'
@@ -25,6 +26,18 @@ const relatedProducts = ref<Product[]>([])
 const quantity = ref(1)
 const loading = ref(true)
 const added = ref(false)
+
+const wished = computed(() => (product.value ? wishlistService.has(product.value.id) : false))
+
+const toggleWishlist = () => {
+  if (!product.value) return
+  const addedToWishlist = wishlistService.toggle(product.value)
+  toastService[addedToWishlist ? 'success' : 'info'](
+    addedToWishlist
+      ? t('wishlist.addedToast', { name: product.value.name })
+      : t('wishlist.removedToast', { name: product.value.name }),
+  )
+}
 
 const loadProduct = async (slug: string) => {
   loading.value = true
@@ -127,6 +140,16 @@ const addToCart = () => {
 
           <div class="detail__buy">
             <QuantityStepper v-model="quantity" :max="Math.max(1, product.stockQuantity)" />
+            <button
+              class="detail__wishlist"
+              :class="{ 'detail__wishlist--active': wished }"
+              type="button"
+              :aria-label="`${wished ? 'Remove' : 'Add'} ${product.name} ${wished ? 'from' : 'to'} wishlist`"
+              :title="`${wished ? 'Remove' : 'Add'} ${product.name} ${wished ? 'from' : 'to'} wishlist`"
+              @click="toggleWishlist"
+            >
+              <AppIcon name="heart" :size="20" :filled="wished" />
+            </button>
             <AppButton size="lg" :block="true" @click="addToCart">
               <AppIcon v-if="added" name="check" :size="18" />
               {{ added ? t('product.addedToCart') : product.inStock ? t('product.addToCart') : t('product.outOfStock') }}
@@ -302,6 +325,36 @@ const addToCart = () => {
 
 .detail__buy :deep(.quantity-stepper) {
   flex-shrink: 0;
+}
+
+.detail__wishlist {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: var(--dz-white);
+  border: 1px solid var(--dz-border);
+  color: var(--dz-ink-soft);
+  transition:
+    transform 0.15s,
+    color 0.2s,
+    border-color 0.2s,
+    background-color 0.2s;
+}
+
+.detail__wishlist:hover {
+  transform: scale(1.06);
+  color: var(--dz-primary-strong);
+  border-color: var(--dz-primary);
+}
+
+.detail__wishlist--active {
+  color: var(--dz-danger);
+  border-color: var(--dz-danger-soft);
+  background: var(--dz-danger-soft);
 }
 
 .detail__stock {
