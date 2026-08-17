@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
+import { authService } from '../application/auth.service'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -50,11 +51,51 @@ const router = createRouter({
       component: () => import('../views/OrderConfirmationView.vue'),
     },
     {
+      path: '/profile',
+      name: 'profile',
+      component: () => import('../views/ProfileView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/auth/login',
+      name: 'login',
+      component: () => import('../views/auth/LoginView.vue'),
+      meta: { guestOnly: true },
+    },
+    {
+      path: '/auth/forgot-password',
+      name: 'forgot-password',
+      component: () => import('../views/auth/ForgotPasswordView.vue'),
+      meta: { guestOnly: true },
+    },
+    {
+      path: '/auth/verify-otp',
+      name: 'verify-otp',
+      component: () => import('../views/auth/VerifyOtpView.vue'),
+      meta: { guestOnly: true },
+    },
+    {
+      path: '/auth/reset-password',
+      name: 'reset-password',
+      component: () => import('../views/auth/ResetPasswordView.vue'),
+      meta: { guestOnly: true },
+    },
+    {
       path: '/:pathMatch(.*)*',
       redirect: '/',
     },
   ],
   scrollBehavior: () => ({ top: 0 }),
+})
+
+router.beforeEach((to) => {
+  if (to.meta.requiresAuth && !authService.isAuthenticated) {
+    return { name: 'login', query: { redirect: to.fullPath } }
+  }
+  if (to.meta.guestOnly && authService.isAuthenticated) {
+    return { name: 'home' }
+  }
+  return true
 })
 
 export default router

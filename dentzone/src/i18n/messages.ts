@@ -15,6 +15,10 @@ export type Messages = {
     toggleMenu: string
     switchLang: string
     toggleTheme: string
+    login: string
+    profile: string
+    myOrders: string
+    logout: string
   }
   home: {
     trustBadge: string
@@ -89,6 +93,76 @@ export type Messages = {
     reviews: string
     productsTitle: string
     productCount: string
+    all: string
+    emptyFilteredTitle: string
+    emptyFilteredDescription: string
+    showAllProducts: string
+  }
+  auth: {
+    loginTitle: string
+    loginSubtitle: string
+    email: string
+    password: string
+    showPassword: string
+    hidePassword: string
+    forgotPassword: string
+    login: string
+    loggingIn: string
+    noAccount: string
+    register: string
+    registerSoon: string
+    errInvalidCredentials: string
+    demoHint: string
+    backToLogin: string
+    forgotTitle: string
+    forgotSubtitle: string
+    sendCode: string
+    sendingCode: string
+    codeSent: string
+    errEmailNotFound: string
+    verifyTitle: string
+    verifySubtitle: string
+    verify: string
+    verifying: string
+    resend: string
+    resendTimer: string
+    errInvalidOtp: string
+    otpHint: string
+    resetTitle: string
+    resetSubtitle: string
+    newPassword: string
+    confirmPassword: string
+    resetPassword: string
+    resetting: string
+    passwordMin: string
+    passwordMismatch: string
+    passwordChanged: string
+    welcomeBackToast: string
+    logoutToast: string
+    ordersComingSoon: string
+  }
+  profile: {
+    title: string
+    personalInfo: string
+    firstName: string
+    lastName: string
+    email: string
+    phone: string
+    saveChanges: string
+    saving: string
+    savedToast: string
+    security: string
+    changePassword: string
+    changePasswordDesc: string
+    currentPassword: string
+    passwordUpdatedToast: string
+    account: string
+    logout: string
+    shortcuts: string
+    ordersShortcut: string
+    wishlistShortcut: string
+    errCurrentPassword: string
+    errRequired: string
   }
   wishlist: {
     title: string
@@ -142,6 +216,30 @@ export type Messages = {
     notFoundTitle: string
     notFoundDescription: string
     backToCatalog: string
+    detailsTab: string
+    shippingTab: string
+    reviewsTab: string
+    specsTitle: string
+    specBrand: string
+    specCategory: string
+    specSku: string
+    specAvailability: string
+    specInStock: string
+    specOutOfStock: string
+    shippingDelivery: string
+    shippingDeliveryDesc: string
+    shippingReturns: string
+    shippingReturnsDesc: string
+    shippingPackaging: string
+    shippingPackagingDesc: string
+    shippingPayment: string
+    shippingPaymentDesc: string
+    reviewsBasedOn: string
+    verifiedPurchase: string
+    helpful: string
+    loadingReviews: string
+    moreFromVendor: string
+    moreFromVendorSubtitle: string
   }
   cart: {
     title: string

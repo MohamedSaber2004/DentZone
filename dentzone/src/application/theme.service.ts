@@ -22,7 +22,7 @@ export const theme = ref<Theme>(readStoredTheme())
 applyTheme(theme.value)
 
 export const toggleTheme = () => {
-  theme.value = theme.value === 'dark' ? 'light' : 'dark'
+  theme.value = theme.value === 'light' ? 'dark' : 'light'
   localStorage.setItem(STORAGE_KEY, theme.value)
   applyTheme(theme.value)
 }

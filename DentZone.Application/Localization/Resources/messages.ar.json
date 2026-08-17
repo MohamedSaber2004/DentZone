@@ -1,0 +1,23 @@
+{
+  "ActionResults": {
+    "Ok": "تمت العملية بنجاح",
+    "Created": "تم إنشاء المورد بنجاح",
+    "Accepted": "تم قبول الطلب",
+    "Deleted": "تم حذف المورد بنجاح"
+  },
+  "ExceptionMessages": {
+    "Validation": "فشل التحقق من البيانات",
+    "InvalidModelState": "حالة النموذج غير صالحة",
+    "NotFound": "المورد غير موجود",
+    "BadRequest": "طلب غير صالح",
+    "Unauthorized": "وصول غير مصرح به",
+    "UnknownException": "حدث خطأ غير معروف"
+  },
+  "OpenApi": {
+    "Title": "DentZone API",
+    "Description": "واجهة برمجة التطبيقات لمنصة دنت زون للتجارة الإلكترونية لمستلزمات طب الأسنان.",
+    "ContactName": "فريق دنت زون",
+    "LicenseName": "رخصة MIT",
+    "LanguageParameter": "لغة الاستجابة (ar، en)"
+  }
+}

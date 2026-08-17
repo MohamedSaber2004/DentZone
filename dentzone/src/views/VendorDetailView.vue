@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { catalogService } from '../application/catalog.service'
-import type { Product } from '../domain/models/product'
+import type { Product, ProductSort } from '../domain/models/product'
 import type { Vendor } from '../domain/models/vendor'
 import { categoryName, t } from '../i18n'
 import ProductGrid from '../components/store/ProductGrid.vue'
@@ -11,23 +11,62 @@ import EmptyState from '../components/ui/EmptyState.vue'
 import AppIcon from '../components/ui/AppIcon.vue'
 import AppButton from '../components/ui/AppButton.vue'
 import SectionHeader from '../components/ui/SectionHeader.vue'
+import AppSelect, { type SelectOption } from '../components/ui/AppSelect.vue'
+
+const SORT_VALUES: ProductSort[] = ['featured', 'price-asc', 'price-desc', 'rating', 'newest']
 
 const route = useRoute()
+const router = useRouter()
 
 const vendor = ref<Vendor | undefined>()
+const allProducts = ref<Product[]>([])
 const products = ref<Product[]>([])
 const loading = ref(true)
 
+const activeCategory = computed(() => (typeof route.query.category === 'string' ? route.query.category : ''))
+const sort = computed<ProductSort>(() => {
+  const raw = typeof route.query.sort === 'string' ? route.query.sort : ''
+  return SORT_VALUES.includes(raw as ProductSort) ? (raw as ProductSort) : 'featured'
+})
+
+const sortOptions = computed<SelectOption[]>(() => [
+  { value: 'featured', label: t('catalog.sortFeatured') },
+  { value: 'price-asc', label: t('catalog.sortPriceAsc') },
+  { value: 'price-desc', label: t('catalog.sortPriceDesc') },
+  { value: 'rating', label: t('catalog.sortTopRated') },
+  { value: 'newest', label: t('catalog.sortNewest') },
+])
+
 const productLabel = computed(() => t('vendors.productCount', { count: products.value.length }))
+
+const categoriesOfVendor = computed(() => {
+  const ids = [...new Set(allProducts.value.map((product) => product.categoryId))]
+  return ids.map((id) => ({ id, name: categoryName(id) }))
+})
 
 const loadVendor = async (slug: string) => {
   loading.value = true
   vendor.value = await catalogService.getVendorBySlug(slug)
   if (vendor.value) {
-    products.value = await catalogService.getProductsByVendor(vendor.value.id)
+    allProducts.value = await catalogService.getProductsByVendor(vendor.value.id)
+    products.value = await catalogService.getProductsByVendor(vendor.value.id, {
+      categoryId: activeCategory.value || undefined,
+      sort: sort.value,
+    })
   } else {
+    allProducts.value = []
     products.value = []
   }
+  loading.value = false
+}
+
+const reloadProducts = async () => {
+  if (!vendor.value) return
+  loading.value = true
+  products.value = await catalogService.getProductsByVendor(vendor.value.id, {
+    categoryId: activeCategory.value || undefined,
+    sort: sort.value,
+  })
   loading.value = false
 }
 
@@ -42,16 +81,33 @@ watch(
   },
 )
 
-const categoriesOfVendor = computed(() => {
-  if (!vendor.value) return []
-  const ids = [...new Set(products.value.map((product) => product.categoryId))]
-  return ids.map((id) => ({ id, name: categoryName(id) }))
+watch([activeCategory, sort], () => {
+  void reloadProducts()
 })
+
+const selectCategory = (categoryId: string) => {
+  const query: Record<string, string> = {}
+  if (categoryId) query.category = categoryId
+  if (sort.value !== 'featured') query.sort = sort.value
+  void router.replace({ path: `/vendor/${route.params.slug}`, query })
+}
+
+const onSortChange = (value: string) => {
+  const parsed = SORT_VALUES.includes(value as ProductSort) ? (value as ProductSort) : 'featured'
+  const query: Record<string, string> = {}
+  if (activeCategory.value) query.category = activeCategory.value
+  if (parsed !== 'featured') query.sort = parsed
+  void router.replace({ path: `/vendor/${route.params.slug}`, query })
+}
+
+const showAllProducts = () => {
+  selectCategory('')
+}
 </script>
 
 <template>
   <div class="container page">
-    <div v-if="loading" class="vendor__loading" role="status">
+    <div v-if="loading && !vendor" class="vendor__loading" role="status">
       <AppSpinner size="lg" :label="t('vendors.loading')" />
     </div>
 
@@ -102,22 +158,58 @@ const categoriesOfVendor = computed(() => {
             </span>
           </div>
           <p class="vendor__description">{{ vendor.description }}</p>
-          <div v-if="categoriesOfVendor.length" class="vendor__chips">
-            <RouterLink
-              v-for="category in categoriesOfVendor"
-              :key="category.id"
-              :to="{ path: '/catalog', query: { category: category.id } }"
-              class="vendor__chip"
-            >
-              {{ category.name }}
-            </RouterLink>
-          </div>
         </div>
       </section>
 
       <section class="vendor__products">
-        <SectionHeader :title="t('vendors.productsTitle', { name: vendor.name })" :subtitle="productLabel" />
-        <ProductGrid :products="products" />
+        <SectionHeader
+          :title="activeCategory ? categoryName(activeCategory) : t('vendors.productsTitle', { name: vendor.name })"
+          :subtitle="productLabel"
+        />
+
+        <div class="vendor__toolbar">
+          <div class="vendor__pills" role="tablist" aria-label="Categories">
+            <button
+              type="button"
+              class="vendor__pill"
+              :class="{ 'vendor__pill--active': !activeCategory }"
+              :aria-pressed="!activeCategory"
+              @click="selectCategory('')"
+            >
+              {{ t('vendors.all') }}
+            </button>
+            <button
+              v-for="category in categoriesOfVendor"
+              :key="category.id"
+              type="button"
+              class="vendor__pill"
+              :class="{ 'vendor__pill--active': activeCategory === category.id }"
+              :aria-pressed="activeCategory === category.id"
+              @click="selectCategory(category.id)"
+            >
+              {{ category.name }}
+            </button>
+          </div>
+
+          <AppSelect v-model="sort" :options="sortOptions" :placeholder="t('catalog.sortBy')" class="vendor__sort" @update:model-value="onSortChange" />
+        </div>
+
+        <div v-if="loading" class="vendor__loading" role="status">
+          <AppSpinner size="md" :label="t('catalog.loadingProducts')" />
+        </div>
+
+        <ProductGrid v-else-if="products.length" :products="products" />
+
+        <EmptyState
+          v-else
+          icon="search"
+          :title="t('vendors.emptyFilteredTitle')"
+          :description="t('vendors.emptyFilteredDescription', { name: vendor.name })"
+        >
+          <template #action>
+            <AppButton @click="showAllProducts">{{ t('vendors.showAllProducts') }}</AppButton>
+          </template>
+        </EmptyState>
       </section>
     </template>
   </div>
@@ -254,35 +346,67 @@ const categoriesOfVendor = computed(() => {
   line-height: 1.6;
 }
 
-.vendor__chips {
-  display: flex;
-  gap: 0.5rem;
+.vendor__products {
   margin-top: 1rem;
+}
+
+.vendor__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
   flex-wrap: wrap;
 }
 
-.vendor__chip {
-  padding: 0.35rem 0.85rem;
+.vendor__pills {
+  display: flex;
+  gap: 0.6rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+  flex: 1;
+  min-width: 0;
+  scrollbar-width: none;
+}
+
+.vendor__pills::-webkit-scrollbar {
+  display: none;
+}
+
+.vendor__pill {
+  padding: 0.45rem 1rem;
   border: 1px solid var(--dz-border);
   border-radius: var(--dz-radius-full);
   background: var(--dz-surface-soft);
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: var(--dz-ink-soft);
+  white-space: nowrap;
   transition:
     border-color 0.2s,
     color 0.2s,
     background-color 0.2s;
 }
 
-.vendor__chip:hover {
+.vendor__pill:hover {
   border-color: var(--dz-primary);
   color: var(--dz-primary-strong);
   background: var(--dz-primary-faint);
 }
 
-.vendor__products {
-  margin-top: 1rem;
+.vendor__pill--active {
+  border-color: var(--dz-primary);
+  background: var(--dz-primary);
+  color: var(--dz-white);
+}
+
+.vendor__pill--active:hover {
+  background: var(--dz-primary);
+  color: var(--dz-white);
+}
+
+.vendor__sort {
+  width: 210px;
 }
 
 @media (max-width: 640px) {
@@ -293,6 +417,10 @@ const categoriesOfVendor = computed(() => {
 
   .vendor__name {
     font-size: 1.4rem;
+  }
+
+  .vendor__sort {
+    width: 100%;
   }
 }
 </style>

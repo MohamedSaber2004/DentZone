@@ -7,6 +7,7 @@ import { toastService } from '../application/toast.service'
 import { wishlistService } from '../application/wishlist.service'
 import { t } from '../i18n'
 import type { Product } from '../domain/models/product'
+import type { Vendor } from '../domain/models/vendor'
 import ProductImage from '../components/ui/ProductImage.vue'
 import PriceTag from '../components/ui/PriceTag.vue'
 import RatingStars from '../components/ui/RatingStars.vue'
@@ -17,15 +18,21 @@ import AppSpinner from '../components/ui/AppSpinner.vue'
 import AppIcon from '../components/ui/AppIcon.vue'
 import SectionHeader from '../components/ui/SectionHeader.vue'
 import ProductGrid from '../components/store/ProductGrid.vue'
+import ProductInfoTabs from '../components/store/ProductInfoTabs.vue'
 import EmptyState from '../components/ui/EmptyState.vue'
 
 const route = useRoute()
 
 const product = ref<Product | undefined>()
 const relatedProducts = ref<Product[]>([])
+const vendorProducts = ref<Product[]>([])
 const quantity = ref(1)
 const loading = ref(true)
 const added = ref(false)
+
+const vendor = computed<Vendor | undefined>(() =>
+  product.value ? catalogService.getVendorById(product.value.vendorId) : undefined,
+)
 
 const wished = computed(() => (product.value ? wishlistService.has(product.value.id) : false))
 
@@ -42,8 +49,15 @@ const toggleWishlist = () => {
 const loadProduct = async (slug: string) => {
   loading.value = true
   product.value = await catalogService.getProductBySlug(slug)
+  relatedProducts.value = []
+  vendorProducts.value = []
   if (product.value) {
-    relatedProducts.value = await catalogService.getRelatedProducts(product.value)
+    const [related, fromVendor] = await Promise.all([
+      catalogService.getRelatedProducts(product.value),
+      catalogService.getProductsByVendor(product.value.vendorId),
+    ])
+    relatedProducts.value = related
+    vendorProducts.value = fromVendor.filter((candidate) => candidate.id !== product.value?.id).slice(0, 4)
     quantity.value = 1
   }
   loading.value = false
@@ -128,16 +142,6 @@ const addToCart = () => {
 
           <p class="detail__description">{{ product.description }}</p>
 
-          <div v-if="product.features.length" class="detail__features">
-            <h3 class="detail__features-title">{{ t('product.keyFeatures') }}</h3>
-            <ul>
-              <li v-for="feature in product.features" :key="feature" class="detail__feature">
-                <AppIcon name="check" :size="16" class="detail__feature-check" />
-                {{ feature }}
-              </li>
-            </ul>
-          </div>
-
           <div class="detail__buy">
             <QuantityStepper v-model="quantity" :max="Math.max(1, product.stockQuantity)" />
             <button
@@ -175,6 +179,20 @@ const addToCart = () => {
             </li>
           </ul>
         </div>
+      </section>
+
+      <ProductInfoTabs :product="product" />
+
+      <section v-if="vendor && vendorProducts.length" class="detail__section">
+        <SectionHeader :title="t('product.moreFromVendor', { name: vendor.name })" :subtitle="t('product.moreFromVendorSubtitle')">
+          <template #action>
+            <RouterLink :to="`/vendor/${vendor.slug}`" class="section-link">
+              {{ vendor.name }}
+              <AppIcon name="arrow-right" :size="15" />
+            </RouterLink>
+          </template>
+        </SectionHeader>
+        <ProductGrid :products="vendorProducts" />
       </section>
 
       <section class="detail__related">
@@ -288,35 +306,6 @@ const addToCart = () => {
   color: var(--dz-ink-soft);
 }
 
-.detail__features-title {
-  font-size: 0.95rem;
-  margin-bottom: 0.6rem;
-}
-
-.detail__features ul {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
-}
-
-.detail__feature {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.45rem;
-  padding: 0.6rem 0.75rem;
-  background: var(--dz-surface);
-  border: 1px solid var(--dz-border);
-  border-radius: var(--dz-radius);
-  font-size: 0.82rem;
-  color: var(--dz-ink-soft);
-}
-
-.detail__feature-check {
-  color: var(--dz-primary);
-  margin-top: 0.15rem;
-  flex-shrink: 0;
-}
-
 .detail__buy {
   display: flex;
   align-items: stretch;
@@ -390,6 +379,10 @@ const addToCart = () => {
   flex-shrink: 0;
 }
 
+.detail__section {
+  margin-top: 4rem;
+}
+
 .detail__related {
   margin-top: 4rem;
 }
@@ -422,10 +415,6 @@ const addToCart = () => {
 
   .detail__title {
     font-size: 1.6rem;
-  }
-
-  .detail__features ul {
-    grid-template-columns: 1fr;
   }
 
   .detail__trust {

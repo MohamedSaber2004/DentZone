@@ -1,0 +1,23 @@
+{
+  "ActionResults": {
+    "Ok": "Operation completed successfully",
+    "Created": "Resource created successfully",
+    "Accepted": "Request accepted",
+    "Deleted": "Resource deleted successfully"
+  },
+  "ExceptionMessages": {
+    "Validation": "Validation failed",
+    "InvalidModelState": "Invalid model state",
+    "NotFound": "Resource not found",
+    "BadRequest": "Bad request",
+    "Unauthorized": "Unauthorized access",
+    "UnknownException": "An unknown error occurred"
+  },
+  "OpenApi": {
+    "Title": "DentZone API",
+    "Description": "REST API for the DentZone dental supplies e-commerce platform.",
+    "ContactName": "DentZone Team",
+    "LicenseName": "MIT",
+    "LanguageParameter": "The language for the response (ar, en)"
+  }
+}

@@ -57,6 +57,10 @@ export class CatalogService {
   getCategoryById(id: string): Category | undefined {
     return this.categories.value.find((category) => category.id === id)
   }
+
+  getVendorById(id: string): Vendor | undefined {
+    return this.vendors.value.find((vendor) => vendor.id === id)
+  }
 }
 
 export const catalogService = new CatalogService()

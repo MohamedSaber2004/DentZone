@@ -1,30 +1,33 @@
-tal 131 (delta 23), reused 0 (delta 0), pack-reused 0 (from 0)
-remote: Resolving deltas: 100% (23/23), done.
-remote: error: GH013: Repository rule violations found for refs/heads/master.
-remote:
-remote: - GITHUB PUSH PROTECTION
-remote:   —————————————————————————————————————————
-remote:     Resolve the following violations before pushing again
-remote:
-remote:     - Push cannot contain secrets
-remote:
-remote:
-remote:      (?) Learn how to resolve a blocked push
-remote:      https://docs.github.com/code-security/secret-scanning/working-with-secret-scanning-and-push-protection/working-with-push-protection-from-the-command-line#resolving-a-blocked-push
-remote:
-remote:
-remote:       —— GCP API Key Bound to a Service Account ————————————
-remote:        locations:
-remote:          - commit: 3f48dd60acb89419e0b64b56471929a304e6bf48
-remote:            path: dentzone/OpenCode.json:13
-remote:
-remote:        (?) To push, remove secret from commit(s) or follow this URL to allow the secret.
-remote:        https://github.com/MohamedSaber2004/DentZone/security/secret-scanning/unblock-secret/3I0uVH1AfZrF0zn4oko8PfOurgb
-remote:
-remote:
-remote:
-To https://github.com/MohamedSaber2004/DentZone.git
- ! [remote rejected] master -> master (push declined due to repository rule violations)
-error: failed to push some refs to 'https://github.com/MohamedSaber2004/DentZone.git'
-PS E:\Dent-Zone\DentZone> ^C
-PS E:\Dent-Zone\DentZone>
+PM> Add-Migration "InitDbWith2Tbls" -Context DentZoneContext
+Build started...
+Build succeeded.
+[17:30:52 INF] DentZone API is starting up at 08/17/2026 17:30:52
+To undo this action, use Remove-Migration.
+PM> Update-Database -Context DentZoneContext
+Build started...
+Build succeeded.
+[17:31:30 INF] DentZone API is starting up at 08/17/2026 17:31:30
+System.ArgumentException: Couldn't set postgresql://neondb_owner:npg_tlb2mokfzj7n@ep-delicate-mountain-ay52ojqv.c-5.us-east-2.aws.neon.tech/neondb?sslmode (Parameter 'postgresql://neondb_owner:npg_tlb2mokfzj7n@ep-delicate-mountain-ay52ojqv.c-5.us-east-2.aws.neon.tech/neondb?sslmode')
+ ---> System.Collections.Generic.KeyNotFoundException: The given key was not present in the dictionary.
+   at Npgsql.NpgsqlConnectionStringBuilder.GeneratedActions(GeneratedAction action, String keyword, Object& value)
+   at Npgsql.NpgsqlConnectionStringBuilder.set_Item(String keyword, Object value)
+   --- End of inner exception stack trace ---
+   at Npgsql.NpgsqlConnectionStringBuilder.set_Item(String keyword, Object value)
+   at System.Data.Common.DbConnectionStringBuilder.set_ConnectionString(String value)
+   at Npgsql.NpgsqlConnectionStringBuilder..ctor(String connectionString)
+   at Npgsql.NpgsqlConnection.SetupDataSource()
+   at Npgsql.NpgsqlConnection.set_ConnectionString(String value)
+   at Npgsql.NpgsqlConnection..ctor(String connectionString)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlRelationalConnection.CreateDbConnection()
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.get_DbConnection()
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.Open(Boolean errorsExpected)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReader(RelationalCommandParameterObject parameterObject)
+   at Microsoft.EntityFrameworkCore.Migrations.HistoryRepository.GetAppliedMigrations()
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Migrations.Internal.NpgsqlHistoryRepository.GetAppliedMigrations()
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Migrations.Internal.NpgsqlMigrator.Migrate(String targetMigration)
+   at Microsoft.EntityFrameworkCore.Design.Internal.MigrationsOperations.UpdateDatabase(String targetMigration, String connectionString, String contextType)
+   at Microsoft.EntityFrameworkCore.Design.OperationExecutor.UpdateDatabaseImpl(String targetMigration, String connectionString, String contextType)
+   at Microsoft.EntityFrameworkCore.Design.OperationExecutor.UpdateDatabase.<>c__DisplayClass0_0.<.ctor>b__0()
+   at Microsoft.EntityFrameworkCore.Design.OperationExecutor.OperationBase.Execute(Action action)
+Couldn't set postgresql://neondb_owner:npg_tlb2mokfzj7n@ep-delicate-mountain-ay52ojqv.c-5.us-east-2.aws.neon.tech/neondb?sslmode (Parameter 'postgresql://neondb_owner:npg_tlb2mokfzj7n@ep-delicate-mountain-ay52ojqv.c-5.us-east-2.aws.neon.tech/neondb?sslmode')
+PM> 

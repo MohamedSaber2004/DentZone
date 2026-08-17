@@ -1,19 +1,34 @@
 <script setup lang="ts">
-withDefaults(
+import { ref } from 'vue'
+import AppIcon from './AppIcon.vue'
+
+const props = withDefaults(
   defineProps<{
+    modelValue?: string
     label: string
-    type?: 'text' | 'email' | 'tel'
+    type?: 'text' | 'email' | 'tel' | 'password'
     placeholder?: string
     required?: boolean
     error?: string
     autocomplete?: string
   }>(),
-  { type: 'text', placeholder: '', required: false, error: '', autocomplete: 'off' },
+  { modelValue: '', type: 'text', placeholder: '', required: false, error: '', autocomplete: 'off' },
 )
 
-defineEmits<{
+const emit = defineEmits<{
   'update:modelValue': [value: string]
 }>()
+
+const showPassword = ref(false)
+
+const fieldType = () => {
+  if (props.type !== 'password') return props.type
+  return showPassword.value ? 'text' : 'password'
+}
+
+const onInput = (event: Event) => {
+  emit('update:modelValue', (event.target as HTMLInputElement).value)
+}
 </script>
 
 <template>
@@ -22,20 +37,30 @@ defineEmits<{
       {{ label }}
       <span v-if="required" class="app-input__required">*</span>
     </span>
-    <input
-      class="app-input__field"
-      :class="{ 'app-input__field--invalid': error }"
-      :type="type"
-      :placeholder="placeholder"
-      :required="required"
-      :autocomplete="autocomplete"
-      @input="
-        $emit(
-          'update:modelValue',
-          ($event.target as HTMLInputElement).value,
-        )
-      "
-    />
+    <span
+      class="app-input__field-wrap"
+      :class="{ 'app-input__field-wrap--invalid': error, 'app-input__field-wrap--password': type === 'password' }"
+    >
+      <input
+        class="app-input__field"
+        :type="fieldType()"
+        :value="modelValue"
+        :placeholder="placeholder"
+        :required="required"
+        :autocomplete="autocomplete"
+        @input="onInput"
+      />
+      <button
+        v-if="type === 'password'"
+        class="app-input__toggle"
+        type="button"
+        :aria-label="showPassword ? 'Hide password' : 'Show password'"
+        :title="showPassword ? 'Hide password' : 'Show password'"
+        @click="showPassword = !showPassword"
+      >
+        <AppIcon :name="showPassword ? 'eye-off' : 'eye'" :size="17" />
+      </button>
+    </span>
     <span v-if="error" class="app-input__error">{{ error }}</span>
   </label>
 </template>
@@ -57,7 +82,13 @@ defineEmits<{
   color: var(--dz-danger);
 }
 
+.app-input__field-wrap {
+  position: relative;
+  display: block;
+}
+
 .app-input__field {
+  width: 100%;
   padding: 0.65rem 0.9rem;
   border: 1px solid var(--dz-border-strong);
   border-radius: var(--dz-radius);
@@ -66,6 +97,10 @@ defineEmits<{
   transition:
     border-color 0.2s,
     box-shadow 0.2s;
+}
+
+.app-input__field-wrap--password .app-input__field {
+  padding-inline-end: 2.8rem;
 }
 
 .app-input__field::placeholder {
@@ -78,12 +113,34 @@ defineEmits<{
   box-shadow: 0 0 0 3px var(--dz-primary-soft);
 }
 
-.app-input__field--invalid {
+.app-input__field-wrap--invalid .app-input__field {
   border-color: var(--dz-danger);
 }
 
-.app-input__field--invalid:focus {
+.app-input__field-wrap--invalid .app-input__field:focus {
   box-shadow: 0 0 0 3px var(--dz-danger-soft);
+}
+
+.app-input__toggle {
+  position: absolute;
+  inset-inline-end: 0.55rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: var(--dz-radius-sm);
+  color: var(--dz-muted);
+  transition:
+    color 0.2s,
+    background-color 0.2s;
+}
+
+.app-input__toggle:hover {
+  color: var(--dz-ink);
+  background: var(--dz-surface-soft);
 }
 
 .app-input__error {

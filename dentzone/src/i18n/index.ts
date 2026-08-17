@@ -23,7 +23,7 @@ export type NestedKeyOf<T> = T extends Record<string, unknown>
 
 const readStoredLocale = (): Locale => {
   const stored = localStorage.getItem(STORAGE_KEY)
-  return stored === 'ar' ? 'ar' : 'en'
+  return stored === 'en' ? 'en' : 'ar'
 }
 
 const applyDocument = (locale: Locale) => {

@@ -2,13 +2,15 @@
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { catalogService } from '../application/catalog.service'
+import { advertisementService } from '../application/advertisement.service'
 import { pricing } from '../data/mocks/catalog.data'
 import { categoryName, categoryDescription, formatPrice, t } from '../i18n'
 import SectionHeader from '../components/ui/SectionHeader.vue'
 import CategoryPill from '../components/ui/CategoryPill.vue'
 import ProductGrid from '../components/store/ProductGrid.vue'
 import VendorCard from '../components/store/VendorCard.vue'
-import AdBanner from '../components/store/AdBanner.vue'
+import HeroAdvertisement from '../components/store/HeroAdvertisement.vue'
+import PromotionalGrid from '../components/store/PromotionalGrid.vue'
 import AppButton from '../components/ui/AppButton.vue'
 import AppSpinner from '../components/ui/AppSpinner.vue'
 import AppIcon from '../components/ui/AppIcon.vue'
@@ -16,6 +18,9 @@ import AppIcon from '../components/ui/AppIcon.vue'
 const router = useRouter()
 
 const isReady = computed(() => catalogService.featuredProducts.value.length > 0)
+
+const heroAd = computed(() => advertisementService.hero.value)
+const secondaryAds = computed(() => advertisementService.secondary.value)
 
 onMounted(() => {
   void catalogService.init()
@@ -49,63 +54,11 @@ const valueProps = computed(() => [
     description: t('home.easyReturnsDesc'),
   },
 ])
-
-const stats = computed(() => [
-  { value: '40k+', label: t('home.statCustomers') },
-  { value: '4.9/5', label: t('home.statRating') },
-  { value: '300+', label: t('home.statProducts') },
-])
 </script>
 
 <template>
   <div>
-    <section class="hero">
-      <div class="container hero__inner">
-        <div class="hero__content">
-          <span class="hero__eyebrow">
-            <span class="hero__eyebrow-dot" aria-hidden="true" />
-            {{ t('home.trustBadge') }}
-          </span>
-          <h1 class="hero__title">
-            {{ t('home.titleLine1') }}
-            <br />
-            <span class="hero__title-accent">{{ t('home.titleAccent') }}</span>
-          </h1>
-          <p class="hero__subtitle">
-            {{ t('home.subtitle', { amount: formattedThreshold }) }}
-          </p>
-          <div class="hero__actions">
-            <RouterLink to="/catalog">
-              <AppButton size="lg">
-                {{ t('home.shopStore') }}
-                <AppIcon name="arrow-right" :size="17" />
-              </AppButton>
-            </RouterLink>
-            <RouterLink to="/catalog?category=cat-whitening">
-              <AppButton variant="outline" size="lg">{{ t('home.whiteningKits') }}</AppButton>
-            </RouterLink>
-          </div>
-          <dl class="hero__stats">
-            <div v-for="stat in stats" :key="stat.label" class="hero__stat">
-              <dt class="hero__stat-value">{{ stat.value }}</dt>
-              <dd class="hero__stat-label">{{ stat.label }}</dd>
-            </div>
-          </dl>
-        </div>
-
-        <div class="hero__visual" aria-hidden="true">
-          <div class="hero__card">
-            <div class="hero__logo">
-              <span class="hero__logo-tile">
-                <AppIcon name="tooth" :size="46" />
-              </span>
-              <span class="hero__logo-wordmark">Dent<span>Zone</span></span>
-              <span class="hero__logo-tagline">DENTAL EQUIPMENT · CLINIC SUPPLIES · TRUSTED SUPPLIERS</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
+    <HeroAdvertisement v-if="heroAd" :advertisement="heroAd" />
 
     <section class="container page">
       <div class="value-props">
@@ -160,14 +113,24 @@ const stats = computed(() => [
       </div>
     </section>
 
+    <section v-if="secondaryAds.length" class="container page home-section">
+      <PromotionalGrid :advertisements="secondaryAds" />
+    </section>
+
     <section class="container page home-section">
-      <AdBanner
-        :title="t('home.ad1Title')"
-        :description="t('home.ad1Description')"
-        :cta-label="t('home.ad1Cta')"
-        cta-to="/catalog?category=cat-whitening"
-        icon="sparkles"
-      />
+      <SectionHeader :title="t('home.bestsellersTitle')" :subtitle="t('home.bestsellersSubtitle')">
+        <template #action>
+          <RouterLink to="/catalog" class="section-link">
+            {{ t('home.seeAll') }} <AppIcon name="arrow-right" :size="15" />
+          </RouterLink>
+        </template>
+      </SectionHeader>
+      <div v-if="isReady" class="home__grid">
+        <ProductGrid :products="catalogService.bestsellers.value" />
+      </div>
+      <div v-else class="home__loading" role="status">
+        <AppSpinner size="lg" :label="t('home.loadingBestsellers')" />
+      </div>
     </section>
 
     <section class="container page home-section">
@@ -207,196 +170,12 @@ const stats = computed(() => [
         </RouterLink>
       </div>
     </section>
-
-    <section class="container page">
-      <SectionHeader :title="t('home.bestsellersTitle')" :subtitle="t('home.bestsellersSubtitle')">
-        <template #action>
-          <RouterLink to="/catalog" class="section-link">
-            {{ t('home.seeAll') }} <AppIcon name="arrow-right" :size="15" />
-          </RouterLink>
-        </template>
-      </SectionHeader>
-      <div v-if="isReady" class="home__grid">
-        <ProductGrid :products="catalogService.bestsellers.value" />
-      </div>
-      <div v-else class="home__loading" role="status">
-        <AppSpinner size="lg" :label="t('home.loadingBestsellers')" />
-      </div>
-    </section>
   </div>
 </template>
 
 <style scoped>
 .home-section {
   padding-top: 0;
-}
-
-.hero {
-  position: relative;
-  background:
-    radial-gradient(52rem 26rem at 90% -10%, var(--dz-primary-soft) 0%, transparent 60%),
-    var(--dz-surface);
-  border-bottom: 1px solid var(--dz-border);
-  overflow: hidden;
-}
-
-.hero__inner {
-  display: flex;
-  align-items: center;
-  gap: 3.5rem;
-  padding-top: 4.5rem;
-  padding-bottom: 4.5rem;
-}
-
-.hero__content {
-  flex: 1.05;
-  min-width: 0;
-}
-
-.hero__eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-family: var(--dz-font-mono);
-  font-size: 0.72rem;
-  font-weight: 500;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--dz-gold-strong);
-  margin-bottom: 1.4rem;
-}
-
-.hero__eyebrow-dot {
-  width: 0.45rem;
-  height: 0.45rem;
-  border-radius: 50%;
-  background: var(--dz-gold);
-  flex-shrink: 0;
-}
-
-.hero__title {
-  font-family: var(--dz-font-display);
-  font-size: clamp(2.4rem, 4.6vw, 3.4rem);
-  line-height: 1.08;
-  letter-spacing: -0.03em;
-  font-weight: 600;
-}
-
-.hero__title-accent {
-  color: var(--dz-gold-strong);
-}
-
-.hero__subtitle {
-  margin-top: 1.15rem;
-  max-width: 470px;
-  color: var(--dz-ink-soft);
-  font-size: 1.02rem;
-  line-height: 1.65;
-}
-
-.hero__actions {
-  display: flex;
-  gap: 0.9rem;
-  margin-top: 2rem;
-  flex-wrap: wrap;
-}
-
-.hero__stats {
-  display: flex;
-  gap: 2.25rem;
-  margin-top: 2.75rem;
-}
-
-.hero__stat {
-  position: relative;
-}
-
-.hero__stat + .hero__stat::before {
-  content: '';
-  position: absolute;
-  inset-inline-start: -1.15rem;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 1px;
-  height: 2.2rem;
-  background: var(--dz-border);
-}
-
-.hero__stat-value {
-  font-family: var(--dz-font-mono);
-  font-size: 1.4rem;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  color: var(--dz-ink);
-}
-
-.hero__stat-label {
-  font-size: 0.78rem;
-  color: var(--dz-muted);
-  font-weight: 500;
-}
-
-.hero__visual {
-  flex: 0.95;
-  min-width: 0;
-}
-
-.hero__card {
-  border-radius: var(--dz-radius-lg);
-  background: var(--dz-surface);
-  border: 1px solid var(--dz-border);
-  box-shadow: var(--dz-shadow);
-  padding: 1.1rem;
-}
-
-.hero__logo {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1.35rem;
-  min-height: 330px;
-  padding: 2rem;
-  border-radius: var(--dz-radius);
-  border: 1px solid var(--dz-border);
-  background:
-    radial-gradient(24rem 18rem at 50% -20%, var(--dz-primary-soft) 0%, transparent 62%),
-    var(--dz-surface);
-  text-align: center;
-}
-
-.hero__logo-tile {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 6rem;
-  height: 6rem;
-  border-radius: var(--dz-radius-lg);
-  background: var(--dz-primary);
-  color: var(--dz-on-primary);
-  box-shadow: var(--dz-shadow-primary);
-}
-
-.hero__logo-wordmark {
-  font-family: var(--dz-font-display);
-  font-size: clamp(2.2rem, 4.5vw, 2.9rem);
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  color: var(--dz-ink);
-  line-height: 1;
-}
-
-.hero__logo-wordmark span {
-  color: var(--dz-gold-strong);
-}
-
-.hero__logo-tagline {
-  font-family: var(--dz-font-mono);
-  font-size: 0.7rem;
-  font-weight: 500;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--dz-muted);
 }
 
 .value-props {
@@ -535,29 +314,6 @@ const stats = computed(() => [
 }
 
 @media (max-width: 800px) {
-  .hero__inner {
-    flex-direction: column;
-    padding-top: 3rem;
-    padding-bottom: 3rem;
-    gap: 2.5rem;
-  }
-
-  .hero__title {
-    font-size: 2.4rem;
-  }
-
-  .hero__visual {
-    width: 100%;
-  }
-
-  .hero__stats {
-    gap: 1.5rem;
-  }
-
-  .hero__stat + .hero__stat::before {
-    inset-inline-start: -0.8rem;
-  }
-
   .home__categories {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -588,15 +344,6 @@ const stats = computed(() => [
 
   .home__vendors {
     grid-template-columns: 1fr;
-  }
-
-  .hero__stats {
-    flex-wrap: wrap;
-    gap: 1rem 1.5rem;
-  }
-
-  .hero__stat + .hero__stat::before {
-    display: none;
   }
 }
 </style>

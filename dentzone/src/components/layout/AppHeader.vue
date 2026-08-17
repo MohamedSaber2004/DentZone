@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { cartService } from '../../application/cart.service'
 import { wishlistService } from '../../application/wishlist.service'
+import { authService } from '../../application/auth.service'
+import { toastService } from '../../application/toast.service'
 import { t, toggleLocale } from '../../i18n'
 import { theme, toggleTheme } from '../../application/theme.service'
 import SearchField from '../ui/SearchField.vue'
@@ -18,7 +20,19 @@ const emit = defineEmits<{
 }>()
 
 const route = useRoute()
+const router = useRouter()
 const menuOpen = ref(false)
+const userMenuOpen = ref(false)
+const userMenuRef = ref<HTMLElement | null>(null)
+
+const isAuthenticated = computed(() => authService.isAuthenticated)
+const user = computed(() => authService.user.value)
+
+const userInitials = computed(() => {
+  const u = user.value
+  if (!u) return 'DZ'
+  return `${u.firstName.charAt(0)}${u.lastName.charAt(0)}`.toUpperCase()
+})
 
 const navItems = computed(() => [
   { label: t('nav.home'), to: '/' },
@@ -44,6 +58,46 @@ const isNavActive = (to: string) => {
 
 const toggleMenu = () => {
   menuOpen.value = !menuOpen.value
+}
+
+const toggleUserMenu = () => {
+  userMenuOpen.value = !userMenuOpen.value
+}
+
+const closeUserMenu = () => {
+  userMenuOpen.value = false
+}
+
+const onClickOutside = (event: MouseEvent) => {
+  if (userMenuRef.value && !userMenuRef.value.contains(event.target as Node)) {
+    closeUserMenu()
+  }
+}
+
+const onEscape = (event: KeyboardEvent) => {
+  if (event.key === 'Escape') closeUserMenu()
+}
+
+onMounted(() => {
+  document.addEventListener('click', onClickOutside)
+  document.addEventListener('keydown', onEscape)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', onClickOutside)
+  document.removeEventListener('keydown', onEscape)
+})
+
+const logout = () => {
+  closeUserMenu()
+  authService.logout()
+  toastService.info(t('auth.logoutToast'))
+  void router.push('/')
+}
+
+const ordersComingSoon = () => {
+  closeUserMenu()
+  toastService.info(t('auth.ordersComingSoon'))
 }
 </script>
 
@@ -107,6 +161,54 @@ const toggleMenu = () => {
             {{ cartService.itemCount.value > 99 ? '99+' : cartService.itemCount.value }}
           </span>
         </RouterLink>
+
+        <RouterLink v-if="!isAuthenticated" to="/auth/login" class="app-header__login">
+          <AppIcon name="user" :size="16" />
+          <span class="app-header__login-text">{{ t('nav.login') }}</span>
+        </RouterLink>
+
+        <div v-else ref="userMenuRef" class="app-header__user">
+          <button
+            type="button"
+            class="app-header__avatar"
+            :class="{ 'app-header__avatar--open': userMenuOpen }"
+            :style="{ '--tint': user?.tint ?? '' }"
+            :aria-label="t('profile.title')"
+            :aria-expanded="userMenuOpen"
+            @click="toggleUserMenu"
+          >
+            {{ userInitials }}
+          </button>
+          <div v-if="userMenuOpen" class="app-header__dropdown">
+            <div class="app-header__dropdown-head">
+              <span class="app-header__dropdown-avatar" :style="{ '--tint': user?.tint ?? '' }">
+                {{ userInitials }}
+              </span>
+              <div>
+                <p class="app-header__dropdown-name">{{ user?.firstName }} {{ user?.lastName }}</p>
+                <p class="app-header__dropdown-email">{{ user?.email }}</p>
+              </div>
+            </div>
+            <RouterLink to="/profile" class="app-header__dropdown-link" @click="closeUserMenu">
+              <AppIcon name="user" :size="16" />
+              {{ t('nav.profile') }}
+            </RouterLink>
+            <RouterLink to="/wishlist" class="app-header__dropdown-link" @click="closeUserMenu">
+              <AppIcon name="heart" :size="16" />
+              {{ t('nav.wishlist') }}
+            </RouterLink>
+            <button type="button" class="app-header__dropdown-link" @click="ordersComingSoon">
+              <AppIcon name="box" :size="16" />
+              {{ t('nav.myOrders') }}
+            </button>
+            <div class="app-header__dropdown-sep" role="separator"></div>
+            <button type="button" class="app-header__dropdown-link app-header__dropdown-link--danger" @click="logout">
+              <AppIcon name="logout" :size="16" />
+              {{ t('nav.logout') }}
+            </button>
+          </div>
+        </div>
+
         <button class="app-header__menu" type="button" :aria-label="t('nav.toggleMenu')" @click="toggleMenu">
           <AppIcon name="menu" :size="24" />
         </button>
@@ -299,6 +401,154 @@ const toggleMenu = () => {
   transform: translateY(-1px);
 }
 
+.app-header__login {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 1rem;
+  border-radius: var(--dz-radius-full);
+  border: 1px solid var(--dz-primary);
+  background: var(--dz-surface);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--dz-primary-strong);
+  white-space: nowrap;
+  transition:
+    border-color 0.2s,
+    color 0.2s,
+    background-color 0.2s;
+}
+
+.app-header__login:hover {
+  background: var(--dz-primary);
+  color: var(--dz-on-primary);
+}
+
+.app-header__user {
+  position: relative;
+}
+
+.app-header__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.7rem;
+  height: 2.7rem;
+  border-radius: var(--dz-radius-full);
+  background: color-mix(in srgb, var(--tint) 16%, var(--dz-surface-soft));
+  border: 1px solid color-mix(in srgb, var(--tint) 26%, var(--dz-border));
+  color: color-mix(in srgb, var(--tint) 80%, var(--dz-ink));
+  font-family: var(--dz-font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  transition:
+    transform 0.15s,
+    border-color 0.2s,
+    background-color 0.2s;
+}
+
+.app-header__avatar:hover,
+.app-header__avatar--open {
+  border-color: var(--dz-primary);
+  background: color-mix(in srgb, var(--tint) 22%, var(--dz-surface-soft));
+}
+
+.app-header__dropdown {
+  position: absolute;
+  top: calc(100% + 0.6rem);
+  inset-inline-end: 0;
+  width: 250px;
+  padding: 0.6rem;
+  background: var(--dz-surface);
+  border: 1px solid var(--dz-border);
+  border-radius: var(--dz-radius-lg);
+  box-shadow: var(--dz-shadow);
+  z-index: 60;
+}
+
+.app-header__dropdown-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.6rem 0.85rem;
+  border-bottom: 1px solid var(--dz-border);
+  margin-bottom: 0.45rem;
+}
+
+.app-header__dropdown-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  flex-shrink: 0;
+  border-radius: var(--dz-radius-full);
+  background: color-mix(in srgb, var(--tint) 16%, var(--dz-surface-soft));
+  border: 1px solid color-mix(in srgb, var(--tint) 26%, var(--dz-border));
+  color: color-mix(in srgb, var(--tint) 80%, var(--dz-ink));
+  font-family: var(--dz-font-display);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.app-header__dropdown-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.app-header__dropdown-email {
+  font-size: 0.75rem;
+  color: var(--dz-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-header__dropdown-link {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.6rem 0.7rem;
+  border-radius: var(--dz-radius);
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--dz-ink-soft);
+  text-align: start;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+}
+
+.app-header__dropdown-link:hover {
+  background: var(--dz-primary-faint);
+  color: var(--dz-primary-strong);
+}
+
+.app-header__dropdown-link svg {
+  color: var(--dz-primary);
+  flex-shrink: 0;
+}
+
+.app-header__dropdown-link--danger {
+  color: var(--dz-danger);
+}
+
+.app-header__dropdown-link--danger:hover {
+  background: var(--dz-danger-soft);
+  color: var(--dz-danger);
+}
+
+.app-header__dropdown-link--danger svg {
+  color: var(--dz-danger);
+}
+
+.app-header__dropdown-sep {
+  height: 1px;
+  background: var(--dz-border);
+  margin: 0.3rem 0.4rem;
+}
+
 .app-header__menu {
   display: none;
   color: var(--dz-ink-soft);
@@ -349,6 +599,16 @@ const toggleMenu = () => {
 @media (max-width: 560px) {
   .app-header__lang-text {
     display: none;
+  }
+
+  .app-header__login-text {
+    display: none;
+  }
+
+  .app-header__login {
+    width: 2.7rem;
+    padding: 0;
+    justify-content: center;
   }
 
   .app-header__lang {

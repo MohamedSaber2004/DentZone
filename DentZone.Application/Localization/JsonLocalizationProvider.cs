@@ -1,0 +1,150 @@
+﻿using System.Globalization;
+using System.Text.Json;
+using Microsoft.Extensions.Logging;
+
+namespace DentZone.Application.Localization
+{
+    public class JsonLocalizationProvider : ILocalizationProvider
+    {
+        private static readonly string[] SupportedCultures = { "en", "ar" };
+
+        private readonly ILogger<JsonLocalizationProvider> _logger;
+        private readonly Dictionary<string, Dictionary<string, string>> _localizations = new(StringComparer.OrdinalIgnoreCase);
+
+        public JsonLocalizationProvider(string? resourcesPath, ILogger<JsonLocalizationProvider> logger)
+        {
+            _logger = logger;
+            LoadResources(resourcesPath);
+        }
+
+        private void LoadResources(string? resourcesPath)
+        {
+            var baseDirectory = AppContext.BaseDirectory;
+            var assemblyLocation = Path.GetDirectoryName(typeof(JsonLocalizationProvider).Assembly.Location);
+
+            var possiblePaths = new List<string>();
+
+            if (!string.IsNullOrEmpty(resourcesPath))
+            {
+                possiblePaths.Add(resourcesPath);
+            }
+
+            possiblePaths.Add(Path.Combine(baseDirectory, "Localization", "Resources"));
+            possiblePaths.Add(Path.Combine(assemblyLocation ?? "", "Localization", "Resources"));
+            possiblePaths.Add(Path.Combine(Directory.GetCurrentDirectory(), "Localization", "Resources"));
+
+            var resourcePath = possiblePaths.FirstOrDefault(Directory.Exists);
+
+            if (resourcePath == null)
+            {
+                _logger.LogWarning("Localization resource directory not found. Paths tried: {Paths}", possiblePaths);
+                return;
+            }
+
+            _logger.LogInformation("Loading localization resources from: {ResourcePath}", resourcePath);
+
+            foreach (var culture in SupportedCultures)
+            {
+                var filePath = Path.Combine(resourcePath, $"messages.{culture}.json");
+                if (File.Exists(filePath))
+                {
+                    try
+                    {
+                        var json = File.ReadAllText(filePath);
+                        using var doc = JsonDocument.Parse(json);
+                        var cultureData = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+                        FlattenJson(doc.RootElement, "", cultureData);
+
+                        _localizations[culture] = cultureData;
+                        _logger.LogInformation("Successfully loaded {Count} keys for culture: {Culture}", cultureData.Count, culture);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error loading localization file {FilePath}", filePath);
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning("Localization file not found: {FilePath}", filePath);
+                }
+            }
+        }
+
+        private static void FlattenJson(JsonElement element, string prefix, Dictionary<string, string> result)
+        {
+            switch (element.ValueKind)
+            {
+                case JsonValueKind.Object:
+                    foreach (var property in element.EnumerateObject())
+                    {
+                        var name = string.IsNullOrEmpty(prefix) ? property.Name : $"{prefix}.{property.Name}";
+                        FlattenJson(property.Value, name, result);
+                    }
+                    break;
+                case JsonValueKind.Array:
+                    int index = 0;
+                    foreach (var item in element.EnumerateArray())
+                    {
+                        FlattenJson(item, $"{prefix}[{index}]", result);
+                        index++;
+                    }
+                    break;
+                case JsonValueKind.String:
+                    result[prefix] = element.GetString() ?? "";
+                    break;
+                case JsonValueKind.Number:
+                case JsonValueKind.True:
+                case JsonValueKind.False:
+                case JsonValueKind.Null:
+                    result[prefix] = element.ToString();
+                    break;
+            }
+        }
+
+        public string GetLocalizedString(string key, string? culture = null)
+        {
+            culture ??= CultureInfo.CurrentUICulture.Name;
+
+            if (!string.IsNullOrEmpty(culture) && culture.Contains('-'))
+            {
+                culture = culture.Split('-')[0];
+            }
+            else if (!string.IsNullOrEmpty(culture) && culture.Length > 2)
+            {
+                culture = culture.Substring(0, 2);
+            }
+
+            if (string.IsNullOrEmpty(culture) || !SupportedCultures.Contains(culture, StringComparer.OrdinalIgnoreCase))
+            {
+                culture = "ar";
+            }
+
+            if (_localizations.TryGetValue(culture, out var cultureData) && cultureData.TryGetValue(key, out var value))
+            {
+                return value;
+            }
+
+            if (culture != "en" && _localizations.TryGetValue("en", out var enData) && enData.TryGetValue(key, out var enValue))
+            {
+                return enValue;
+            }
+
+            return key;
+        }
+
+        public string GetLocalizedString(string key, string? culture, params object[] args)
+        {
+            var baseValue = GetLocalizedString(key, culture);
+
+            try
+            {
+                return string.Format(baseValue, args);
+            }
+            catch
+            {
+                return baseValue;
+            }
+        }
+    }
+}

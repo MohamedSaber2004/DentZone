@@ -15,4 +15,8 @@
     <ProjectReference Include="..\DentZone.Persistence\DentZone.Persistence.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Services\" />
+  </ItemGroup>
+
 </Project>
