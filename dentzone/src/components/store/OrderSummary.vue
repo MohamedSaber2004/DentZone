@@ -115,7 +115,7 @@ const taxRate = Math.round(pricing.taxRate * 100)
 .order-summary__progress-fill {
   height: 100%;
   border-radius: var(--dz-radius-full);
-  background: var(--dz-gradient);
+  background: var(--dz-primary);
   transition: width 0.4s ease;
 }
 

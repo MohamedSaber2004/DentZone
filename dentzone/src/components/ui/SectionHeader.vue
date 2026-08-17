@@ -38,12 +38,15 @@ withDefaults(
 }
 
 .section-header__title {
-  font-size: 1.6rem;
+  font-family: var(--dz-font-display);
+  font-size: 1.7rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 .section-header__subtitle {
-  margin-top: 0.3rem;
+  margin-top: 0.35rem;
   color: var(--dz-muted);
-  font-size: 0.95rem;
+  font-size: 0.92rem;
 }
 </style>

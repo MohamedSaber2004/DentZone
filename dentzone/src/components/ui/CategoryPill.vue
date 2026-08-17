@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Category } from '../../domain/models/category'
+import AppIcon, { type IconName } from './AppIcon.vue'
 
 withDefaults(
   defineProps<{
@@ -13,6 +14,16 @@ withDefaults(
 const emit = defineEmits<{
   select: [category: Category]
 }>()
+
+const categoryIcons: Record<string, IconName> = {
+  '': 'store',
+  'cat-toothbrushes': 'brush',
+  'cat-toothpaste': 'tube',
+  'cat-mouthwash': 'droplet',
+  'cat-floss': 'floss',
+  'cat-whitening': 'sparkles',
+  'cat-accessories': 'box',
+}
 </script>
 
 <template>
@@ -22,7 +33,9 @@ const emit = defineEmits<{
     type="button"
     @click="emit('select', category)"
   >
-    <span class="category-pill__emoji" :style="{ '--tint': category.tint }">{{ category.emoji }}</span>
+    <span class="category-pill__icon" :style="{ '--tint': category.tint }">
+      <AppIcon :name="categoryIcons[category.id] ?? 'box'" :size="variant === 'card' ? 20 : 15" />
+    </span>
     <span class="category-pill__label">
       <span class="category-pill__name">{{ category.name }}</span>
       <span v-if="variant === 'card'" class="category-pill__description">{{ category.description }}</span>
@@ -60,11 +73,27 @@ const emit = defineEmits<{
 .category-pill--active {
   background: var(--dz-primary);
   border-color: var(--dz-primary);
-  color: var(--dz-white);
+  color: var(--dz-on-primary);
 }
 
-.category-pill__emoji {
-  font-size: 1rem;
+.category-pill--active .category-pill__name {
+  color: var(--dz-on-primary);
+}
+
+.category-pill--active .category-pill__icon {
+  color: var(--dz-on-primary);
+}
+
+.category-pill__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  flex-shrink: 0;
+  border-radius: var(--dz-radius-full);
+  background: color-mix(in srgb, var(--tint) 14%, var(--dz-surface-soft));
+  color: var(--dz-primary);
 }
 
 .category-pill--card {
@@ -77,6 +106,7 @@ const emit = defineEmits<{
   background: var(--dz-surface);
   text-align: left;
   white-space: normal;
+  width: 100%;
 }
 
 .category-pill--card:hover {
@@ -90,15 +120,11 @@ const emit = defineEmits<{
   box-shadow: var(--dz-shadow);
 }
 
-.category-pill--card .category-pill__emoji {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.category-pill--card .category-pill__icon {
   width: 3rem;
   height: 3rem;
-  font-size: 1.5rem;
   border-radius: var(--dz-radius);
-  background: color-mix(in srgb, var(--tint) 14%, white);
+  color: var(--dz-primary);
 }
 
 .category-pill--card.category-pill--active .category-pill__name {
@@ -112,8 +138,9 @@ const emit = defineEmits<{
 }
 
 .category-pill__name {
+  font-family: var(--dz-font-display);
   font-size: 0.95rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--dz-ink);
 }
 
@@ -126,5 +153,9 @@ const emit = defineEmits<{
   font-weight: 400;
   color: var(--dz-muted);
   line-height: 1.45;
+}
+
+html[dir='rtl'] .category-pill--card {
+  text-align: right;
 }
 </style>

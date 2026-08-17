@@ -11,12 +11,14 @@ const props = defineProps<{
 const productLabel = computed(() =>
   t('vendors.productCount', { count: props.vendor.productCount }),
 )
+
+const initial = computed(() => props.vendor.name.charAt(0).toUpperCase())
 </script>
 
 <template>
   <RouterLink :to="`/vendor/${vendor.slug}`" class="vendor-card">
     <div class="vendor-card__top">
-      <span class="vendor-card__logo" :style="{ '--tint': vendor.tint }">{{ vendor.emoji }}</span>
+      <span class="vendor-card__logo" :style="{ '--tint': vendor.tint }" aria-hidden="true">{{ initial }}</span>
       <span v-if="vendor.verified" class="vendor-card__verified" :title="t('vendors.verified')">
         <AppIcon name="check-circle" :size="14" />
       </span>
@@ -69,11 +71,15 @@ const productLabel = computed(() =>
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 3.25rem;
-  height: 3.25rem;
-  font-size: 1.6rem;
+  width: 3rem;
+  height: 3rem;
+  font-family: var(--dz-font-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--tint) 78%, var(--dz-ink));
   border-radius: var(--dz-radius);
-  background: color-mix(in srgb, var(--tint) 14%, white);
+  background: color-mix(in srgb, var(--tint) 14%, var(--dz-surface-soft));
+  border: 1px solid color-mix(in srgb, var(--tint) 22%, var(--dz-border));
 }
 
 .vendor-card__verified {
@@ -95,7 +101,7 @@ const productLabel = computed(() =>
   margin-top: 0.15rem;
   font-size: 0.8rem;
   font-weight: 600;
-  color: var(--dz-primary-strong);
+  color: var(--dz-gold-strong);
 }
 
 .vendor-card__description {
@@ -123,8 +129,9 @@ const productLabel = computed(() =>
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
+  font-family: var(--dz-font-mono);
   font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--dz-ink);
 }
 
@@ -133,6 +140,7 @@ const productLabel = computed(() =>
 }
 
 .vendor-card__reviews {
+  font-family: var(--dz-font-body);
   font-weight: 500;
   color: var(--dz-muted);
 }

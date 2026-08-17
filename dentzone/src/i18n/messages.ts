@@ -14,6 +14,7 @@ export type Messages = {
     wishlist: string
     toggleMenu: string
     switchLang: string
+    toggleTheme: string
   }
   home: {
     trustBadge: string

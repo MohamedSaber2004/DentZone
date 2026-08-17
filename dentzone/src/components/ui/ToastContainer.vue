@@ -83,12 +83,12 @@ const icons: Record<Toast['type'], IconName> = {
 }
 
 .toast--success .toast__icon {
-  background: var(--dz-success-faint);
+  background: var(--dz-success-soft);
   color: var(--dz-success);
 }
 
 .toast--error .toast__icon {
-  background: var(--dz-danger-faint);
+  background: var(--dz-danger-soft);
   color: var(--dz-danger);
 }
 

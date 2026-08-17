@@ -141,8 +141,7 @@ const viewProduct = () => {
 .product-card__overlay {
   position: absolute;
   top: 0.6rem;
-  right: 0.6rem;
-  left: 0.6rem;
+  inset-inline: 0.6rem;
   z-index: 2;
   display: flex;
   justify-content: space-between;
@@ -171,7 +170,7 @@ const viewProduct = () => {
   width: 2.2rem;
   height: 2.2rem;
   border-radius: 50%;
-  background: var(--dz-white);
+  background: var(--dz-surface);
   border: 1px solid var(--dz-border);
   box-shadow: var(--dz-shadow-sm);
   color: var(--dz-ink-soft);
@@ -239,7 +238,7 @@ const viewProduct = () => {
 
 .product-card__add {
   position: absolute;
-  right: 0.8rem;
+  inset-inline-end: 0.8rem;
   bottom: 0.8rem;
   z-index: 2;
   display: flex;
@@ -248,17 +247,19 @@ const viewProduct = () => {
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 50%;
-  background: var(--dz-gradient);
-  color: var(--dz-white);
+  background: var(--dz-primary);
+  color: var(--dz-on-primary);
   box-shadow: var(--dz-shadow-primary);
   transition:
     transform 0.15s,
-    box-shadow 0.2s;
+    box-shadow 0.2s,
+    background-color 0.2s;
 }
 
 .product-card__add:hover:not(:disabled) {
   transform: scale(1.1);
-  box-shadow: 0 10px 26px rgb(13 148 136 / 0.45);
+  background: var(--dz-primary-strong);
+  box-shadow: 0 10px 24px rgb(14 43 58 / 0.35);
 }
 
 .product-card__add--added {

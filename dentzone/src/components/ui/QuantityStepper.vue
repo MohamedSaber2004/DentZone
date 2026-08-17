@@ -101,8 +101,7 @@ const increment = () => setValue(props.modelValue + 1)
 .quantity-stepper__input {
   width: 2.8rem;
   border: none;
-  border-left: 1px solid var(--dz-border);
-  border-right: 1px solid var(--dz-border);
+  border-inline: 1px solid var(--dz-border);
   text-align: center;
   font-weight: 600;
   -moz-appearance: textfield;

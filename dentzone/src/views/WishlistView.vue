@@ -27,7 +27,7 @@ const clearWishlist = () => {
 
     <EmptyState
       v-else
-      emoji="💛"
+      icon="heart"
       :title="t('wishlist.emptyTitle')"
       :description="t('wishlist.emptyDescription')"
     >

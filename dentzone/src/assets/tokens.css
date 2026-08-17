@@ -1,56 +1,115 @@
 :root {
-  --dz-primary: #0d9488;
-  --dz-primary-strong: #0f766e;
-  --dz-primary-soft: #ccfbf1;
-  --dz-primary-faint: #f0fdfa;
+  --dz-ink: #0e2b3a;
+  --dz-ink-strong: #0a2230;
+  --dz-ink-soft: #41606f;
+  --dz-muted: #7e95a2;
 
-  --dz-accent: #06b6d4;
-  --dz-accent-soft: #cffafe;
+  --dz-primary: #0e2b3a;
+  --dz-primary-strong: #0a2230;
+  --dz-primary-soft: #e5f0eb;
+  --dz-primary-faint: #f1f6f3;
 
-  --dz-gradient: linear-gradient(135deg, #0f766e 0%, #06b6d4 100%);
-  --dz-gradient-soft: linear-gradient(135deg, #ccfbf1 0%, #cffafe 100%);
+  --dz-gold: #b8862b;
+  --dz-gold-strong: #9a6f1f;
+  --dz-gold-soft: #f4ebd7;
+  --dz-gold-faint: #faf5e9;
 
-  --dz-ink: #0f172a;
-  --dz-ink-soft: #475569;
-  --dz-muted: #94a3b8;
+  --dz-mint: #e5f0eb;
 
+  --dz-paper: #f6f8f6;
   --dz-white: #ffffff;
-  --dz-star: #f59e0b;
-  --dz-star-track: #e2e8f0;
-  --dz-hover-secondary: #99f6e4;
-
-  --dz-bg: #f6f9f9;
   --dz-surface: #ffffff;
-  --dz-surface-soft: #f1f5f5;
-  --dz-border: #e2e8f0;
-  --dz-border-strong: #cbd5e1;
+  --dz-surface-soft: #eff3f0;
+  --dz-border: #dfe8e3;
+  --dz-border-strong: #c3d1ca;
 
-  --dz-success: #16a34a;
-  --dz-success-soft: #dcfce7;
-  --dz-warning: #d97706;
-  --dz-warning-soft: #fef3c7;
-  --dz-danger: #dc2626;
-  --dz-danger-soft: #fee2e2;
-  --dz-violet: #7c3aed;
-  --dz-violet-soft: #ede9fe;
+  --dz-band: #0e2b3a;
+  --dz-on-primary: #ffffff;
+  --dz-on-gold: #ffffff;
+  --dz-header-bg: rgb(255 255 255 / 0.92);
+
+  --dz-star: #b8862b;
+  --dz-star-track: #e3eae6;
+
+  --dz-success: #1f7a4d;
+  --dz-success-soft: #e3f2e9;
+  --dz-warning: #a16207;
+  --dz-warning-soft: #fbf0dc;
+  --dz-danger: #c0392b;
+  --dz-danger-soft: #fbeae7;
+  --dz-violet: #5b3e9e;
+  --dz-violet-soft: #ece6f6;
 
   --dz-radius-sm: 8px;
   --dz-radius: 12px;
-  --dz-radius-lg: 18px;
+  --dz-radius-lg: 16px;
   --dz-radius-full: 9999px;
 
-  --dz-shadow-sm: 0 1px 2px rgb(15 23 42 / 0.05);
-  --dz-shadow: 0 4px 18px rgb(15 23 42 / 0.08);
-  --dz-shadow-lg: 0 18px 44px rgb(15 23 42 / 0.12);
-  --dz-shadow-primary: 0 8px 22px rgb(13 148 136 / 0.35);
+  --dz-shadow-sm: 0 1px 2px rgb(14 43 58 / 0.06);
+  --dz-shadow: 0 8px 24px rgb(14 43 58 / 0.08);
+  --dz-shadow-lg: 0 20px 48px rgb(14 43 58 / 0.12);
+  --dz-shadow-primary: 0 8px 20px rgb(14 43 58 / 0.28);
 
   --dz-ring: 0 0 0 3px var(--dz-primary-soft);
 
-  --dz-font:
-    Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans',
+  --dz-font-display:
+    'Spline Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans',
     'Droid Sans', 'Helvetica Neue', sans-serif;
+  --dz-font-body:
+    'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans',
+    'Droid Sans', 'Helvetica Neue', sans-serif;
+  --dz-font-mono:
+    'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', monospace;
 
   --dz-max-width: 1200px;
-  --dz-header-height: 72px;
+  --dz-header-height: 76px;
   --dz-gutter: 1.5rem;
+}
+
+:root[data-theme='dark'] {
+  --dz-ink: #e6eef2;
+  --dz-ink-strong: #ffffff;
+  --dz-ink-soft: #9db1bd;
+  --dz-muted: #6d828e;
+
+  --dz-primary: #7fd4bd;
+  --dz-primary-strong: #a3e3d1;
+  --dz-primary-soft: #17352c;
+  --dz-primary-faint: #12241f;
+
+  --dz-gold: #d4a24c;
+  --dz-gold-strong: #e6bc6e;
+  --dz-gold-soft: #3a2e18;
+  --dz-gold-faint: #2a2415;
+
+  --dz-mint: #17352c;
+
+  --dz-paper: #0d1519;
+  --dz-white: #ffffff;
+  --dz-surface: #121c22;
+  --dz-surface-soft: #18252c;
+  --dz-border: #24343d;
+  --dz-border-strong: #35505c;
+
+  --dz-band: #0a2230;
+  --dz-on-primary: #0e2b3a;
+  --dz-on-gold: #0e2b3a;
+  --dz-header-bg: rgb(18 28 34 / 0.9);
+
+  --dz-star: #d4a24c;
+  --dz-star-track: #2a3a42;
+
+  --dz-success: #5fce93;
+  --dz-success-soft: #143026;
+  --dz-warning: #e8b45a;
+  --dz-warning-soft: #332a18;
+  --dz-danger: #e07a6d;
+  --dz-danger-soft: #331c19;
+  --dz-violet: #b39ae0;
+  --dz-violet-soft: #251c3d;
+
+  --dz-shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3);
+  --dz-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
+  --dz-shadow-lg: 0 20px 48px rgb(0 0 0 / 0.45);
+  --dz-shadow-primary: 0 8px 20px rgb(0 0 0 / 0.4);
 }

@@ -36,8 +36,10 @@ const savingsPercent = computed(() =>
 }
 
 .price-tag__current {
-  font-weight: 700;
+  font-family: var(--dz-font-mono);
+  font-weight: 600;
   color: var(--dz-ink);
+  letter-spacing: -0.01em;
 }
 
 .price-tag--sm .price-tag__current {
@@ -67,10 +69,11 @@ const savingsPercent = computed(() =>
 }
 
 .price-tag__savings {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--dz-danger);
-  background: var(--dz-danger-soft);
+  font-family: var(--dz-font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--dz-gold-strong);
+  background: var(--dz-gold-soft);
   padding: 0.1rem 0.45rem;
   border-radius: var(--dz-radius-full);
 }

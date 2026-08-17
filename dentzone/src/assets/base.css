@@ -14,8 +14,8 @@ html {
 body {
   min-height: 100vh;
   color: var(--dz-ink);
-  background: var(--dz-bg);
-  font-family: var(--dz-font);
+  background: var(--dz-paper);
+  font-family: var(--dz-font-body);
   font-size: 15px;
   line-height: 1.6;
   text-rendering: optimizeLegibility;
@@ -59,7 +59,8 @@ h1,
 h2,
 h3,
 h4 {
-  line-height: 1.25;
+  font-family: var(--dz-font-display);
+  line-height: 1.2;
   letter-spacing: -0.02em;
   font-weight: 700;
 }
@@ -74,7 +75,16 @@ html[dir='rtl'] body {
 
 html[dir='rtl'] body {
   font-family:
-    'Segoe UI', 'Tahoma', 'Noto Sans Arabic', 'Geeza Pro', 'Inter', -apple-system, BlinkMacSystemFont, Roboto,
+    'Segoe UI', 'Tahoma', 'Noto Sans Arabic', 'Geeza Pro', 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, Roboto,
+    Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+}
+
+html[dir='rtl'] h1,
+html[dir='rtl'] h2,
+html[dir='rtl'] h3,
+html[dir='rtl'] h4 {
+  font-family:
+    'Segoe UI', 'Tahoma', 'Noto Sans Arabic', 'Geeza Pro', 'Spline Sans', -apple-system, BlinkMacSystemFont, Roboto,
     Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
 }
 
@@ -122,5 +132,19 @@ html[dir='rtl'] body {
 @media (max-width: 640px) {
   .page {
     padding: 1.5rem 0 3rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

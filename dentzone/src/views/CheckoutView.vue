@@ -84,7 +84,7 @@ const placeOrder = () => {
 
     <EmptyState
       v-if="cartService.lines.value.length === 0"
-      emoji="🛒"
+      icon="cart"
       :title="t('checkout.nothingToCheckout')"
       :description="t('checkout.emptyDescription')"
     >
@@ -184,9 +184,9 @@ const placeOrder = () => {
 }
 
 .steps__item:first-child .steps__dot {
-  background: var(--dz-gradient);
+  background: var(--dz-primary);
   border-color: transparent;
-  color: var(--dz-white);
+  color: var(--dz-on-primary);
 }
 
 .steps__item--current .steps__dot {

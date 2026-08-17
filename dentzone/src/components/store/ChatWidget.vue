@@ -180,8 +180,8 @@ const formatTime = (time: number) =>
   align-items: center;
   gap: 0.7rem;
   padding: 0.9rem 1rem;
-  background: var(--dz-gradient);
-  color: var(--dz-white);
+  background: var(--dz-primary);
+  color: var(--dz-on-primary);
 }
 
 .chat-widget__avatar {
@@ -226,7 +226,7 @@ const formatTime = (time: number) =>
   width: 2rem;
   height: 2rem;
   border-radius: 50%;
-  color: var(--dz-white);
+  color: var(--dz-on-primary);
   transition: background-color 0.2s;
 }
 
@@ -267,14 +267,14 @@ const formatTime = (time: number) =>
 }
 
 .chat-widget__row--agent .chat-widget__bubble {
-  background: var(--dz-white);
+  background: var(--dz-surface);
   border: 1px solid var(--dz-border);
   border-bottom-left-radius: var(--dz-radius-sm);
 }
 
 .chat-widget__row--user .chat-widget__bubble {
-  background: var(--dz-gradient);
-  color: var(--dz-white);
+  background: var(--dz-primary);
+  color: var(--dz-on-primary);
   border-bottom-right-radius: var(--dz-radius-sm);
 }
 
@@ -400,17 +400,17 @@ html[dir='rtl'] .chat-widget__row--user .chat-widget__bubble {
   height: 2.4rem;
   flex-shrink: 0;
   border-radius: 50%;
-  background: var(--dz-gradient);
-  color: var(--dz-white);
+  background: var(--dz-primary);
+  color: var(--dz-on-primary);
   box-shadow: var(--dz-shadow-primary);
   transition:
     transform 0.15s,
-    filter 0.2s;
+    background-color 0.2s;
 }
 
 .chat-widget__send:hover:not(:disabled) {
   transform: scale(1.08);
-  filter: brightness(1.08);
+  background: var(--dz-primary-strong);
 }
 
 .chat-widget__send:disabled {
@@ -431,7 +431,7 @@ html[dir='rtl'] .chat-widget__row--user .chat-widget__bubble {
   width: 3rem;
   height: 3rem;
   border-radius: 50%;
-  color: var(--dz-white);
+  color: var(--dz-on-primary);
   box-shadow: var(--dz-shadow-lg);
   transition:
     transform 0.2s,
@@ -449,7 +449,7 @@ html[dir='rtl'] .chat-widget__row--user .chat-widget__bubble {
 
 .chat-widget__launcher--chat {
   position: relative;
-  background: var(--dz-gradient);
+  background: var(--dz-primary);
 }
 
 .chat-widget__badge {

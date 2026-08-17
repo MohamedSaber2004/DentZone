@@ -62,7 +62,7 @@ watch(activeCategory, () => {
 
     <EmptyState
       v-else
-      emoji="🛍️"
+      icon="store"
       :title="t('vendors.noVendorsTitle')"
       :description="t('vendors.noVendorsDescription')"
     >

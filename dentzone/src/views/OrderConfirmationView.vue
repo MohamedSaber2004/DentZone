@@ -6,6 +6,7 @@ import { locale, t, type MessageKey } from '../i18n'
 import type { Order, OrderStatus } from '../domain/models/order'
 import AppButton from '../components/ui/AppButton.vue'
 import AppBadge from '../components/ui/AppBadge.vue'
+import AppIcon from '../components/ui/AppIcon.vue'
 import OrderSummary from '../components/store/OrderSummary.vue'
 import OrderLinesList, { type OrderLineView } from '../components/store/OrderLinesList.vue'
 import EmptyState from '../components/ui/EmptyState.vue'
@@ -51,37 +52,39 @@ const linesAsOrderLines = (order: Order): OrderLineView[] =>
   <div class="container page">
     <EmptyState
       v-if="!order"
-      emoji="🧾"
-      title="Order not found"
-      description="We couldn't find this order. Orders are stored locally in this browser."
+      icon="alert-circle"
+      :title="t('confirmation.notFoundTitle')"
+      :description="t('confirmation.notFoundDescription')"
     >
       <template #action>
         <RouterLink to="/catalog">
-          <AppButton>Continue shopping</AppButton>
+          <AppButton>{{ t('confirmation.continueShopping') }}</AppButton>
         </RouterLink>
       </template>
     </EmptyState>
 
     <template v-else>
       <div class="confirm">
-        <span class="confirm__icon">✅</span>
-        <h1 class="confirm__title">Thank you, {{ order.customer.name.split(' ')[0] }}!</h1>
+        <span class="confirm__icon">
+          <AppIcon name="check-circle" :size="34" />
+        </span>
+        <h1 class="confirm__title">{{ t('confirmation.thankYou', { name: order.customer.name.split(' ')[0] ?? '' }) }}</h1>
         <p class="confirm__subtitle">
-          Your order <strong>{{ order.id }}</strong> has been placed successfully.
+          {{ t('confirmation.placedSuccessfully', { id: order.id }) }}
           <br />
-          A confirmation email is on its way to <strong>{{ order.customer.email }}</strong>.
+          {{ t('confirmation.confirmationEmail', { email: order.customer.email }) }}
         </p>
         <AppBadge tone="success" size="md" class="confirm__status">{{ statusLabel(order.status) }}</AppBadge>
       </div>
 
       <section class="confirm__details">
         <div class="confirm__card">
-          <h2 class="confirm__heading">Order details</h2>
+          <h2 class="confirm__heading">{{ t('confirmation.orderDetails') }}</h2>
           <OrderLinesList :lines="linesAsOrderLines(order)" />
         </div>
 
         <div class="confirm__card">
-          <h2 class="confirm__heading">Summary</h2>
+          <h2 class="confirm__heading">{{ t('confirmation.summary') }}</h2>
           <OrderSummary
             :subtotal="order.totals.subtotal"
             :discount="order.totals.discount"
@@ -92,7 +95,7 @@ const linesAsOrderLines = (order: Order): OrderLineView[] =>
         </div>
 
         <div class="confirm__card">
-          <h2 class="confirm__heading">Shipping to</h2>
+          <h2 class="confirm__heading">{{ t('confirmation.shippingTo') }}</h2>
           <p class="confirm__customer-name">{{ order.customer.name }}</p>
           <p class="confirm__customer-line">{{ order.customer.address }}</p>
           <p class="confirm__customer-line">{{ order.customer.city }}</p>
@@ -101,13 +104,13 @@ const linesAsOrderLines = (order: Order): OrderLineView[] =>
       </section>
 
       <div class="confirm__meta">
-        <span class="confirm__meta-item">Placed on {{ formatDate(order.createdAt) }}</span>
-        <span class="confirm__meta-item">Order ID: {{ order.id }}</span>
+        <span class="confirm__meta-item">{{ t('confirmation.placedOn', { date: formatDate(order.createdAt) }) }}</span>
+        <span class="confirm__meta-item">{{ t('confirmation.orderId', { id: order.id }) }}</span>
       </div>
 
       <div class="confirm__actions">
         <RouterLink to="/catalog">
-          <AppButton size="lg">Continue shopping</AppButton>
+          <AppButton size="lg">{{ t('confirmation.continueShopping') }}</AppButton>
         </RouterLink>
       </div>
     </template>
@@ -124,7 +127,15 @@ const linesAsOrderLines = (order: Order): OrderLineView[] =>
 }
 
 .confirm__icon {
-  font-size: 3.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 4.75rem;
+  height: 4.75rem;
+  border-radius: 50%;
+  background: var(--dz-success-soft);
+  color: var(--dz-success);
+  border: 1px solid color-mix(in srgb, var(--dz-success) 24%, var(--dz-surface-soft));
 }
 
 .confirm__title {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 withDefaults(
   defineProps<{
-    variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger'
+    variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'gold'
     size?: 'sm' | 'md' | 'lg'
     block?: boolean
     disabled?: boolean
@@ -34,6 +34,7 @@ withDefaults(
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  font-family: var(--dz-font-body);
   font-weight: 600;
   border-radius: var(--dz-radius);
   transition:
@@ -75,14 +76,14 @@ withDefaults(
 }
 
 .app-button--primary {
-  background: var(--dz-gradient);
-  color: var(--dz-white);
+  background: var(--dz-primary);
+  color: var(--dz-on-primary);
   box-shadow: var(--dz-shadow-primary);
 }
 
 .app-button--primary:hover:not(:disabled) {
-  filter: brightness(1.08);
-  box-shadow: 0 10px 26px rgb(13 148 136 / 0.45);
+  background: var(--dz-primary-strong);
+  box-shadow: 0 12px 28px rgb(14 43 58 / 0.32);
   transform: translateY(-1px);
 }
 
@@ -92,7 +93,7 @@ withDefaults(
 }
 
 .app-button--secondary:hover:not(:disabled) {
-  background: var(--dz-hover-secondary);
+  background: var(--dz-mint);
 }
 
 .app-button--outline {
@@ -103,7 +104,7 @@ withDefaults(
 
 .app-button--outline:hover:not(:disabled) {
   border-color: var(--dz-primary);
-  color: var(--dz-primary-strong);
+  color: var(--dz-primary);
 }
 
 .app-button--ghost {
@@ -118,5 +119,16 @@ withDefaults(
 .app-button--danger {
   background: var(--dz-danger);
   color: var(--dz-white);
+}
+
+.app-button--gold {
+  background: var(--dz-gold);
+  color: var(--dz-on-gold);
+  box-shadow: 0 8px 20px rgb(184 134 43 / 0.35);
+}
+
+.app-button--gold:hover:not(:disabled) {
+  background: var(--dz-gold-strong);
+  transform: translateY(-1px);
 }
 </style>

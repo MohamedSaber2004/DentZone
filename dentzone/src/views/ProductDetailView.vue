@@ -83,7 +83,7 @@ const addToCart = () => {
 
     <EmptyState
       v-else-if="!product"
-      emoji="🫥"
+      icon="eye"
       :title="t('product.notFoundTitle')"
       :description="t('product.notFoundDescription')"
     >
@@ -230,7 +230,7 @@ const addToCart = () => {
 
 .detail__stock-chip {
   position: absolute;
-  right: 0.9rem;
+  inset-inline-end: 0.9rem;
   bottom: 0.9rem;
   z-index: 1;
   display: inline-flex;
@@ -238,11 +238,12 @@ const addToCart = () => {
   gap: 0.4rem;
   padding: 0.4rem 0.8rem;
   border-radius: var(--dz-radius-full);
-  background: var(--dz-white);
+  background: var(--dz-surface);
   border: 1px solid var(--dz-border);
   box-shadow: var(--dz-shadow-sm);
-  font-size: 0.75rem;
-  font-weight: 700;
+  font-family: var(--dz-font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
   color: var(--dz-success);
 }
 
@@ -335,7 +336,7 @@ const addToCart = () => {
   width: 3rem;
   height: 3rem;
   border-radius: 50%;
-  background: var(--dz-white);
+  background: var(--dz-surface);
   border: 1px solid var(--dz-border);
   color: var(--dz-ink-soft);
   transition:

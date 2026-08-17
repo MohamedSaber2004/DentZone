@@ -59,7 +59,7 @@ const badgeText: Record<string, string> = {
 .product-image__badge {
   position: absolute;
   top: 0.6rem;
-  left: 0.6rem;
+  inset-inline-start: 0.6rem;
   z-index: 1;
   box-shadow: var(--dz-shadow-sm);
 }
@@ -72,7 +72,7 @@ const badgeText: Record<string, string> = {
 
 .product-image--md {
   width: 100%;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 1 / 1;
 }
 
 .product-image--lg {

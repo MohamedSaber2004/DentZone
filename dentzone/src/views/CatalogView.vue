@@ -125,7 +125,7 @@ const filteredCount = computed(() => products.value.length)
 
     <EmptyState
       v-else
-      emoji="🔍"
+      icon="search"
       :title="t('catalog.noProductsTitle')"
       :description="t('catalog.noProductsDescription')"
     >

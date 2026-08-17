@@ -56,13 +56,17 @@ const emit = defineEmits<{
   transition: border-color 0.2s;
 }
 
+html[dir='rtl'] .app-select__native {
+  padding: 0.6rem 1rem 0.6rem 2.4rem;
+}
+
 .app-select__native:hover {
   border-color: var(--dz-primary);
 }
 
 .app-select__chevron {
   position: absolute;
-  right: 0.9rem;
+  inset-inline-end: 0.9rem;
   top: 50%;
   transform: translateY(-50%);
   color: var(--dz-muted);

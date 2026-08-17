@@ -42,6 +42,12 @@ defineProps<{
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .product-grid__item {
+    animation: none;
+  }
+}
+
 @media (max-width: 640px) {
   .product-grid {
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));

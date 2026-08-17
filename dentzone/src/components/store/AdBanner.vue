@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { locale } from '../../i18n'
-import AppIcon from '../ui/AppIcon.vue'
+import AppIcon, { type IconName } from '../ui/AppIcon.vue'
 
 withDefaults(
   defineProps<{
@@ -9,9 +9,9 @@ withDefaults(
     description: string
     ctaLabel?: string
     ctaTo?: string
-    emoji?: string
+    icon?: IconName
   }>(),
-  { ctaLabel: '', ctaTo: '', emoji: '📢' },
+  { ctaLabel: '', ctaTo: '', icon: 'sparkles' },
 )
 
 const arrowIcon = computed<'arrow-left' | 'arrow-right'>(() => (locale.value === 'ar' ? 'arrow-left' : 'arrow-right'))
@@ -19,8 +19,10 @@ const arrowIcon = computed<'arrow-left' | 'arrow-right'>(() => (locale.value ===
 
 <template>
   <aside class="ad-banner">
-    <span class="ad-banner__label">Ad</span>
-    <div class="ad-banner__icon" aria-hidden="true">{{ emoji }}</div>
+    <span class="ad-banner__label">Limited offer</span>
+    <div class="ad-banner__icon" aria-hidden="true">
+      <AppIcon :name="icon" :size="24" />
+    </div>
     <div class="ad-banner__content">
       <h3 class="ad-banner__title">{{ title }}</h3>
       <p class="ad-banner__description">{{ description }}</p>
@@ -34,46 +36,60 @@ const arrowIcon = computed<'arrow-left' | 'arrow-right'>(() => (locale.value ===
 
 <style scoped>
 .ad-banner {
-  position: relative;
   display: flex;
   align-items: center;
   gap: 1.25rem;
-  padding: 1.6rem 2rem 1.6rem 1.6rem;
+  padding: 1.5rem 2rem 1.5rem 1.6rem;
   border-radius: var(--dz-radius-lg);
   background:
-    radial-gradient(30rem 14rem at 90% -30%, rgb(255 255 255 / 0.35) 0%, transparent 60%),
-    linear-gradient(120deg, #4338ca 0%, #7c3aed 55%, #a855f7 100%);
-  color: var(--dz-white);
+    linear-gradient(120deg, var(--dz-gold-faint) 0%, var(--dz-surface) 55%),
+    var(--dz-surface);
+  border: 1px solid var(--dz-border);
+  color: var(--dz-ink);
   overflow: hidden;
 }
 
 html[dir='rtl'] .ad-banner {
-  padding: 1.6rem 1.6rem 1.6rem 2rem;
+  padding: 1.5rem 1.6rem 1.5rem 2rem;
+}
+
+.ad-banner::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--dz-gold);
+}
+
+.ad-banner {
+  position: relative;
 }
 
 .ad-banner__label {
   position: absolute;
-  inset-inline-end: 0.75rem;
-  top: 0.6rem;
-  padding: 0.15rem 0.5rem;
-  border-radius: var(--dz-radius-full);
-  background: rgb(255 255 255 / 0.22);
+  inset-inline-end: 0.9rem;
+  top: 0.65rem;
+  font-family: var(--dz-font-mono);
   font-size: 0.62rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
+  font-weight: 600;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
+  color: var(--dz-gold-strong);
 }
 
 .ad-banner__icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 4rem;
-  height: 4rem;
+  width: 3.75rem;
+  height: 3.75rem;
   flex-shrink: 0;
-  font-size: 2rem;
   border-radius: var(--dz-radius);
-  background: rgb(255 255 255 / 0.18);
+  background: var(--dz-gold-soft);
+  color: var(--dz-gold-strong);
+  border: 1px solid color-mix(in srgb, var(--dz-gold) 22%, var(--dz-surface-soft));
 }
 
 .ad-banner__content {
@@ -89,7 +105,7 @@ html[dir='rtl'] .ad-banner {
 .ad-banner__description {
   margin-top: 0.25rem;
   font-size: 0.88rem;
-  color: rgb(255 255 255 / 0.85);
+  color: var(--dz-ink-soft);
   max-width: 56ch;
 }
 
@@ -101,16 +117,19 @@ html[dir='rtl'] .ad-banner {
   margin-inline-start: auto;
   flex-shrink: 0;
   border-radius: var(--dz-radius);
-  background: var(--dz-white);
-  color: #6d28d9;
+  background: var(--dz-primary);
+  color: var(--dz-on-primary);
   font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: 600;
   white-space: nowrap;
-  transition: transform 0.15s;
+  transition:
+    transform 0.15s,
+    background-color 0.2s;
 }
 
 .ad-banner__cta:hover {
   transform: translateY(-1px);
+  background: var(--dz-primary-strong);
 }
 
 @media (max-width: 640px) {
@@ -124,7 +143,6 @@ html[dir='rtl'] .ad-banner {
   .ad-banner__icon {
     width: 3.25rem;
     height: 3.25rem;
-    font-size: 1.6rem;
   }
 
   .ad-banner__content {

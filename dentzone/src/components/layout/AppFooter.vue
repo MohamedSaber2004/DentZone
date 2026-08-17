@@ -175,7 +175,8 @@ const subscribe = () => {
 }
 
 .app-footer__newsletter {
-  background: linear-gradient(120deg, var(--dz-primary) 0%, var(--dz-accent) 100%);
+  background: var(--dz-band);
+  border-bottom: 1px solid var(--dz-border);
 }
 
 .app-footer__newsletter-inner {
@@ -193,7 +194,7 @@ const subscribe = () => {
 }
 
 .app-footer__newsletter-sub {
-  color: rgb(255 255 255 / 0.85);
+  color: rgb(255 255 255 / 0.72);
   font-size: 0.9rem;
   margin-top: 0.2rem;
 }
@@ -207,9 +208,9 @@ const subscribe = () => {
 .app-footer__newsletter-input {
   width: 240px;
   padding: 0.65rem 1rem;
-  border: 1px solid rgb(255 255 255 / 0.4);
+  border: 1px solid rgb(255 255 255 / 0.25);
   border-radius: var(--dz-radius);
-  background: rgb(255 255 255 / 0.14);
+  background: rgb(255 255 255 / 0.08);
   color: var(--dz-white);
   font-size: 0.9rem;
   transition:
@@ -218,19 +219,23 @@ const subscribe = () => {
 }
 
 .app-footer__newsletter-input::placeholder {
-  color: rgb(255 255 255 / 0.65);
+  color: rgb(255 255 255 / 0.5);
 }
 
 .app-footer__newsletter-input:focus {
   outline: none;
-  background: rgb(255 255 255 / 0.22);
-  border-color: var(--dz-white);
+  background: rgb(255 255 255 / 0.14);
+  border-color: var(--dz-gold);
 }
 
 .app-footer__newsletter :deep(.app-button--primary) {
-  background: var(--dz-white);
-  color: var(--dz-primary-strong);
+  background: var(--dz-gold);
+  color: var(--dz-on-gold);
   box-shadow: none;
+}
+
+.app-footer__newsletter :deep(.app-button--primary:hover) {
+  background: var(--dz-gold-strong);
 }
 
 .app-footer__inner {
@@ -245,13 +250,15 @@ const subscribe = () => {
   display: inline-flex;
   align-items: center;
   gap: 0.55rem;
+  font-family: var(--dz-font-display);
   font-size: 1.2rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--dz-ink);
 }
 
 .app-footer__logo span {
-  color: var(--dz-primary);
+  color: var(--dz-gold-strong);
 }
 
 .app-footer__logo-tile {
@@ -261,8 +268,8 @@ const subscribe = () => {
   width: 2rem;
   height: 2rem;
   border-radius: var(--dz-radius-sm);
-  background: var(--dz-gradient);
-  color: var(--dz-white);
+  background: var(--dz-primary);
+  color: var(--dz-on-primary);
 }
 
 .app-footer__tagline {
@@ -356,7 +363,7 @@ const subscribe = () => {
   padding: 0.5rem 0.9rem;
   border: 1px solid var(--dz-border);
   border-radius: var(--dz-radius);
-  background: var(--dz-ink);
+  background: var(--dz-band);
   color: var(--dz-white);
   transition:
     transform 0.15s,

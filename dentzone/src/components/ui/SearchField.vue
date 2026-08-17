@@ -53,7 +53,7 @@ const onSubmit = (event: Event) => {
 
 .search-field__icon {
   position: absolute;
-  left: 0.9rem;
+  inset-inline-start: 0.9rem;
   color: var(--dz-muted);
   pointer-events: none;
 }
@@ -70,6 +70,10 @@ const onSubmit = (event: Event) => {
     box-shadow 0.2s;
 }
 
+html[dir='rtl'] .search-field__input {
+  padding: 0.6rem 2.4rem 0.6rem 2.5rem;
+}
+
 .search-field__input::placeholder {
   color: var(--dz-muted);
 }
@@ -82,7 +86,7 @@ const onSubmit = (event: Event) => {
 
 .search-field__clear {
   position: absolute;
-  right: 0.7rem;
+  inset-inline-end: 0.7rem;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -1,17 +1,21 @@
 <script setup lang="ts">
+import AppIcon, { type IconName } from './AppIcon.vue'
+
 withDefaults(
   defineProps<{
-    emoji: string
+    icon?: IconName
     title: string
     description?: string
   }>(),
-  { description: '' },
+  { icon: 'box', description: '' },
 )
 </script>
 
 <template>
   <div class="empty-state">
-    <div class="empty-state__icon">{{ emoji }}</div>
+    <div class="empty-state__icon">
+      <AppIcon :name="icon" :size="26" />
+    </div>
     <h3 class="empty-state__title">{{ title }}</h3>
     <p v-if="description" class="empty-state__description">{{ description }}</p>
     <div v-if="$slots.action" class="empty-state__action">
@@ -36,12 +40,12 @@ withDefaults(
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 4.5rem;
-  height: 4.5rem;
+  width: 4.25rem;
+  height: 4.25rem;
   border-radius: var(--dz-radius-full);
   background: var(--dz-primary-faint);
   border: 1px solid var(--dz-primary-soft);
-  font-size: 2.1rem;
+  color: var(--dz-primary);
   margin-bottom: 1rem;
 }
 

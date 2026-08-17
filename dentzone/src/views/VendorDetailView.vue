@@ -57,7 +57,7 @@ const categoriesOfVendor = computed(() => {
 
     <EmptyState
       v-else-if="!vendor"
-      emoji="🛍️"
+      icon="store"
       :title="t('vendors.notFoundTitle')"
       :description="t('vendors.notFoundDescription')"
     >
@@ -78,7 +78,9 @@ const categoriesOfVendor = computed(() => {
       </nav>
 
       <section class="vendor__header">
-        <span class="vendor__logo" :style="{ '--tint': vendor.tint }">{{ vendor.emoji }}</span>
+        <span class="vendor__logo" :style="{ '--tint': vendor.tint }" aria-hidden="true">
+          {{ vendor.name.charAt(0).toUpperCase() }}
+        </span>
         <div class="vendor__info">
           <div class="vendor__title-row">
             <h1 class="vendor__name">{{ vendor.name }}</h1>
@@ -164,9 +166,13 @@ const categoriesOfVendor = computed(() => {
   width: 5.5rem;
   height: 5.5rem;
   flex-shrink: 0;
-  font-size: 2.6rem;
+  font-family: var(--dz-font-display);
+  font-size: 2.3rem;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--tint) 78%, var(--dz-ink));
   border-radius: var(--dz-radius-lg);
-  background: color-mix(in srgb, var(--tint) 14%, white);
+  background: color-mix(in srgb, var(--tint) 14%, var(--dz-surface-soft));
+  border: 1px solid color-mix(in srgb, var(--tint) 22%, var(--dz-border));
 }
 
 .vendor__info {

@@ -1,4 +1,11 @@
 <Solution>
+  <Folder Name="/DentZone-Api/">
+    <Project Path="DentZone-Api/DentZone.Api.csproj" Id="4d42c3a6-b12d-402a-add3-376456ab20ef" />
+    <Project Path="DentZone.Application/DentZone.Application.csproj" Id="7e7328f6-b4eb-44c0-8768-d9b38e11b787" />
+    <Project Path="DentZone.Domain/DentZone.Domain.csproj" Id="8a791162-953f-4221-b3cf-4ff7f6514493" />
+    <Project Path="DentZone.Infrastructure/DentZone.Infrastructure.csproj" Id="bfe56cf6-76d9-41f8-b3af-6b8711f7b64f" />
+    <Project Path="DentZone.Persistence/DentZone.Persistence.csproj" Id="713ab116-a99f-4570-9d40-1d9700e24a95" />
+  </Folder>
   <Project Path="DentZone/dentzone.esproj">
     <Build />
     <Deploy />

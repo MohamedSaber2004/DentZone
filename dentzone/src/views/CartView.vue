@@ -25,7 +25,7 @@ const setQuantity = (productId: string, quantity: number) => {
 
     <EmptyState
       v-if="cartService.lines.value.length === 0"
-      emoji="🛒"
+      icon="cart"
       :title="t('cart.emptyTitle')"
       :description="t('cart.emptyDescription')"
     >

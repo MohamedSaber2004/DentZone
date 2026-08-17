@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import { cartService } from '../../application/cart.service'
 import { wishlistService } from '../../application/wishlist.service'
 import { t, toggleLocale } from '../../i18n'
+import { theme, toggleTheme } from '../../application/theme.service'
 import SearchField from '../ui/SearchField.vue'
 import AppIcon from '../ui/AppIcon.vue'
 
@@ -28,6 +29,7 @@ const navItems = computed(() => [
 
 const searchPlaceholder = computed(() => t('nav.searchPlaceholder'))
 const switchLangLabel = computed(() => t('nav.switchLang'))
+const themeLabel = computed(() => t('nav.toggleTheme'))
 
 const isNavActive = (to: string) => {
   const [path, queryString] = to.split('?')
@@ -56,6 +58,15 @@ const toggleMenu = () => {
       </RouterLink>
 
       <nav class="app-header__nav" :class="{ 'app-header__nav--open': menuOpen }" aria-label="Main navigation">
+        <div class="app-header__nav-search">
+          <SearchField
+            class="app-header__search"
+            :model-value="props.query ?? ''"
+            :placeholder="searchPlaceholder"
+            @update:model-value="emit('update:query', $event)"
+            @submit="emit('submit')"
+          />
+        </div>
         <RouterLink
           v-for="item in navItems"
           :key="item.label"
@@ -79,7 +90,10 @@ const toggleMenu = () => {
         />
         <button class="app-header__lang" type="button" :aria-label="switchLangLabel" @click="toggleLocale">
           <AppIcon name="globe" :size="16" />
-          {{ switchLangLabel }}
+          <span class="app-header__lang-text">{{ switchLangLabel }}</span>
+        </button>
+        <button class="app-header__theme" type="button" :aria-label="themeLabel" @click="toggleTheme">
+          <AppIcon :name="theme === 'dark' ? 'sun' : 'moon'" :size="17" />
         </button>
         <RouterLink to="/wishlist" class="app-header__wishlist" :aria-label="t('nav.wishlist')">
           <AppIcon name="heart" :size="18" />
@@ -107,7 +121,7 @@ const toggleMenu = () => {
   top: 0;
   z-index: 50;
   height: var(--dz-header-height);
-  background: rgb(255 255 255 / 0.92);
+  background: var(--dz-header-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--dz-border);
@@ -124,7 +138,7 @@ const toggleMenu = () => {
 .app-header__brand {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.65rem;
   flex-shrink: 0;
 }
 
@@ -135,25 +149,35 @@ const toggleMenu = () => {
   width: 2.35rem;
   height: 2.35rem;
   border-radius: var(--dz-radius);
-  background: var(--dz-gradient);
-  color: var(--dz-white);
+  background: var(--dz-primary);
+  color: var(--dz-on-primary);
   box-shadow: var(--dz-shadow-primary);
 }
 
 .app-header__wordmark {
+  font-family: var(--dz-font-display);
   font-size: 1.3rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--dz-ink);
 }
 
 .app-header__wordmark span {
-  color: var(--dz-primary);
+  color: var(--dz-gold-strong);
 }
 
 .app-header__nav {
   display: flex;
   align-items: center;
   gap: 0.25rem;
+}
+
+.app-header__nav-search {
+  display: none;
+}
+
+.app-header__search {
+  width: 230px;
 }
 
 .app-header__link {
@@ -181,29 +205,10 @@ const toggleMenu = () => {
 .app-header__actions {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.55rem;
 }
 
-.app-header__search {
-  width: 230px;
-}
-
-.app-header__cart {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.7rem;
-  height: 2.7rem;
-  border-radius: var(--dz-radius);
-  color: var(--dz-ink-soft);
-  background: var(--dz-surface-soft);
-  transition:
-    background-color 0.2s,
-    color 0.2s,
-    transform 0.15s;
-}
-
+.app-header__cart,
 .app-header__wishlist {
   position: relative;
   display: flex;
@@ -220,10 +225,30 @@ const toggleMenu = () => {
     transform 0.15s;
 }
 
+.app-header__cart:hover,
 .app-header__wishlist:hover {
-  background: var(--dz-danger-soft);
-  color: var(--dz-danger);
+  background: var(--dz-primary-soft);
+  color: var(--dz-primary-strong);
   transform: translateY(-1px);
+}
+
+.app-header__cart-count {
+  position: absolute;
+  top: -5px;
+  inset-inline-end: -5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.2rem;
+  height: 1.2rem;
+  padding: 0 0.28rem;
+  border-radius: var(--dz-radius-full);
+  background: var(--dz-gold);
+  color: var(--dz-on-gold);
+  font-family: var(--dz-font-mono);
+  font-size: 0.66rem;
+  font-weight: 600;
+  box-shadow: var(--dz-shadow-sm);
 }
 
 .app-header__lang {
@@ -235,7 +260,7 @@ const toggleMenu = () => {
   border: 1px solid var(--dz-border);
   background: var(--dz-surface);
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--dz-ink-soft);
   transition:
     border-color 0.2s,
@@ -253,28 +278,25 @@ const toggleMenu = () => {
   color: var(--dz-primary);
 }
 
-.app-header__cart:hover {
-  background: var(--dz-primary-soft);
-  color: var(--dz-primary-strong);
-  transform: translateY(-1px);
-}
-
-.app-header__cart-count {
-  position: absolute;
-  top: -5px;
-  right: -5px;
+.app-header__theme {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 1.2rem;
-  height: 1.2rem;
-  padding: 0 0.28rem;
-  border-radius: var(--dz-radius-full);
-  background: var(--dz-gradient);
-  color: var(--dz-white);
-  font-size: 0.66rem;
-  font-weight: 700;
-  box-shadow: var(--dz-shadow-sm);
+  width: 2.7rem;
+  height: 2.7rem;
+  border-radius: var(--dz-radius);
+  color: var(--dz-ink-soft);
+  background: var(--dz-surface-soft);
+  transition:
+    background-color 0.2s,
+    color 0.2s,
+    transform 0.15s;
+}
+
+.app-header__theme:hover {
+  background: var(--dz-primary-soft);
+  color: var(--dz-primary-strong);
+  transform: translateY(-1px);
 }
 
 .app-header__menu {
@@ -287,6 +309,16 @@ const toggleMenu = () => {
     display: none;
   }
 
+  .app-header__nav-search {
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+
+  .app-header__nav-search .app-header__search {
+    display: block;
+    width: 100%;
+  }
+
   .app-header__menu {
     display: flex;
   }
@@ -294,8 +326,7 @@ const toggleMenu = () => {
   .app-header__nav {
     position: absolute;
     top: var(--dz-header-height);
-    left: 0;
-    right: 0;
+    inset-inline: 0;
     display: none;
     flex-direction: column;
     align-items: stretch;
@@ -312,6 +343,22 @@ const toggleMenu = () => {
 
   .app-header__link {
     padding: 0.7rem 1rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .app-header__lang-text {
+    display: none;
+  }
+
+  .app-header__lang {
+    width: 2.7rem;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .app-header__wordmark {
+    font-size: 1.15rem;
   }
 }
 </style>
