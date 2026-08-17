@@ -361,3 +361,7 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/DentZone.Api/appsettings.json
+/DentZone.Api/appsettings.Development.json
+/DentZone.Api/appsettings.Preview.json
+/DentZone.Api/appsettings.Production.json
