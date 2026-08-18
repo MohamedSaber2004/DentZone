@@ -18,6 +18,9 @@
           ) {
             document.documentElement.dataset.theme = 'dark'
           }
+          var l = localStorage.getItem('dentzone-locale') || 'ar'
+          document.documentElement.lang = l
+          document.documentElement.dir = l === 'ar' ? 'rtl' : 'ltr'
         } catch (e) {}
       })()
     </script>

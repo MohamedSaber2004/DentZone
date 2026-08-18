@@ -1,11 +1,1 @@
-﻿{
-    "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
-    "title": "One or more validation errors occurred.",
-    "status": 400,
-    "errors": {
-        "$.language": [
-            "The JSON value could not be converted to System.Nullable`1[DentZone.Domain.Enums.LanguageCode]. Path: $.language | LineNumber: 0 | BytePositionInLine: 134."
-        ]
-    },
-    "traceId": "00-ca270aaef60fbcd363ec3e2b0f71235f-f538ec61fd098f9d-00"
-}
+﻿2(index):1 Uncaught (in promise) Error: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received
