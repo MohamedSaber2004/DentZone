@@ -56,6 +56,10 @@ const resend = async () => {
 }
 
 onMounted(() => {
+  if (!email.value) {
+    void router.push('/auth/forgot-password')
+    return
+  }
   startResendTimer()
 })
 </script>
@@ -88,11 +92,6 @@ onMounted(() => {
           {{ t('auth.backToLogin') }}
         </RouterLink>
       </div>
-
-      <p class="verify__hint">
-        <AppIcon name="key" :size="14" />
-        {{ t('auth.otpHint') }}
-      </p>
     </div>
   </AuthLayout>
 </template>
@@ -157,20 +156,5 @@ onMounted(() => {
 
 .verify__back:hover {
   color: var(--dz-primary-strong);
-}
-
-.verify__hint {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  padding: 0.6rem 0.8rem;
-  border-radius: var(--dz-radius);
-  background: var(--dz-gold-faint);
-  border: 1px dashed color-mix(in srgb, var(--dz-gold) 35%, var(--dz-border));
-  font-family: var(--dz-font-mono);
-  font-size: 0.72rem;
-  color: var(--dz-gold-strong);
-  text-align: center;
 }
 </style>
