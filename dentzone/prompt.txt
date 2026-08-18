@@ -1,1 +1,3 @@
-﻿2(index):1 Uncaught (in promise) Error: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received
+﻿Ø¹Ø±Ø¶ Ù„ÙØªØ±Ø© Ù…Ø­Ø¯ÙˆØ¯Ø©
+Ø£Ù†Ø¸Ù…Ø© Ø§Ù„ØªØ¨ÙŠÙŠØ¶ â€” Ø®ØµÙ… 25% Ø¹Ù„Ù‰ Ø§Ù„Ø·Ù„Ø¨Ø§Øª Ø¨Ø§Ù„Ø¬Ù…Ù„Ø©
+Ø¬Ù‡Ù‘Ø² Ø¹ÙŠØ§Ø¯ØªÙƒ Ø¨Ø£Ù†Ø¸Ù…Ø© ØªØ¨ÙŠÙŠØ¶ LED Ø§Ø­ØªØ±Ø§ÙÙŠØ© Ø¨Ø£Ø³Ø¹Ø§Ø± Ø§Ù„Ø¬Ù…Ù„Ø©. Ù…Ø¬Ù…ÙˆØ¹Ø§Øª Ù…Ø®ØªØ¨ÙŽØ±Ø© Ø³Ø±ÙŠØ±ÙŠØ§Ù‹ØŒ ØªÙÙˆØµÙŽÙ‘Ù„ Ø®Ù„Ø§Ù„ 24â€“48 Ø³Ø§Ø¹Ø©.

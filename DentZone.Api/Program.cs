@@ -133,6 +133,12 @@ namespace DentZone_Api
                 options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
             });
 
+            builder.Services.Configure<Microsoft.AspNetCore.Mvc.JsonOptions>(options =>
+            {
+                options.JsonSerializerOptions.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All);
+                options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+            });
+
             builder.Services.AddOpenApi("v1", options =>
             {
                 options.AddDocumentTransformer<DentZoneOpenApiDocumentTransformer>();

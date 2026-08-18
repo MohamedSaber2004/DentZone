@@ -21,7 +21,7 @@ namespace DentZone.Persistence.Seeding
                 return;
             }
 
-            var json = await File.ReadAllTextAsync(seedPath, cancellationToken);
+            var json = await File.ReadAllTextAsync(seedPath, System.Text.Encoding.UTF8, cancellationToken);
             var seedingData = JsonSerializer.Deserialize<SeedingData>(json, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true,
@@ -150,7 +150,7 @@ namespace DentZone.Persistence.Seeding
                 return;
             }
 
-            var json = await File.ReadAllTextAsync(seedPath, cancellationToken);
+            var json = await File.ReadAllTextAsync(seedPath, System.Text.Encoding.UTF8, cancellationToken);
             var seedingData = JsonSerializer.Deserialize<StoreSeedingData>(json, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true,
