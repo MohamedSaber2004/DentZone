@@ -59,9 +59,9 @@ const toMessageKey = (err: unknown, fallback: MessageKey): MessageKey => {
   if (err instanceof ApiError) {
     switch (err.status) {
       case 401:
-        return 'auth.errSessionExpired'
+        return fallback !== 'auth.errGeneric' ? fallback : 'auth.errSessionExpired'
       case 404:
-        return 'auth.errEmailNotFound'
+        return fallback !== 'auth.errGeneric' ? fallback : 'auth.errEmailNotFound'
       case 429:
         return 'auth.errTooManyAttempts'
       case 0:
