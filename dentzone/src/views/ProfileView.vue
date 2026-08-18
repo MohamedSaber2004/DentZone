@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { authService } from '../application/auth.service'
 import { wishlistService } from '../application/wishlist.service'
+import { orderService } from '../application/order.service'
 import { locale, setLocale, t } from '../i18n'
 import AppInput from '../components/ui/AppInput.vue'
 import AppButton from '../components/ui/AppButton.vue'
@@ -41,9 +42,11 @@ const initials = computed(() =>
 )
 
 const recordId = computed(() => (user.value?.id ?? 'dz').slice(0, 8).toUpperCase())
+const ordersCount = computed(() => orderService.orders.value.length || user.value?.ordersCount || 0)
 
 onMounted(() => {
   void authService.fetchProfile()
+  void orderService.fetchOrders()
 })
 
 watch(authService.user, (next) => {
@@ -255,6 +258,9 @@ const logout = () => {
               <RouterLink to="/orders" class="profile__link">
                 <AppIcon name="box" :size="17" />
                 {{ t('profile.ordersShortcut') }}
+                <span v-if="ordersCount" class="profile__link-count">
+                  {{ ordersCount }}
+                </span>
               </RouterLink>
             </nav>
           </section>

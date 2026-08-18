@@ -11,5 +11,6 @@ namespace DentZone.Application.Features.Auth.DTOs
         public string? ProfilePictureName { get; init; }
         public LanguageCode Language { get; init; }
         public UserType UserType { get; init; }
+        public int OrdersCount { get; init; }
     }
 }

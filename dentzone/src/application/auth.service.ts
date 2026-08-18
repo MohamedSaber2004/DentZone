@@ -38,7 +38,7 @@ const toDateInput = (iso: string | null | undefined): string => {
   return iso.slice(0, 10)
 }
 
-const nameToUser = (id: string, fullName: string, email: string, existing?: User, birthDate?: string): User => {
+const nameToUser = (id: string, fullName: string, email: string, existing?: User, birthDate?: string, ordersCount?: number): User => {
   const parts = fullName.trim().split(/\s+/)
   const firstName = parts[0] ?? ''
   const lastName = parts.slice(1).join(' ') || '…'
@@ -51,6 +51,7 @@ const nameToUser = (id: string, fullName: string, email: string, existing?: User
     phone: existing?.phone ?? '',
     tint: existing?.tint ?? TINTS[seed % TINTS.length] ?? '#0ea5e9',
     birthDate: birthDate ?? existing?.birthDate,
+    ordersCount: ordersCount ?? existing?.ordersCount,
   }
 }
 
@@ -214,6 +215,7 @@ class AuthService {
         profile.email,
         this.user.value ?? undefined,
         toDateInput(profile.birthDate),
+        profile.ordersCount,
       )
       this.persistUser()
     } catch {

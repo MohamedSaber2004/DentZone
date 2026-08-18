@@ -1,9 +1,11 @@
 using DentZone.Application.Common.Exceptions;
+using DentZone.Application.Common.Interfaces;
 using DentZone.Application.Features.Auth.DTOs;
 using DentZone.Application.Localization;
 using DentZone.Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 
 namespace DentZone.Application.Features.Auth.Commands.UpdateUserProfile
@@ -12,12 +14,15 @@ namespace DentZone.Application.Features.Auth.Commands.UpdateUserProfile
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IStringLocalizer<Messages> _localizer;
+        private readonly IDentZoneContext _context;
 
         public UpdateProfileCommandHandler(UserManager<ApplicationUser> userManager,
-            IStringLocalizer<Messages> localizer)
+            IStringLocalizer<Messages> localizer,
+            IDentZoneContext context)
         {
             _userManager = userManager;
             _localizer = localizer;
+            _context = context;
         }
 
         public async Task<UserProfileDto> Handle(UpdateProfileCommand request, CancellationToken cancellationToken)
@@ -35,6 +40,13 @@ namespace DentZone.Application.Features.Auth.Commands.UpdateUserProfile
             if (!result.Succeeded)
                 throw new BadRequestException(result.Errors.Select(e => e.Description).ToArray());
 
+            var ordersCount = await _context.Orders
+                .AsNoTracking()
+                .CountAsync(o => !o.IsDeleted && (
+                    (user.Id != Guid.Empty && o.UserId == user.Id) ||
+                    (!string.IsNullOrEmpty(user.Email) && o.CustomerEmail.ToLower() == user.Email.ToLower())
+                ), cancellationToken);
+
             return new UserProfileDto
             {
                 Id = user.Id,
@@ -43,7 +55,8 @@ namespace DentZone.Application.Features.Auth.Commands.UpdateUserProfile
                 BirthDate = user.BirthDate,
                 ProfilePictureName = user.ProfilePictureName,
                 Language = user.Language,
-                UserType = user.UserType
+                UserType = user.UserType,
+                OrdersCount = ordersCount
             };
         }
     }

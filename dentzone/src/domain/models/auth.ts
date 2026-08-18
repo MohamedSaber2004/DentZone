@@ -19,4 +19,5 @@ export interface UserProfileDto {
   profilePictureName: string | null
   language: string
   userType: number
+  ordersCount?: number
 }
