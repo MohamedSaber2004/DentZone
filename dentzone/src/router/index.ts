@@ -89,8 +89,14 @@ const router = createRouter({
 })
 
 router.beforeEach((to) => {
-  if (to.meta.requiresAuth && !authService.isAuthenticated) {
-    return { name: 'login', query: { redirect: to.fullPath } }
+  if (to.meta.requiresAuth) {
+    if (!authService.isAuthenticated) {
+      return { name: 'login', query: { redirect: to.fullPath } }
+    }
+    if (!authService.hasValidRefreshToken) {
+      authService.expireSession()
+      return { name: 'login', query: { redirect: to.fullPath } }
+    }
   }
   if (to.meta.guestOnly && authService.isAuthenticated) {
     return { name: 'home' }

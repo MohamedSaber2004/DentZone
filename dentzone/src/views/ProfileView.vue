@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { authService } from '../application/auth.service'
 import { toastService } from '../application/toast.service'
@@ -28,6 +28,19 @@ const initials = computed(() =>
   `${form.firstName.charAt(0)}${form.lastName.charAt(0)}`.toUpperCase() || 'DZ',
 )
 
+onMounted(() => {
+  void authService.fetchProfile()
+})
+
+watch(authService.user, (next) => {
+  if (next) {
+    form.firstName = next.firstName
+    form.lastName = next.lastName
+    form.email = next.email
+    form.phone = next.phone
+  }
+})
+
 const saveProfile = async () => {
   formError.value = ''
   if (!form.firstName.trim() || !form.lastName.trim()) {
@@ -35,13 +48,17 @@ const saveProfile = async () => {
     return
   }
   saving.value = true
-  await authService.updateProfile({
+  const result = await authService.updateProfile({
     firstName: form.firstName.trim(),
     lastName: form.lastName.trim(),
     email: form.email.trim(),
     phone: form.phone.trim(),
   })
   saving.value = false
+  if (!result.ok) {
+    formError.value = t(result.error)
+    return
+  }
   toastService.success(t('profile.savedToast'))
 }
 
@@ -77,7 +94,7 @@ const savePassword = async () => {
 }
 
 const logout = () => {
-  authService.logout()
+  void authService.logout()
   toastService.info(t('auth.logoutToast'))
   void router.push('/')
 }

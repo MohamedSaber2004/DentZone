@@ -13,8 +13,7 @@ namespace DentZone.Persistence.Configurations
             builder.HasKey(e => e.Id);
 
             builder.Property(e => e.Token)
-                .IsRequired()
-                .HasMaxLength(512);
+                .IsRequired();
 
             builder.Property(e => e.ExpiryDate)
                 .IsRequired();

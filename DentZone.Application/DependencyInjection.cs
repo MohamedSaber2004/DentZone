@@ -25,10 +25,12 @@ namespace DentZone.Application
 
             services.AddAutoMapper(cfg => cfg.AddMaps(typeof(DependencyInjection).Assembly));
 
-            services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
+            services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly, lifetime: ServiceLifetime.Scoped);
 
             services.AddHttpContextAccessor();
             services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+            services.AddLocalization();
 
             services.AddSingleton<ILocalizationProvider>(sp =>
             {

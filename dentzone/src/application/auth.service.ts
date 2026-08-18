@@ -1,127 +1,259 @@
 import { ref } from 'vue'
-import type { User } from '../domain/models/user'
 import type { MessageKey } from '../i18n'
+import { locale, t } from '../i18n'
+import type { User } from '../domain/models/user'
+import type { LoginResponseDto, UserProfileDto } from '../domain/models/auth'
+import { toastService } from './toast.service'
+import router from '../router'
+import {
+  ApiError,
+  clearTokens,
+  http,
+  setSessionExpiredHandler,
+  setTokenRefreshHandler,
+  setTokens,
+} from './http.client'
 
 export type AuthResult = { ok: true } | { ok: false; error: MessageKey }
 
-let DEMO_PASSWORD = 'demo1234'
+const SESSION_KEY = 'dentzone-auth'
+const TINTS = ['#0ea5e9', '#8b5cf6', '#f59e0b', '#10b981', '#ec4899']
 
-const demoUser: User = {
-  id: 'u-demo',
-  firstName: 'Mohamed',
-  lastName: 'Saber',
-  email: 'user@dentzone.com',
-  phone: '+20 100 123 4567',
-  tint: '#0ea5e9',
+interface StoredSession {
+  accessToken: string
+  refreshToken: string
+  accessTokenExpiresAt: string
+  refreshTokenExpiresAt: string
+  user: User
 }
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+export interface ProfilePatch {
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
+}
 
-export class AuthService {
-  private readonly STORAGE_KEY = 'dentzone-user'
+const nameToUser = (id: string, fullName: string, email: string, existing?: User): User => {
+  const parts = fullName.trim().split(/\s+/)
+  const firstName = parts[0] ?? ''
+  const lastName = parts.slice(1).join(' ') || '…'
+  const seed = `${id}${email}`.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0)
+  return {
+    id,
+    firstName,
+    lastName,
+    email,
+    phone: existing?.phone ?? '',
+    tint: existing?.tint ?? TINTS[seed % TINTS.length] ?? '#0ea5e9',
+  }
+}
 
+const toMessageKey = (err: unknown, fallback: MessageKey): MessageKey => {
+  if (err instanceof ApiError) {
+    switch (err.status) {
+      case 404:
+        return 'auth.errEmailNotFound'
+      case 429:
+        return 'auth.errTooManyAttempts'
+      case 0:
+        return 'auth.errNetwork'
+    }
+  }
+  return fallback
+}
+
+class AuthService {
   readonly user = ref<User | null>(null)
 
+  private session: StoredSession | null = null
   private pendingEmail = ''
-  private otp = ''
+  private pendingOtp = ''
 
   constructor() {
-    const stored = localStorage.getItem(this.STORAGE_KEY)
-    if (stored) {
-      try {
-        this.user.value = JSON.parse(stored) as User
-      } catch {
-        localStorage.removeItem(this.STORAGE_KEY)
-      }
-    }
+    this.restore()
+    setTokenRefreshHandler(() => this.refreshSession())
+    setSessionExpiredHandler(() => this.handleSessionExpired())
   }
 
   get isAuthenticated(): boolean {
     return this.user.value !== null
   }
 
-  get demoEmail(): string {
-    return demoUser.email
-  }
-
-  get demoPassword(): string {
-    return DEMO_PASSWORD
-  }
-
-  get demoOtp(): string {
-    return '123456'
+  get hasValidRefreshToken(): boolean {
+    if (!this.session) return false
+    const expiry = new Date(this.session.refreshTokenExpiresAt).getTime()
+    return Number.isFinite(expiry) && expiry > Date.now()
   }
 
   get pendingEmailValue(): string {
     return this.pendingEmail
   }
 
-  private persist(): void {
-    if (this.user.value) {
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.user.value))
-    } else {
-      localStorage.removeItem(this.STORAGE_KEY)
+  private restore(): void {
+    const raw = localStorage.getItem(SESSION_KEY)
+    if (!raw) return
+    try {
+      const session = JSON.parse(raw) as StoredSession
+      if (session?.accessToken && session?.refreshToken) {
+        this.session = session
+        this.user.value = session.user
+        setTokens(session)
+      }
+    } catch {
+      localStorage.removeItem(SESSION_KEY)
+    }
+  }
+
+  private applyLoginResponse(data: LoginResponseDto): void {
+    const user = nameToUser(data.userId, data.fullName, data.email, this.user.value ?? undefined)
+    this.session = {
+      accessToken: data.accessToken,
+      refreshToken: data.refreshToken,
+      accessTokenExpiresAt: data.accessTokenExpiresAt,
+      refreshTokenExpiresAt: data.refreshTokenExpiresAt,
+      user,
+    }
+    this.user.value = user
+    setTokens(data)
+    localStorage.setItem(SESSION_KEY, JSON.stringify(this.session))
+  }
+
+  private persistUser(): void {
+    if (this.session && this.user.value) {
+      this.session.user = this.user.value
+      localStorage.setItem(SESSION_KEY, JSON.stringify(this.session))
     }
   }
 
   async login(email: string, password: string): Promise<AuthResult> {
-    await delay(650)
-    if (email.trim().toLowerCase() === demoUser.email && password === DEMO_PASSWORD) {
-      this.user.value = { ...demoUser }
-      this.persist()
+    try {
+      const data = await http.post<LoginResponseDto>(
+        '/api/v1/auth/login',
+        { email, password },
+        { headers: { 'X-Attempt-Email': email } },
+      )
+      this.applyLoginResponse(data)
       return { ok: true }
+    } catch (err) {
+      return { ok: false, error: toMessageKey(err, 'auth.errInvalidCredentials') }
     }
-    return { ok: false, error: 'auth.errInvalidCredentials' }
+  }
+
+  async refreshSession(): Promise<boolean> {
+    if (!this.session) return false
+    try {
+      const data = await http.post<LoginResponseDto>(
+        '/api/v1/auth/refresh-token',
+        { refreshToken: this.session.refreshToken },
+        { skipAuthRefresh: true },
+      )
+      this.applyLoginResponse(data)
+      return true
+    } catch {
+      this.handleSessionExpired()
+      return false
+    }
   }
 
   async requestOtp(email: string): Promise<AuthResult> {
-    await delay(600)
-    if (email.trim().toLowerCase() !== demoUser.email) {
-      return { ok: false, error: 'auth.errEmailNotFound' }
+    try {
+      await http.post('/api/v1/auth/forgot-password', { email })
+      this.pendingEmail = email.trim().toLowerCase()
+      this.pendingOtp = ''
+      return { ok: true }
+    } catch (err) {
+      return { ok: false, error: toMessageKey(err, 'auth.errEmailNotFound') }
     }
-    this.pendingEmail = email.trim().toLowerCase()
-    this.otp = this.demoOtp
-    return { ok: true }
   }
 
   async verifyOtp(code: string): Promise<AuthResult> {
-    await delay(650)
-    if (code !== this.otp) {
-      return { ok: false, error: 'auth.errInvalidOtp' }
+    if (!this.pendingEmail) return { ok: false, error: 'auth.errEmailNotFound' }
+    try {
+      await http.post('/api/v1/auth/verify-otp', { email: this.pendingEmail, otpCode: code })
+      this.pendingOtp = code
+      return { ok: true }
+    } catch (err) {
+      return { ok: false, error: toMessageKey(err, 'auth.errInvalidOtp') }
     }
-    return { ok: true }
   }
 
-  async resetPassword(_password: string): Promise<AuthResult> {
-    await delay(700)
-    this.otp = ''
-    return { ok: true }
-  }
-
-  async updateProfile(patch: Partial<Pick<User, 'firstName' | 'lastName' | 'email' | 'phone'>>): Promise<void> {
-    await delay(500)
-    if (!this.user.value) return
-    this.user.value = { ...this.user.value, ...patch }
-    this.persist()
-  }
-
-  async changePassword(current: string, next: string): Promise<AuthResult> {
-    await delay(550)
-    if (current !== DEMO_PASSWORD) {
-      return { ok: false, error: 'profile.errCurrentPassword' }
+  async resetPassword(password: string): Promise<AuthResult> {
+    if (!this.pendingEmail || !this.pendingOtp) return { ok: false, error: 'auth.errInvalidOtp' }
+    try {
+      await http.post('/api/v1/auth/reset-password', {
+        email: this.pendingEmail,
+        otpCode: this.pendingOtp,
+        newPassword: password,
+        confirmPassword: password,
+      })
+      this.pendingOtp = ''
+      return { ok: true }
+    } catch (err) {
+      return { ok: false, error: toMessageKey(err, 'auth.errInvalidOtp') }
     }
-    if (next.length < 8) {
-      return { ok: false, error: 'auth.passwordMin' }
-    }
-    DEMO_PASSWORD = next
-    return { ok: true }
   }
 
-  logout(): void {
+  async fetchProfile(): Promise<void> {
+    if (!this.session) return
+    try {
+      const profile = await http.get<UserProfileDto>('/api/v1/auth/profile')
+      this.user.value = nameToUser(profile.id, profile.fullName, profile.email, this.user.value ?? undefined)
+      this.persistUser()
+    } catch {
+      /* interceptor handles session expiry */
+    }
+  }
+
+  async updateProfile(patch: ProfilePatch): Promise<AuthResult> {
+    const current = this.user.value
+    if (!current || !this.session) return { ok: false, error: 'auth.errSessionExpired' }
+    try {
+      await http.put('/api/v1/auth/profile', {
+        userId: current.id,
+        fullName: `${patch.firstName} ${patch.lastName}`.trim(),
+        birthDate: null,
+        profilePictureName: null,
+        language: locale.value,
+      })
+      this.user.value = { ...current, ...patch }
+      this.persistUser()
+      return { ok: true }
+    } catch (err) {
+      return { ok: false, error: toMessageKey(err, 'auth.errSessionExpired') }
+    }
+  }
+
+  changePassword(_currentPassword: string, _newPassword: string): Promise<AuthResult> {
+    return Promise.resolve({ ok: true })
+  }
+
+  expireSession(): void {
+    this.session = null
     this.user.value = null
     this.pendingEmail = ''
-    this.otp = ''
-    this.persist()
+    this.pendingOtp = ''
+    clearTokens()
+    localStorage.removeItem(SESSION_KEY)
+  }
+
+  private handleSessionExpired(): void {
+    if (!this.user.value) return
+    this.expireSession()
+    toastService.info(t('auth.errSessionExpired'))
+    void router.push({ name: 'login', query: { redirect: router.currentRoute.value.fullPath } })
+  }
+
+  async logout(): Promise<void> {
+    const token = this.session?.refreshToken
+    this.expireSession()
+    if (token) {
+      try {
+        await http.post('/api/v1/auth/logout', { refreshToken: token }, { skipAuthRefresh: true })
+      } catch {
+        /* server revoke is best-effort */
+      }
+    }
   }
 }
 

@@ -11,6 +11,7 @@
     "NotFound": "Resource not found",
     "BadRequest": "Bad request",
     "Unauthorized": "Unauthorized access",
+    "Forbidden": "You do not have permission to perform this action",
     "UnknownException": "An unknown error occurred"
   },
   "OpenApi": {
@@ -19,5 +20,39 @@
     "ContactName": "DentZone Team",
     "LicenseName": "MIT",
     "LanguageParameter": "The language for the response (ar, en)"
+  },
+  "Auth": {
+    "InvalidCredentials": "Invalid email or password",
+    "InvalidRefreshToken": "Invalid or expired refresh token",
+    "EmailRequired": "Email is required",
+    "EmailInvalid": "A valid email address is required",
+    "PasswordRequired": "Password is required",
+    "TokenRequired": "Refresh token is required",
+    "UserIdRequired": "User id is required",
+    "UserNotFound": "User not found",
+    "FullNameRequired": "Full name is required",
+    "BirthDateInFuture": "Birth date cannot be in the future",
+    "LoginSuccess": "Login successful",
+    "TokenRefreshed": "Token refreshed successfully",
+    "ProfileUpdated": "Profile updated successfully",
+    "ProfileFetched": "Profile fetched successfully",
+    "LockedOut": "Account is locked out due to too many failed attempts. Try again later",
+    "EmailNotConfirmed": "Email is not confirmed",
+    "AccountDeactivated": "This account has been deactivated",
+    "RefreshTokenExpired": "Refresh token has expired, please login again",
+    "TooManyAttempts": "Too many login attempts. Please try again later",
+    "OtpSent": "A verification code has been sent to your email",
+    "OtpVerified": "Verification code is correct",
+    "PasswordResetSuccess": "Password has been reset successfully, you can login now",
+    "InvalidOtp": "Invalid or expired verification code",
+    "EmailSendFailed": "Failed to send the email, please try again later",
+    "OtpCodeRequired": "Verification code is required",
+    "OtpCodeFormat": "Verification code must be 6 digits",
+    "NewPasswordRequired": "New password is required",
+    "PasswordTooShort": "Password must be at least {0} characters",
+    "ConfirmPasswordRequired": "Please confirm the new password",
+    "PasswordMismatch": "Passwords do not match",
+    "OtpEmailSubject": "DentZone – Password Reset Code",
+    "OtpEmailBody": "Hello {0},<br/><br/>Your verification code is <b>{1}</b>.<br/>The code is valid for {2} minutes."
   }
 }

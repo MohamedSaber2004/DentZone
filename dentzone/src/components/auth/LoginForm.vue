@@ -29,12 +29,10 @@ const submit = async () => {
     error.value = t(result.error)
     return
   }
-  toastService.success(t('auth.welcomeBackToast', { name: 'Mohamed' }))
+  toastService.success(t('auth.welcomeBackToast', { name: authService.user.value?.firstName ?? '' }))
   const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
   void router.push(redirect)
 }
-
-const showDemoHint = true
 </script>
 
 <template>

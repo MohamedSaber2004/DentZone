@@ -21,6 +21,7 @@ namespace DentZone.Domain.Entities
         public string? PasswordResetToken { get; private set; }
         public DateTime? PasswordResetTokenExpiry { get; private set; }
         public LanguageCode Language { get; private set; }
+        public UserType UserType { get; private set; } = UserType.Doctor;
 
         public void MarkAsCreated(string createdBy)
         {
@@ -74,6 +75,12 @@ namespace DentZone.Domain.Entities
         public void SetLanguage(LanguageCode language, string updatedBy)
         {
             Language = language;
+            MarkAsUpdated(updatedBy);
+        }
+
+        public void SetUserType(UserType userType, string updatedBy)
+        {
+            UserType = userType;
             MarkAsUpdated(updatedBy);
         }
 

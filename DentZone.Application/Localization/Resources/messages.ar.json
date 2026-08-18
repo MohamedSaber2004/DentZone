@@ -11,6 +11,7 @@
     "NotFound": "المورد غير موجود",
     "BadRequest": "طلب غير صالح",
     "Unauthorized": "وصول غير مصرح به",
+    "Forbidden": "ليست لديك صلاحية تنفيذ هذا الإجراء",
     "UnknownException": "حدث خطأ غير معروف"
   },
   "OpenApi": {
@@ -19,5 +20,39 @@
     "ContactName": "فريق دنت زون",
     "LicenseName": "رخصة MIT",
     "LanguageParameter": "لغة الاستجابة (ar، en)"
+  },
+  "Auth": {
+    "InvalidCredentials": "البريد الإلكتروني أو كلمة المرور غير صحيحة",
+    "InvalidRefreshToken": "رمز التحديث غير صالح أو منتهي الصلاحية",
+    "EmailRequired": "البريد الإلكتروني مطلوب",
+    "EmailInvalid": "يرجى إدخال بريد إلكتروني صحيح",
+    "PasswordRequired": "كلمة المرور مطلوبة",
+    "TokenRequired": "رمز التحديث مطلوب",
+    "UserIdRequired": "معرّف المستخدم مطلوب",
+    "UserNotFound": "المستخدم غير موجود",
+    "FullNameRequired": "الاسم الكامل مطلوب",
+    "BirthDateInFuture": "تاريخ الميلاد لا يمكن أن يكون في المستقبل",
+    "LoginSuccess": "تم تسجيل الدخول بنجاح",
+    "TokenRefreshed": "تم تحديث الرمز بنجاح",
+    "ProfileUpdated": "تم تحديث الملف الشخصي بنجاح",
+    "ProfileFetched": "تم جلب الملف الشخصي بنجاح",
+    "LockedOut": "تم قفل الحساب بسبب محاولات فاشلة كثيرة. حاول لاحقاً",
+    "EmailNotConfirmed": "البريد الإلكتروني غير مؤكد",
+    "AccountDeactivated": "تم تعطيل هذا الحساب",
+    "RefreshTokenExpired": "انتهت صلاحية رمز التحديث، يرجى تسجيل الدخول مرة أخرى",
+    "TooManyAttempts": "محاولات تسجيل دخول كثيرة. يرجى المحاولة لاحقاً",
+    "OtpSent": "تم إرسال رمز التحقق إلى بريدك الإلكتروني",
+    "OtpVerified": "رمز التحقق صحيح",
+    "PasswordResetSuccess": "تم إعادة تعيين كلمة المرور بنجاح، يمكنك تسجيل الدخول الآن",
+    "InvalidOtp": "رمز التحقق غير صالح أو منتهي الصلاحية",
+    "EmailSendFailed": "فشل إرسال البريد الإلكتروني، يرجى المحاولة لاحقاً",
+    "OtpCodeRequired": "رمز التحقق مطلوب",
+    "OtpCodeFormat": "رمز التحقق يجب أن يتكون من 6 أرقام",
+    "NewPasswordRequired": "كلمة المرور الجديدة مطلوبة",
+    "PasswordTooShort": "كلمة المرور يجب أن تكون {0} أحرف على الأقل",
+    "ConfirmPasswordRequired": "يرجى تأكيد كلمة المرور الجديدة",
+    "PasswordMismatch": "كلمتا المرور غير متطابقتين",
+    "OtpEmailSubject": "دنت زون – رمز إعادة تعيين كلمة المرور",
+    "OtpEmailBody": "مرحباً {0}،<br/><br/>رمز التحقق الخاص بك هو <b>{1}</b>.<br/>الرمز صالح لمدة {2} دقيقة."
   }
 }

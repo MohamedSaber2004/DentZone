@@ -17,6 +17,7 @@
             public const string NotFound = "ExceptionMessages.NotFound";
             public const string BadRequest = "ExceptionMessages.BadRequest";
             public const string Unauthorized = "ExceptionMessages.Unauthorized";
+            public const string Forbidden = "ExceptionMessages.Forbidden";
             public const string UnknownException = "ExceptionMessages.UnknownException";
         }
 
@@ -27,6 +28,42 @@
             public const string ContactName = "OpenApi.ContactName";
             public const string LicenseName = "OpenApi.LicenseName";
             public const string LanguageParameter = "OpenApi.LanguageParameter";
+        }
+
+        public static class Auth
+        {
+            public const string InvalidCredentials = "Auth.InvalidCredentials";
+            public const string InvalidRefreshToken = "Auth.InvalidRefreshToken";
+            public const string EmailRequired = "Auth.EmailRequired";
+            public const string EmailInvalid = "Auth.EmailInvalid";
+            public const string PasswordRequired = "Auth.PasswordRequired";
+            public const string TokenRequired = "Auth.TokenRequired";
+            public const string UserIdRequired = "Auth.UserIdRequired";
+            public const string UserNotFound = "Auth.UserNotFound";
+            public const string FullNameRequired = "Auth.FullNameRequired";
+            public const string BirthDateInFuture = "Auth.BirthDateInFuture";
+            public const string LoginSuccess = "Auth.LoginSuccess";
+            public const string TokenRefreshed = "Auth.TokenRefreshed";
+            public const string ProfileUpdated = "Auth.ProfileUpdated";
+            public const string ProfileFetched = "Auth.ProfileFetched";
+            public const string LockedOut = "Auth.LockedOut";
+            public const string EmailNotConfirmed = "Auth.EmailNotConfirmed";
+            public const string AccountDeactivated = "Auth.AccountDeactivated";
+            public const string RefreshTokenExpired = "Auth.RefreshTokenExpired";
+            public const string TooManyAttempts = "Auth.TooManyAttempts";
+            public const string OtpSent = "Auth.OtpSent";
+            public const string OtpVerified = "Auth.OtpVerified";
+            public const string PasswordResetSuccess = "Auth.PasswordResetSuccess";
+            public const string InvalidOtp = "Auth.InvalidOtp";
+            public const string EmailSendFailed = "Auth.EmailSendFailed";
+            public const string OtpCodeRequired = "Auth.OtpCodeRequired";
+            public const string OtpCodeFormat = "Auth.OtpCodeFormat";
+            public const string NewPasswordRequired = "Auth.NewPasswordRequired";
+            public const string PasswordTooShort = "Auth.PasswordTooShort";
+            public const string ConfirmPasswordRequired = "Auth.ConfirmPasswordRequired";
+            public const string PasswordMismatch = "Auth.PasswordMismatch";
+            public const string OtpEmailSubject = "Auth.OtpEmailSubject";
+            public const string OtpEmailBody = "Auth.OtpEmailBody";
         }
     }
 }

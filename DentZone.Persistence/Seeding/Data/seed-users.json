@@ -1,0 +1,17 @@
+{
+  "Roles": [
+    "Doctor"
+  ],
+  "Users": [
+    {
+      "Id": "9c1a2b3d-4e5f-4a6b-8c7d-0e1f2a3b4c5d",
+      "Email": "mmms77990@gmail.com",
+      "UserName": "mmms77990@gmail.com",
+      "FullName": "Mohamed Saber",
+      "BirthDate": null,
+      "Language": "ar",
+      "UserType": "Doctor",
+      "Password": "Mo@123456"
+    }
+  ]
+}

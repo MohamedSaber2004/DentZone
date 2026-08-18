@@ -1,9 +1,12 @@
 using Asp.Versioning;
 using Asp.Versioning.ApiExplorer;
 using DentZone.Application;
+using DentZone.Application.Common.Models;
 using DentZone.Application.Common.Options;
+using DentZone.Application.Localization;
 using DentZone.Infrastructure;
 using DentZone.Persistence;
+using DentZone.Persistence.Seeding;
 using DentZone_Api.OpenApi;
 using Microsoft.AspNetCore.Mvc;
 using Scalar.AspNetCore;
@@ -48,8 +51,10 @@ namespace DentZone_Api
             </script>
             """;
 
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
+            AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
             var builder = WebApplication.CreateBuilder(args);
 
             var env = builder.Environment;
@@ -88,8 +93,10 @@ namespace DentZone_Api
             // Add services to the container.
 
             builder.Services.AddApplicationServices()
-                            .AddInfrastructureServices()
+                            .AddInfrastructureServices(builder.Configuration)
                             .AddPersistenceServices();
+
+            builder.Services.AddAuthorization();
 
             builder.Services.AddApiVersioning(options =>
             {
@@ -160,7 +167,7 @@ namespace DentZone_Api
                 }
 
                 options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-                options.OnRejected = (context, cancellationToken) =>
+                options.OnRejected = async (context, cancellationToken) =>
                 {
                     if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
                     {
@@ -170,9 +177,16 @@ namespace DentZone_Api
                     context.HttpContext.Response.Headers["X-RateLimit-Limit"] = rateLimiting.PermitLimit.ToString();
                     context.HttpContext.Response.Headers["X-RateLimit-Window"] = rateLimiting.Window.TotalSeconds.ToString();
 
-                    Log.Warning("Request rejected by rate limiter. Client: {ClientIp}", context.HttpContext.Connection.RemoteIpAddress);
+                    var localizationProvider = context.HttpContext.RequestServices.GetRequiredService<ILocalizationProvider>();
+                    var message = localizationProvider.GetLocalizedString(LocalizationKeys.Auth.TooManyAttempts);
 
-                    return ValueTask.CompletedTask;
+                    context.HttpContext.Response.ContentType = "application/json";
+                    var payload = System.Text.Json.JsonSerializer.Serialize(
+                        ApiResponse<object>.Error(message, StatusCodes.Status429TooManyRequests));
+
+                    await context.HttpContext.Response.WriteAsync(payload, cancellationToken);
+
+                    Log.Warning("Request rejected by rate limiter. Client: {ClientIp}", context.HttpContext.Connection.RemoteIpAddress);
                 };
 
                 options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(partitionKey =>
@@ -187,9 +201,55 @@ namespace DentZone_Api
                         AutoReplenishment = true
                     });
                 });
+
+                options.AddPolicy("Login", context =>
+                {
+                    var clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                    var email = context.Request.Headers["X-Attempt-Email"].ToString()
+                        ?? context.Request.Query["email"].ToString();
+                    var partitionKey = string.IsNullOrWhiteSpace(email) ? clientIp : $"{clientIp}:{email.Trim().ToLowerInvariant()}";
+
+                    return RateLimitPartition.GetFixedWindowLimiter(partitionKey, _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 3,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueLimit = 0,
+                        AutoReplenishment = true
+                    });
+                });
+
+                options.AddPolicy("Otp", context =>
+                {
+                    var clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                    var email = context.Request.Headers["X-Attempt-Email"].ToString()
+                        ?? context.Request.Query["email"].ToString();
+                    var partitionKey = string.IsNullOrWhiteSpace(email) ? clientIp : $"{clientIp}:{email.Trim().ToLowerInvariant()}";
+
+                    return RateLimitPartition.GetFixedWindowLimiter(partitionKey, _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 5,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueLimit = 0,
+                        AutoReplenishment = true
+                    });
+                });
             });
 
             var app = builder.Build();
+
+            using (var scope = app.Services.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<DentZoneContext>();
+                var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("DentZoneDbSeeder");
+                try
+                {
+                    await AppDbSeeder.SeedAsync(dbContext, logger);
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning(ex, "Failed to seed the database on startup. Skipping seeding.");
+                }
+            }
 
             // Configure the HTTP request pipeline.
 
@@ -238,6 +298,10 @@ namespace DentZone_Api
             app.UseRequestLocalization();
 
             app.UseCors("AllowedOrigins");
+
+            app.UseAuthentication();
+
+            app.UseAuthorization();
 
             app.UseStaticFiles();
 

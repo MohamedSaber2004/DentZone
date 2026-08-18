@@ -127,6 +127,10 @@ export type Messages = {
     resend: string
     resendTimer: string
     errInvalidOtp: string
+    errTooManyAttempts: string
+    errSessionExpired: string
+    errGeneric: string
+    errNetwork: string
     otpHint: string
     resetTitle: string
     resetSubtitle: string

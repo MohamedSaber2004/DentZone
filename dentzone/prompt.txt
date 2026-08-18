@@ -1,33 +1,36 @@
-PM> Add-Migration "InitDbWith2Tbls" -Context DentZoneContext
-Build started...
-Build succeeded.
-[17:30:52 INF] DentZone API is starting up at 08/17/2026 17:30:52
-To undo this action, use Remove-Migration.
-PM> Update-Database -Context DentZoneContext
-Build started...
-Build succeeded.
-[17:31:30 INF] DentZone API is starting up at 08/17/2026 17:31:30
-System.ArgumentException: Couldn't set postgresql://neondb_owner:npg_tlb2mokfzj7n@ep-delicate-mountain-ay52ojqv.c-5.us-east-2.aws.neon.tech/neondb?sslmode (Parameter 'postgresql://neondb_owner:npg_tlb2mokfzj7n@ep-delicate-mountain-ay52ojqv.c-5.us-east-2.aws.neon.tech/neondb?sslmode')
- ---> System.Collections.Generic.KeyNotFoundException: The given key was not present in the dictionary.
-   at Npgsql.NpgsqlConnectionStringBuilder.GeneratedActions(GeneratedAction action, String keyword, Object& value)
-   at Npgsql.NpgsqlConnectionStringBuilder.set_Item(String keyword, Object value)
-   --- End of inner exception stack trace ---
-   at Npgsql.NpgsqlConnectionStringBuilder.set_Item(String keyword, Object value)
-   at System.Data.Common.DbConnectionStringBuilder.set_ConnectionString(String value)
-   at Npgsql.NpgsqlConnectionStringBuilder..ctor(String connectionString)
-   at Npgsql.NpgsqlConnection.SetupDataSource()
-   at Npgsql.NpgsqlConnection.set_ConnectionString(String value)
-   at Npgsql.NpgsqlConnection..ctor(String connectionString)
-   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlRelationalConnection.CreateDbConnection()
-   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.get_DbConnection()
-   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.Open(Boolean errorsExpected)
-   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReader(RelationalCommandParameterObject parameterObject)
-   at Microsoft.EntityFrameworkCore.Migrations.HistoryRepository.GetAppliedMigrations()
-   at Npgsql.EntityFrameworkCore.PostgreSQL.Migrations.Internal.NpgsqlHistoryRepository.GetAppliedMigrations()
-   at Npgsql.EntityFrameworkCore.PostgreSQL.Migrations.Internal.NpgsqlMigrator.Migrate(String targetMigration)
-   at Microsoft.EntityFrameworkCore.Design.Internal.MigrationsOperations.UpdateDatabase(String targetMigration, String connectionString, String contextType)
-   at Microsoft.EntityFrameworkCore.Design.OperationExecutor.UpdateDatabaseImpl(String targetMigration, String connectionString, String contextType)
-   at Microsoft.EntityFrameworkCore.Design.OperationExecutor.UpdateDatabase.<>c__DisplayClass0_0.<.ctor>b__0()
-   at Microsoft.EntityFrameworkCore.Design.OperationExecutor.OperationBase.Execute(Action action)
-Couldn't set postgresql://neondb_owner:npg_tlb2mokfzj7n@ep-delicate-mountain-ay52ojqv.c-5.us-east-2.aws.neon.tech/neondb?sslmode (Parameter 'postgresql://neondb_owner:npg_tlb2mokfzj7n@ep-delicate-mountain-ay52ojqv.c-5.us-east-2.aws.neon.tech/neondb?sslmode')
-PM> 
+﻿[12:37:44 ERR] DentZone Request: Unhandled Exception for Request ForgetPasswordCommand {"Email": "mmms77990@gmail.com", "$type": "ForgetPasswordCommand"}
+﻿System.InvalidOperationException: User security stamp cannot be null.
+﻿   at Microsoft.AspNetCore.Identity.UserManager`1.GetSecurityStampAsync(TUser user)
+﻿   at Microsoft.AspNetCore.Identity.UserManager`1.ValidateUserAsync(TUser user)
+﻿   at Microsoft.AspNetCore.Identity.UserManager`1.UpdateUserAsync(TUser user)
+﻿   at Microsoft.AspNetCore.Identity.UserManager`1.UpdateUserAndRecordMetricAsync(TUser user, UserUpdateType updateType, Int64 startTimestamp)
+﻿   at Microsoft.AspNetCore.Identity.UserManager`1.UpdateAsync(TUser user)
+﻿   at DentZone.Application.Features.Auth.Commands.ForgetPassword.ForgetPasswordCommandHandler.Handle(ForgetPasswordCommand request, CancellationToken cancellationToken) in E:\Dent-Zone\DentZone\DentZone.Application\Features\Auth\Commands\ForgetPassword\ForgetPasswordCommandHandler.cs:line 44
+﻿   at DentZone.Application.Common.Behaviours.PerformanceBehaviour`2.Handle(TRequest request, RequestHandlerDelegate`1 next, CancellationToken cancellationToken) in E:\Dent-Zone\DentZone\DentZone.Application\Common\Behaviours\PerformanceBehaviour.cs:line 21
+﻿   at DentZone.Application.Common.Behaviours.ValidationBehaviour`2.Handle(TRequest request, RequestHandlerDelegate`1 next, CancellationToken cancellationToken) in E:\Dent-Zone\DentZone\DentZone.Application\Common\Behaviours\ValidationBehaviour.cs:line 28
+﻿   at DentZone.Application.Common.Behaviours.LoggingBehaviour`2.Handle(TRequest request, RequestHandlerDelegate`1 next, CancellationToken cancellationToken) in E:\Dent-Zone\DentZone\DentZone.Application\Common\Behaviours\LoggingBehaviour.cs:line 22
+﻿   at DentZone.Application.Common.Behaviours.UnhandledExceptionBehaviour`2.Handle(TRequest request, RequestHandlerDelegate`1 next, CancellationToken cancellationToken) in E:\Dent-Zone\DentZone\DentZone.Application\Common\Behaviours\UnhandledExceptionBehaviour.cs:line 20
+﻿[12:37:45 ERR] An unhandled exception has occurred while executing the request.
+﻿System.InvalidOperationException: User security stamp cannot be null.
+﻿   at Microsoft.AspNetCore.Identity.UserManager`1.GetSecurityStampAsync(TUser user)
+﻿   at Microsoft.AspNetCore.Identity.UserManager`1.ValidateUserAsync(TUser user)
+﻿   at Microsoft.AspNetCore.Identity.UserManager`1.UpdateUserAsync(TUser user)
+﻿   at Microsoft.AspNetCore.Identity.UserManager`1.UpdateUserAndRecordMetricAsync(TUser user, UserUpdateType updateType, Int64 startTimestamp)
+﻿   at Microsoft.AspNetCore.Identity.UserManager`1.UpdateAsync(TUser user)
+﻿   at DentZone.Application.Features.Auth.Commands.ForgetPassword.ForgetPasswordCommandHandler.Handle(ForgetPasswordCommand request, CancellationToken cancellationToken) in E:\Dent-Zone\DentZone\DentZone.Application\Features\Auth\Commands\ForgetPassword\ForgetPasswordCommandHandler.cs:line 44
+﻿   at DentZone.Application.Common.Behaviours.PerformanceBehaviour`2.Handle(TRequest request, RequestHandlerDelegate`1 next, CancellationToken cancellationToken) in E:\Dent-Zone\DentZone\DentZone.Application\Common\Behaviours\PerformanceBehaviour.cs:line 21
+﻿   at DentZone.Application.Common.Behaviours.ValidationBehaviour`2.Handle(TRequest request, RequestHandlerDelegate`1 next, CancellationToken cancellationToken) in E:\Dent-Zone\DentZone\DentZone.Application\Common\Behaviours\ValidationBehaviour.cs:line 28
+﻿   at DentZone.Application.Common.Behaviours.LoggingBehaviour`2.Handle(TRequest request, RequestHandlerDelegate`1 next, CancellationToken cancellationToken) in E:\Dent-Zone\DentZone\DentZone.Application\Common\Behaviours\LoggingBehaviour.cs:line 22
+﻿   at DentZone.Application.Common.Behaviours.UnhandledExceptionBehaviour`2.Handle(TRequest request, RequestHandlerDelegate`1 next, CancellationToken cancellationToken) in E:\Dent-Zone\DentZone\DentZone.Application\Common\Behaviours\UnhandledExceptionBehaviour.cs:line 20
+﻿   at DentZone_Api.Controllers.Api.V1.AuthController.ForgetPassword(ForgetPasswordCommand command, CancellationToken cancellationToken) in E:\Dent-Zone\DentZone\DentZone.Api\Controllers\Api\V1\AuthController.cs:line 55
+﻿   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfIActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+﻿   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+﻿   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+﻿   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+﻿   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+﻿   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeInnerFilterAsync>g__Awaited|13_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+﻿   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeNextExceptionFilterAsync>g__Awaited|26_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+﻿[12:37:45 INF] Executing ObjectResult, writing value of type 'DentZone.Application.Common.Models.ApiResponse`1[[System.Object, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+﻿[12:37:45 INF] Executed action DentZone_Api.Controllers.Api.V1.AuthController.ForgetPassword (DentZone.Api) in 10478.4347ms
+﻿[12:37:45 INF] Executed endpoint 'DentZone_Api.Controllers.Api.V1.AuthController.ForgetPassword (DentZone.Api)'
+﻿[12:37:45 INF] Request finished HTTP/2 POST https://localhost:44361/api/v1/auth/forgot-password - 500 null application/json; charset=utf-8 10548.2442ms

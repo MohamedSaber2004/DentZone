@@ -24,6 +24,11 @@ namespace DentZone.Persistence.Configurations
                 .IsRequired()
                 .HasConversion<string>();
 
+            builder.Property(e => e.UserType)
+                .IsRequired()
+                .HasDefaultValue(Domain.Enums.UserType.Doctor)
+                .HasConversion<string>();
+
             builder.HasIndex(e => e.NormalizedEmail).IsUnique();
             builder.HasIndex(e => e.IsDeleted);
             builder.HasIndex(e => e.IsActive);

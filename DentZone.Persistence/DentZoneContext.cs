@@ -20,6 +20,13 @@ namespace DentZone.Persistence
             _currentUserService = currentUserService;
         }
 
+        public DbSet<Category> Categories => Set<Category>();
+        public DbSet<Vendor> Vendors => Set<Vendor>();
+        public DbSet<Product> Products => Set<Product>();
+        public DbSet<Advertisement> Advertisements => Set<Advertisement>();
+        public DbSet<Review> Reviews => Set<Review>();
+        public DbSet<WishlistItem> WishlistItems => Set<WishlistItem>();
+
         protected override void OnConfiguring(DbContextOptionsBuilder builder)
         {
             builder.ConfigureWarnings(action =>
