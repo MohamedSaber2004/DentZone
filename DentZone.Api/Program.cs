@@ -10,6 +10,7 @@ using DentZone.Persistence.Seeding;
 using DentZone_Api.OpenApi;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 using Serilog;
 using System.Globalization;
