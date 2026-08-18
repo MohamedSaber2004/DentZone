@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import { orderService } from '../application/order.service'
 import { authService } from '../application/auth.service'
 import { formatPrice, locale, t, type MessageKey } from '../i18n'
@@ -11,8 +11,8 @@ import SkeletonLoader from '../components/ui/SkeletonLoader.vue'
 import AppBadge from '../components/ui/AppBadge.vue'
 import AppIcon from '../components/ui/AppIcon.vue'
 
-const orders = ref<Order[]>([])
-const loading = ref(true)
+const orders = computed(() => orderService.orders.value)
+const loading = computed(() => orderService.loading.value)
 
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString(locale.value === 'ar' ? 'ar-EG' : 'en-US', {
@@ -38,16 +38,11 @@ const statusTone = (status: OrderStatus): 'success' | 'primary' | 'warning' | 'n
 }
 
 onMounted(async () => {
-  if (!authService.isAuthenticated) {
-    loading.value = false
-    return
-  }
+  if (!authService.isAuthenticated) return
   try {
     await orderService.fetchOrders()
   } catch {
-    orders.value = []
-  } finally {
-    loading.value = false
+    // Handled gracefully in orderService
   }
 })
 </script>

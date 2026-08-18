@@ -37,17 +37,17 @@ interface OrderDto {
 const mapOrderDto = (dto: OrderDto): Order => ({
   id: dto.id,
   orderNumber: dto.orderNumber,
-  status: dto.status as OrderStatus,
+  status: (dto.status || 'confirmed') as OrderStatus,
   createdAt: dto.createdAt,
   customer: {
-    name: dto.customer.name,
-    email: dto.customer.email,
-    phone: dto.customer.phone ?? '',
-    address: dto.customer.address,
-    city: dto.customer.city,
-    notes: dto.customer.notes ?? undefined,
+    name: dto.customer?.name ?? '',
+    email: dto.customer?.email ?? '',
+    phone: dto.customer?.phone ?? '',
+    address: dto.customer?.address ?? '',
+    city: dto.customer?.city ?? '',
+    notes: dto.customer?.notes ?? undefined,
   },
-  lines: dto.lines.map((line) => ({
+  lines: (dto.lines ?? []).map((line) => ({
     productId: line.productId,
     name: line.name,
     image: line.image,
@@ -55,11 +55,11 @@ const mapOrderDto = (dto: OrderDto): Order => ({
     quantity: line.quantity,
   })),
   totals: {
-    subtotal: dto.subtotal,
-    discount: dto.discount,
-    shipping: dto.shipping,
-    tax: dto.tax,
-    total: dto.total,
+    subtotal: dto.subtotal ?? 0,
+    discount: dto.discount ?? 0,
+    shipping: dto.shipping ?? 0,
+    tax: dto.tax ?? 0,
+    total: dto.total ?? 0,
   },
 })
 

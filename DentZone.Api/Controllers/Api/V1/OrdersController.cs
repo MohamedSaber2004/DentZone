@@ -35,7 +35,7 @@ namespace DentZone_Api.Controllers.Api.V1
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetOrderById(Guid id, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetOrderById(string id, CancellationToken cancellationToken)
         {
             var result = await _mediator.Send(new GetOrderByIdQuery { Id = id }, cancellationToken);
             return Ok(result);

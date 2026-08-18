@@ -10,7 +10,7 @@ namespace DentZone.Application.Features.Orders.Queries.GetOrderById
 {
     public class GetOrderByIdQuery : IRequest<OrderDto>
     {
-        public Guid Id { get; set; }
+        public string Id { get; set; } = null!;
     }
 
     public class GetOrderByIdQueryHandler : IRequestHandler<GetOrderByIdQuery, OrderDto>
@@ -29,10 +29,19 @@ namespace DentZone.Application.Features.Orders.Queries.GetOrderById
 
         public async Task<OrderDto> Handle(GetOrderByIdQuery request, CancellationToken cancellationToken)
         {
+            var userId = _currentUserService.UserId;
+            var userEmail = _currentUserService.Email?.Trim().ToLower();
+            var searchIdStr = request.Id?.Trim();
+            var isGuid = Guid.TryParse(searchIdStr, out var searchGuid);
+
             var order = await _context.Orders
                 .AsNoTracking()
                 .Include(o => o.Lines)
-                .FirstOrDefaultAsync(o => o.Id == request.Id && o.UserId == _currentUserService.UserId && !o.IsDeleted, cancellationToken);
+                .FirstOrDefaultAsync(o => !o.IsDeleted &&
+                    (isGuid ? o.Id == searchGuid : o.OrderNumber.ToLower() == searchIdStr!.ToLower()) && (
+                        (userId != Guid.Empty && o.UserId == userId) ||
+                        (!string.IsNullOrEmpty(userEmail) && o.CustomerEmail.ToLower() == userEmail)
+                    ), cancellationToken);
 
             if (order is null)
                 throw new NotFoundException(_localizer[LocalizationKeys.Orders.OrderNotFound]);

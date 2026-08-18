@@ -22,10 +22,16 @@ namespace DentZone.Application.Features.Orders.Queries.GetMyOrders
 
         public async Task<List<OrderDto>> Handle(GetMyOrdersQuery request, CancellationToken cancellationToken)
         {
+            var userId = _currentUserService.UserId;
+            var userEmail = _currentUserService.Email?.Trim().ToLower();
+
             var orders = await _context.Orders
                 .AsNoTracking()
                 .Include(o => o.Lines)
-                .Where(o => o.UserId == _currentUserService.UserId && !o.IsDeleted)
+                .Where(o => !o.IsDeleted && (
+                    (userId != Guid.Empty && o.UserId == userId) ||
+                    (!string.IsNullOrEmpty(userEmail) && o.CustomerEmail.ToLower() == userEmail)
+                ))
                 .OrderByDescending(o => o.CreatedAt)
                 .ToListAsync(cancellationToken);
 

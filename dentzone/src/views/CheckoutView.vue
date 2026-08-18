@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { cartService } from '../application/cart.service'
 import { orderService } from '../application/order.service'
@@ -15,7 +15,7 @@ import AppIcon from '../components/ui/AppIcon.vue'
 
 const router = useRouter()
 
-const isAuthenticated = authService.isAuthenticated
+const isAuthenticated = computed(() => authService.isAuthenticated)
 
 const form = reactive({
   name: '',

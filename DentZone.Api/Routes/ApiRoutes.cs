@@ -1,4 +1,4 @@
-﻿namespace DentZone_Api.Routes
+namespace DentZone_Api.Routes
 {
     public static class ApiRoutes
     {
@@ -44,7 +44,7 @@
         {
             public const string GetOrders = Base + "/orders";
             public const string CreateOrder = Base + "/orders";
-            public const string GetOrderById = Base + "/orders/{id:guid}";
+            public const string GetOrderById = Base + "/orders/{id}";
         }
     }
 }

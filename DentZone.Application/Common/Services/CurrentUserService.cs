@@ -1,12 +1,14 @@
+using System.Security.Claims;
 using DentZone.Application.Common.Interfaces;
 using Microsoft.AspNetCore.Http;
-using System.Security.Claims;
 
 namespace DentZone.Application.Common.Services
 {
     public class CurrentUserService : ICurrentUserService
     {
         public Guid UserId { get; }
+
+        public string? Email { get; }
 
         public bool IsAuthenticated { get; }
 
@@ -15,9 +17,13 @@ namespace DentZone.Application.Common.Services
         public CurrentUserService(IHttpContextAccessor httpContextAccessor)
         {
             var httpContext = httpContextAccessor.HttpContext;
+            var user = httpContext?.User;
 
-            if (httpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value is { } userIdString &&
-                Guid.TryParse(userIdString, out var userId))
+            var userIdString = user?.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? user?.FindFirst("sub")?.Value
+                ?? user?.FindFirst("nameid")?.Value;
+
+            if (userIdString is not null && Guid.TryParse(userIdString, out var userId))
             {
                 UserId = userId;
             }
@@ -26,7 +32,10 @@ namespace DentZone.Application.Common.Services
                 UserId = Guid.Empty;
             }
 
-            IsAuthenticated = httpContext?.User?.Identity?.IsAuthenticated ?? false;
+            Email = user?.FindFirst(ClaimTypes.Email)?.Value
+                ?? user?.FindFirst("email")?.Value;
+
+            IsAuthenticated = user?.Identity?.IsAuthenticated ?? false;
             IpAddress = httpContext?.Connection?.RemoteIpAddress?.ToString();
         }
     }

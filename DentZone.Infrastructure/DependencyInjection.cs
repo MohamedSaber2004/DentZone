@@ -1,4 +1,4 @@
-﻿using DentZone.Application.Common.Interfaces;
+using DentZone.Application.Common.Interfaces;
 using DentZone.Application.Common.Options;
 using DentZone.Application.Localization;
 using DentZone.Domain.Entities;
@@ -58,7 +58,7 @@ namespace DentZone.Infrastructure
             var tokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(jwtOptions.Secret)),
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Secret)),
                 ValidateIssuer = false,
                 ValidIssuer = jwtOptions.Issuer,
                 ValidateAudience = false,
@@ -78,27 +78,6 @@ namespace DentZone.Infrastructure
             {
                 options.SaveToken = true;
                 options.TokenValidationParameters = tokenValidationParameters;
-                options.Events = new JwtBearerEvents
-                {
-                    OnChallenge = async context =>
-                    {
-                        context.HandleResponse();
-                        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                        context.Response.ContentType = "application/json";
-
-                        var localizationProvider = context.HttpContext.RequestServices.GetRequiredService<ILocalizationProvider>();
-                        var localizedMessage = localizationProvider.GetLocalizedString(LocalizationKeys.ExceptionMessages.Unauthorized);
-                        var result = System.Text.Json.JsonSerializer.Serialize(new
-                        {
-                            succeeded = false,
-                            message = localizedMessage,
-                            errors = new Dictionary<string, string[]>(),
-                            code = 401
-                        });
-
-                        await context.Response.WriteAsync(result);
-                    }
-                };
             });
 
             return services;
