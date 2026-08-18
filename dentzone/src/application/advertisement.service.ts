@@ -13,11 +13,12 @@ export class AdvertisementService {
   constructor() {
     onLocaleChange(() => {
       this.loaded = false
-      void this.load()
+      void this.load(true)
     })
   }
 
-  async load(): Promise<void> {
+  async load(force = false): Promise<void> {
+    if (this.loaded && !force) return
     try {
       const advertisements = await catalogService.getAdvertisements()
       this.hero.value = advertisements.hero

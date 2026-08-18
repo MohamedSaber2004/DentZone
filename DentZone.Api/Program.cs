@@ -24,7 +24,7 @@ namespace DentZone_Api
         private const string LanguageSwitcherSnippet = """
             <script>
             (function () {
-                var KEY = 'dz-language';
+                var KEY = 'dentzone-locale';
                 var lang = localStorage.getItem(KEY) || 'ar';
                 var origFetch = window.fetch;
                 window.fetch = function (input, init) {
