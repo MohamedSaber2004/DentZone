@@ -82,7 +82,7 @@ const saveProfile = async () => {
   })
   saving.value = false
   if (!result.ok) {
-    formError.value = t(result.error)
+    formError.value = result.error
   }
 }
 
@@ -111,7 +111,7 @@ const savePassword = async () => {
   const result = await authService.changePassword(currentPassword.value, newPassword.value, confirmPassword.value)
   changing.value = false
   if (!result.ok) {
-    passwordError.value = t(result.error)
+    passwordError.value = result.error
     return
   }
   passwordOpen.value = false

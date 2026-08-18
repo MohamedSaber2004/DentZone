@@ -25,7 +25,7 @@ const submit = async () => {
   const result = await authService.login(email.value, password.value)
   submitting.value = false
   if (!result.ok) {
-    error.value = t(result.error)
+    error.value = result.error
     return
   }
   const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'

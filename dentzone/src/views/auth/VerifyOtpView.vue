@@ -40,7 +40,7 @@ const verify = async () => {
   const result = await authService.verifyOtp(code.value)
   verifying.value = false
   if (!result.ok) {
-    error.value = t(result.error)
+    error.value = result.error
     code.value = ''
     return
   }

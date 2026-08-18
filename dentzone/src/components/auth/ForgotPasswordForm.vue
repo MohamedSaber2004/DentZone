@@ -24,7 +24,7 @@ const submit = async () => {
   const result = await authService.requestOtp(email.value)
   submitting.value = false
   if (!result.ok) {
-    error.value = t(result.error)
+    error.value = result.error
     return
   }
   emit('sent', email.value.trim())

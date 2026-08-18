@@ -14,7 +14,7 @@ import {
   setTokenRefreshHandler,
 } from './http.client'
 
-export type AuthResult = { ok: true } | { ok: false; error: MessageKey }
+export type AuthResult = { ok: true } | { ok: false; error: string }
 
 const SESSION_KEY = 'dentzone-auth'
 const TINTS = ['#0ea5e9', '#8b5cf6', '#f59e0b', '#10b981', '#ec4899']
@@ -69,6 +69,16 @@ const toMessageKey = (err: unknown, fallback: MessageKey): MessageKey => {
     }
   }
   return fallback
+}
+
+const toErrorMessage = (err: unknown, fallbackKey: MessageKey): string => {
+  if (err instanceof ApiError) {
+    if (err.message && !err.message.startsWith('Request failed with status') && err.message !== 'Session expired') {
+      return err.message
+    }
+    return t(toMessageKey(err, fallbackKey))
+  }
+  return t(fallbackKey)
 }
 
 class AuthService {
@@ -144,7 +154,7 @@ class AuthService {
       this.applyLoginResponse(data)
       return { ok: true }
     } catch (err) {
-      return { ok: false, error: toMessageKey(err, 'auth.errInvalidCredentials') }
+      return { ok: false, error: toErrorMessage(err, 'auth.errInvalidCredentials') }
     }
   }
 
@@ -174,23 +184,23 @@ class AuthService {
       this.pendingOtp = ''
       return { ok: true }
     } catch (err) {
-      return { ok: false, error: toMessageKey(err, 'auth.errEmailNotFound') }
+      return { ok: false, error: toErrorMessage(err, 'auth.errEmailNotFound') }
     }
   }
 
   async verifyOtp(code: string): Promise<AuthResult> {
-    if (!this.pendingEmail) return { ok: false, error: 'auth.errEmailNotFound' }
+    if (!this.pendingEmail) return { ok: false, error: t('auth.errEmailNotFound') }
     try {
       await http.post('/api/v1/auth/verify-otp', { email: this.pendingEmail, otpCode: code })
       this.pendingOtp = code
       return { ok: true }
     } catch (err) {
-      return { ok: false, error: toMessageKey(err, 'auth.errInvalidOtp') }
+      return { ok: false, error: toErrorMessage(err, 'auth.errInvalidOtp') }
     }
   }
 
   async resetPassword(password: string): Promise<AuthResult> {
-    if (!this.pendingEmail || !this.pendingOtp) return { ok: false, error: 'auth.errInvalidOtp' }
+    if (!this.pendingEmail || !this.pendingOtp) return { ok: false, error: t('auth.errInvalidOtp') }
     try {
       await http.post('/api/v1/auth/reset-password', {
         email: this.pendingEmail,
@@ -201,7 +211,7 @@ class AuthService {
       this.pendingOtp = ''
       return { ok: true }
     } catch (err) {
-      return { ok: false, error: toMessageKey(err, 'auth.errInvalidOtp') }
+      return { ok: false, error: toErrorMessage(err, 'auth.errInvalidOtp') }
     }
   }
 
@@ -243,18 +253,18 @@ class AuthService {
       this.persistUser()
       return { ok: true }
     } catch (err) {
-      return { ok: false, error: toMessageKey(err, 'auth.errGeneric') }
+      return { ok: false, error: toErrorMessage(err, 'auth.errGeneric') }
     }
   }
 
   async changePassword(currentPassword: string, newPassword: string, confirmPassword: string): Promise<AuthResult> {
-    if (!this.session) return { ok: false, error: 'auth.errSessionExpired' }
+    if (!this.session) return { ok: false, error: t('auth.errSessionExpired') }
     try {
       await http.put('/api/v1/auth/change-password', { currentPassword, newPassword, confirmPassword })
       this.expireSession()
       return { ok: true }
     } catch (err) {
-      return { ok: false, error: toMessageKey(err, 'auth.errGeneric') }
+      return { ok: false, error: toErrorMessage(err, 'auth.errGeneric') }
     }
   }
 
