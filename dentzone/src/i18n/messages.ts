@@ -1,4 +1,9 @@
 export type Messages = {
+  common: {
+    loading: string
+    dataLoaded: string
+    loadFailed: string
+  }
   nav: {
     home: string
     shop: string

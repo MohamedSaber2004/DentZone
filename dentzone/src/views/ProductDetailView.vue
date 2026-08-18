@@ -14,7 +14,7 @@ import RatingStars from '../components/ui/RatingStars.vue'
 import AppBadge from '../components/ui/AppBadge.vue'
 import QuantityStepper from '../components/ui/QuantityStepper.vue'
 import AppButton from '../components/ui/AppButton.vue'
-import AppSpinner from '../components/ui/AppSpinner.vue'
+import SkeletonLoader from '../components/ui/SkeletonLoader.vue'
 import AppIcon from '../components/ui/AppIcon.vue'
 import SectionHeader from '../components/ui/SectionHeader.vue'
 import ProductGrid from '../components/store/ProductGrid.vue'
@@ -95,8 +95,8 @@ const addToCart = () => {
 
 <template>
   <div class="container page">
-    <div v-if="loading" class="detail__loading">
-      <AppSpinner size="lg" :label="t('product.loading')" />
+    <div v-if="loading" class="detail__loading" role="status">
+      <SkeletonLoader variant="detail" :count="1" />
     </div>
 
     <EmptyState

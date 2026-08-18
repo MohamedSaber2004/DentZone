@@ -12,12 +12,12 @@ import VendorCard from '../components/store/VendorCard.vue'
 import HeroAdvertisement from '../components/store/HeroAdvertisement.vue'
 import PromotionalGrid from '../components/store/PromotionalGrid.vue'
 import AppButton from '../components/ui/AppButton.vue'
-import AppSpinner from '../components/ui/AppSpinner.vue'
+import SkeletonLoader from '../components/ui/SkeletonLoader.vue'
 import AppIcon from '../components/ui/AppIcon.vue'
 
 const router = useRouter()
 
-const isReady = computed(() => catalogService.featuredProducts.value.length > 0)
+const isReady = computed(() => catalogService.initialized.value)
 
 const heroAd = computed(() => advertisementService.hero.value)
 const secondaryAds = computed(() => advertisementService.secondary.value)
@@ -98,9 +98,7 @@ const valueProps = computed(() => [
           @select="selectCategory(category.slug)"
         />
       </div>
-      <div v-else class="home__loading" role="status">
-        <AppSpinner size="md" :label="t('home.loadingFeatured')" />
-      </div>
+      <SkeletonLoader v-else variant="cards" :count="6" class="home__skeleton" />
     </section>
 
     <section class="container page home-section">
@@ -114,9 +112,7 @@ const valueProps = computed(() => [
       <div v-if="isReady" class="home__grid">
         <ProductGrid :products="catalogService.featuredProducts.value" />
       </div>
-      <div v-else class="home__loading" role="status">
-        <AppSpinner size="lg" :label="t('home.loadingFeatured')" />
-      </div>
+      <SkeletonLoader v-else variant="grid" :count="4" class="home__skeleton" />
     </section>
 
     <section v-if="secondaryAds.length" class="container page home-section">
@@ -134,9 +130,7 @@ const valueProps = computed(() => [
       <div v-if="isReady" class="home__grid">
         <ProductGrid :products="catalogService.bestsellers.value" />
       </div>
-      <div v-else class="home__loading" role="status">
-        <AppSpinner size="lg" :label="t('home.loadingBestsellers')" />
-      </div>
+      <SkeletonLoader v-else variant="grid" :count="4" class="home__skeleton" />
     </section>
 
     <section class="container page home-section">
@@ -155,9 +149,7 @@ const valueProps = computed(() => [
           :vendor="vendor"
         />
       </div>
-      <div v-else class="home__loading" role="status">
-        <AppSpinner size="md" :label="t('home.loadingFeatured')" />
-      </div>
+      <SkeletonLoader v-else variant="cards" :count="4" class="home__skeleton" />
     </section>
 
     <section class="promo">
@@ -255,10 +247,8 @@ const valueProps = computed(() => [
   gap: 1.1rem;
 }
 
-.home__loading {
-  display: flex;
-  justify-content: center;
-  padding: 3rem 0;
+.home__skeleton {
+  padding-top: 0.25rem;
 }
 
 .promo {

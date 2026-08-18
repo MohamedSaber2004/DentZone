@@ -7,7 +7,7 @@ import type { Order, OrderStatus } from '../domain/models/order'
 import SectionHeader from '../components/ui/SectionHeader.vue'
 import EmptyState from '../components/ui/EmptyState.vue'
 import AppButton from '../components/ui/AppButton.vue'
-import AppSpinner from '../components/ui/AppSpinner.vue'
+import SkeletonLoader from '../components/ui/SkeletonLoader.vue'
 import AppBadge from '../components/ui/AppBadge.vue'
 import AppIcon from '../components/ui/AppIcon.vue'
 
@@ -57,7 +57,7 @@ onMounted(async () => {
     <SectionHeader :title="t('orders.title')" :subtitle="t('orders.subtitle', { count: orders.length })" />
 
     <div v-if="loading" class="orders__loading" role="status">
-      <AppSpinner size="lg" :label="t('orders.loading')" />
+      <SkeletonLoader variant="rows" :count="3" />
     </div>
 
     <EmptyState
@@ -98,9 +98,7 @@ onMounted(async () => {
 
 <style scoped>
 .orders__loading {
-  display: flex;
-  justify-content: center;
-  padding: 4rem 0;
+  padding-top: 0.25rem;
 }
 
 .orders__list {

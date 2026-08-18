@@ -1,6 +1,11 @@
 import type { Messages } from './messages'
 
 export const ar: Messages = {
+  common: {
+    loading: 'جارٍ التحميل…',
+    dataLoaded: 'تم تحميل البيانات بنجاح',
+    loadFailed: 'فشل تحميل البيانات. حاول مرة أخرى.',
+  },
   nav: {
     home: 'الرئيسية',
     shop: 'المتجر',

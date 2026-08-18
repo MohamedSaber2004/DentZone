@@ -1,5 +1,6 @@
 import { locale } from '../i18n'
 import { toastService } from './toast.service'
+import { requestTracker } from './request.tracker'
 
 export const API_BASE_URL = ((import.meta.env.VITE_API_BASE_URL as string | undefined) ?? '').replace(/\/+$/, '')
 
@@ -179,6 +180,18 @@ export interface RequestOptions {
 
 const dedupeMap = new Map<string, Promise<unknown>>()
 
+const tracked = async <T>(path: string, run: () => Promise<T>): Promise<T> => {
+  requestTracker.begin()
+  try {
+    const result = await run()
+    requestTracker.settle(true)
+    return result
+  } catch (error) {
+    requestTracker.settle(false, error instanceof ApiError && error.silent)
+    throw error
+  }
+}
+
 const request = async <T>(path: string, options: { method?: string; body?: unknown } & RequestOptions = {}): Promise<T> => {
   const { method = 'GET', body, headers: extraHeaders, skipAuthRefresh = false } = options
 
@@ -264,7 +277,7 @@ const request = async <T>(path: string, options: { method?: string; body?: unkno
     const dedupeKey = `${method} ${path}`
     const existing = dedupeMap.get(dedupeKey) as Promise<T> | undefined
     if (existing) return existing
-    const promise = withSlot(run)
+    const promise = tracked(path, () => withSlot(run))
     dedupeMap.set(dedupeKey, promise)
     void promise.finally(() => {
       if (dedupeMap.get(dedupeKey) === promise) dedupeMap.delete(dedupeKey)
@@ -274,7 +287,7 @@ const request = async <T>(path: string, options: { method?: string; body?: unkno
 
   if (isRefreshTokenCall) return run()
 
-  return withSlot(run)
+  return tracked(path, () => withSlot(run))
 }
 
 export const http = {

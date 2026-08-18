@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import AppHeader from './components/layout/AppHeader.vue'
 import AppFooter from './components/layout/AppFooter.vue'
 import ToastContainer from './components/ui/ToastContainer.vue'
+import LoadingBar from './components/ui/LoadingBar.vue'
 import ChatWidget from './components/store/ChatWidget.vue'
 
 const router = useRouter()
@@ -20,6 +21,7 @@ const onSearchSubmit = () => {
 
 <template>
   <div class="app-shell">
+    <LoadingBar />
     <AppHeader v-model:query="searchQuery" @submit="onSearchSubmit" />
     <ToastContainer />
     <main class="app-main">

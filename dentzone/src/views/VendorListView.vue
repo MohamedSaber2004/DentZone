@@ -6,7 +6,7 @@ import type { Vendor } from '../domain/models/vendor'
 import { t } from '../i18n'
 import SectionHeader from '../components/ui/SectionHeader.vue'
 import VendorCard from '../components/store/VendorCard.vue'
-import AppSpinner from '../components/ui/AppSpinner.vue'
+import SkeletonLoader from '../components/ui/SkeletonLoader.vue'
 import EmptyState from '../components/ui/EmptyState.vue'
 import AppButton from '../components/ui/AppButton.vue'
 import AppIcon from '../components/ui/AppIcon.vue'
@@ -54,9 +54,7 @@ watch(activeCategory, () => {
       </template>
     </SectionHeader>
 
-    <div v-if="loading" class="vendors__loading" role="status">
-      <AppSpinner size="lg" :label="t('vendors.loading')" />
-    </div>
+    <SkeletonLoader v-if="loading" variant="cards" :count="6" class="vendors__skeleton" role="status" />
 
     <div v-else-if="vendors.length > 0" class="vendors__grid">
       <VendorCard v-for="vendor in vendors" :key="vendor.id" :vendor="vendor" />
@@ -92,10 +90,8 @@ watch(activeCategory, () => {
   text-decoration: underline;
 }
 
-.vendors__loading {
-  display: flex;
-  justify-content: center;
-  padding: 4rem 0;
+.vendors__skeleton {
+  padding-top: 0.25rem;
 }
 
 .vendors__grid {

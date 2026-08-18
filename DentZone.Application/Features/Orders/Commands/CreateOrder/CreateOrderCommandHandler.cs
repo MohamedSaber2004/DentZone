@@ -42,7 +42,7 @@ namespace DentZone.Application.Features.Orders.Commands.CreateOrder
             var outOfStock = request.Lines.FirstOrDefault(l =>
                 !products.TryGetValue(l.ProductId, out var product) || !product.InStock);
             if (outOfStock is not null && products.TryGetValue(outOfStock.ProductId, out var unavailableProduct))
-                throw new BadRequestException(string.Format(_localizer[LocalizationKeys.Orders.OutOfStock], unavailableProduct.GetName(Domain.Enums.LanguageCode.en)));
+                throw new BadRequestException(string.Format(_localizer[LocalizationKeys.Orders.OutOfStock], unavailableProduct.GetName(request.Language)));
 
             var (shippingCost, freeShippingThreshold, taxRate) = GetSettings();
 
@@ -76,7 +76,7 @@ namespace DentZone.Application.Features.Orders.Commands.CreateOrder
             {
                 var product = products[line.ProductId];
                 order.AddLine(OrderLine.Create(
-                    product.Id, product.GetName(Domain.Enums.LanguageCode.en),
+                    product.Id, product.GetName(request.Language),
                     product.Image, product.Price, line.Quantity));
 
                 product.UpdateStock(Math.Max(0, product.StockQuantity - line.Quantity), "system");

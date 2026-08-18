@@ -5,6 +5,7 @@ import { orderService } from '../application/order.service'
 import { locale, t, type MessageKey } from '../i18n'
 import type { Order, OrderStatus } from '../domain/models/order'
 import AppButton from '../components/ui/AppButton.vue'
+import SkeletonLoader from '../components/ui/SkeletonLoader.vue'
 import AppBadge from '../components/ui/AppBadge.vue'
 import AppIcon from '../components/ui/AppIcon.vue'
 import OrderSummary from '../components/store/OrderSummary.vue'
@@ -61,7 +62,7 @@ const linesAsOrderLines = (order: Order): OrderLineView[] =>
 <template>
   <div class="container page">
     <div v-if="loading" class="confirm__loading" role="status">
-      <AppSpinner size="lg" :label="t('confirmation.loading')" />
+      <SkeletonLoader variant="detail" :count="1" />
     </div>
 
     <EmptyState

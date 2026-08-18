@@ -48,6 +48,7 @@ namespace DentZone_Api.Controllers.Api.V1
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> CreateOrder([FromBody] CreateOrderCommand command, CancellationToken cancellationToken)
         {
+            command.Language = ResolveLanguage();
             var result = await _mediator.Send(command, cancellationToken);
             return Ok(result, _localizationProvider.GetLocalizedString(LocalizationKeys.Orders.Placed));
         }

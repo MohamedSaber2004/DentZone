@@ -23,6 +23,7 @@ export class CatalogService {
   readonly featuredProducts = ref<Product[]>([])
   readonly bestsellers = ref<Product[]>([])
   readonly settings = ref<CatalogSettings>({ ...DEFAULT_SETTINGS })
+  readonly initialized = ref(false)
 
   private productsCache = new Map<string, Product>()
 
@@ -31,18 +32,22 @@ export class CatalogService {
   }
 
   async init(): Promise<void> {
-    const [categories, vendors, featured, bestsellers, settings] = await Promise.allSettled([
-      this.repository.listCategories(),
-      this.repository.listVendors(),
-      this.repository.getFeaturedProducts(4),
-      this.repository.getBestsellers(4),
-      this.repository.getSettings(),
-    ])
-    if (categories.status === 'fulfilled') this.categories.value = categories.value
-    if (vendors.status === 'fulfilled') this.vendors.value = vendors.value
-    if (featured.status === 'fulfilled') this.featuredProducts.value = featured.value
-    if (bestsellers.status === 'fulfilled') this.bestsellers.value = bestsellers.value
-    if (settings.status === 'fulfilled') this.settings.value = settings.value
+    try {
+      const [categories, vendors, featured, bestsellers, settings] = await Promise.allSettled([
+        this.repository.listCategories(),
+        this.repository.listVendors(),
+        this.repository.getFeaturedProducts(4),
+        this.repository.getBestsellers(4),
+        this.repository.getSettings(),
+      ])
+      if (categories.status === 'fulfilled') this.categories.value = categories.value
+      if (vendors.status === 'fulfilled') this.vendors.value = vendors.value
+      if (featured.status === 'fulfilled') this.featuredProducts.value = featured.value
+      if (bestsellers.status === 'fulfilled') this.bestsellers.value = bestsellers.value
+      if (settings.status === 'fulfilled') this.settings.value = settings.value
+    } finally {
+      this.initialized.value = true
+    }
   }
 
   async getProducts(query?: ProductQuery): Promise<Product[]> {

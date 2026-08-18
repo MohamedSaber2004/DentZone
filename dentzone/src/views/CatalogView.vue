@@ -9,7 +9,7 @@ import CategoryPill from '../components/ui/CategoryPill.vue'
 import ProductGrid from '../components/store/ProductGrid.vue'
 import EmptyState from '../components/ui/EmptyState.vue'
 import AppButton from '../components/ui/AppButton.vue'
-import AppSpinner from '../components/ui/AppSpinner.vue'
+import SkeletonLoader from '../components/ui/SkeletonLoader.vue'
 import AppSelect, { type SelectOption } from '../components/ui/AppSelect.vue'
 import SearchField from '../components/ui/SearchField.vue'
 
@@ -119,9 +119,7 @@ const filteredCount = computed(() => products.value.length)
       <AppSelect v-model="sort" :options="sortOptions" :placeholder="t('catalog.sortBy')" />
     </div>
 
-    <div v-if="loading" class="catalog__loading" role="status">
-      <AppSpinner size="lg" :label="t('catalog.loadingProducts')" />
-    </div>
+    <SkeletonLoader v-if="loading" variant="grid" :count="8" class="catalog__skeleton" role="status" />
 
     <ProductGrid v-else-if="filteredCount > 0" :products="products" />
 
@@ -166,10 +164,8 @@ const filteredCount = computed(() => products.value.length)
   width: 240px;
 }
 
-.catalog__loading {
-  display: flex;
-  justify-content: center;
-  padding: 4rem 0;
+.catalog__skeleton {
+  padding-top: 0.25rem;
 }
 
 @media (max-width: 640px) {

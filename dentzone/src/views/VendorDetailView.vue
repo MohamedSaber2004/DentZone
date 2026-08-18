@@ -6,7 +6,7 @@ import type { Product, ProductSort } from '../domain/models/product'
 import type { Vendor } from '../domain/models/vendor'
 import { t } from '../i18n'
 import ProductGrid from '../components/store/ProductGrid.vue'
-import AppSpinner from '../components/ui/AppSpinner.vue'
+import SkeletonLoader from '../components/ui/SkeletonLoader.vue'
 import EmptyState from '../components/ui/EmptyState.vue'
 import AppIcon from '../components/ui/AppIcon.vue'
 import AppButton from '../components/ui/AppButton.vue'
@@ -111,7 +111,7 @@ const showAllProducts = () => {
 <template>
   <div class="container page">
     <div v-if="loading && !vendor" class="vendor__loading" role="status">
-      <AppSpinner size="lg" :label="t('vendors.loading')" />
+      <SkeletonLoader variant="detail" :count="1" />
     </div>
 
     <EmptyState
@@ -202,7 +202,7 @@ const showAllProducts = () => {
         </div>
 
         <div v-if="loading" class="vendor__loading" role="status">
-          <AppSpinner size="md" :label="t('catalog.loadingProducts')" />
+          <SkeletonLoader variant="grid" :count="4" />
         </div>
 
         <ProductGrid v-else-if="products.length" :products="products" />

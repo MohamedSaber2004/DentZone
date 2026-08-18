@@ -6,7 +6,7 @@ import { t } from '../i18n'
 import ProductGrid from '../components/store/ProductGrid.vue'
 import EmptyState from '../components/ui/EmptyState.vue'
 import AppButton from '../components/ui/AppButton.vue'
-import AppSpinner from '../components/ui/AppSpinner.vue'
+import SkeletonLoader from '../components/ui/SkeletonLoader.vue'
 import SectionHeader from '../components/ui/SectionHeader.vue'
 
 const loading = ref(true)
@@ -37,7 +37,7 @@ const clearWishlist = async () => {
     </SectionHeader>
 
     <div v-if="loading" class="wishlist__loading" role="status">
-      <AppSpinner size="lg" :label="t('wishlist.loading')" />
+      <SkeletonLoader variant="grid" :count="4" />
     </div>
 
     <ProductGrid v-else-if="wishlistService.count.value > 0" :products="wishlistService.items.value" />
@@ -59,8 +59,6 @@ const clearWishlist = async () => {
 
 <style scoped>
 .wishlist__loading {
-  display: flex;
-  justify-content: center;
-  padding: 4rem 0;
+  padding-top: 0.25rem;
 }
 </style>

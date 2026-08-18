@@ -169,8 +169,10 @@ namespace DentZone.Persistence.Seeding
                 var existing = await context.Categories.FirstOrDefaultAsync(c => c.Slug == categoryData.Slug, cancellationToken);
                 if (existing is not null)
                 {
+                    existing.Update(categoryData.NameEn, categoryData.NameAr, categoryData.Slug,
+                        categoryData.DescriptionEn, categoryData.DescriptionAr, categoryData.Emoji, categoryData.Tint, "system");
                     categoryIdsBySlug[categoryData.Slug] = existing.Id;
-                    logger.LogInformation("Seed category {Slug} already exists. Skipping.", categoryData.Slug);
+                    logger.LogInformation("Seed category {Slug} found. Syncing from seed file.", categoryData.Slug);
                     continue;
                 }
 
@@ -188,8 +190,12 @@ namespace DentZone.Persistence.Seeding
                 var existing = await context.Vendors.FirstOrDefaultAsync(v => v.Slug == vendorData.Slug, cancellationToken);
                 if (existing is not null)
                 {
+                    existing.Update(vendorData.NameEn, vendorData.NameAr, vendorData.Slug,
+                        vendorData.TaglineEn, vendorData.TaglineAr, vendorData.DescriptionEn, vendorData.DescriptionAr,
+                        vendorData.Emoji, vendorData.Tint, vendorData.Verified, "system");
+                    existing.UpdateRating(vendorData.Rating, vendorData.ReviewCount, "system");
                     vendorIdsBySlug[vendorData.Slug] = existing.Id;
-                    logger.LogInformation("Seed vendor {Slug} already exists. Skipping.", vendorData.Slug);
+                    logger.LogInformation("Seed vendor {Slug} found. Syncing from seed file.", vendorData.Slug);
                     continue;
                 }
 
@@ -209,8 +215,21 @@ namespace DentZone.Persistence.Seeding
                 var existing = await context.Products.FirstOrDefaultAsync(p => p.Slug == productData.Slug, cancellationToken);
                 if (existing is not null)
                 {
+                    var existingCategoryId = categoryIdsBySlug.TryGetValue(productData.CategorySlug ?? string.Empty, out var foundExistingCategory)
+                        ? foundExistingCategory
+                        : existing.CategoryId;
+                    var existingVendorId = vendorIdsBySlug.TryGetValue(productData.VendorSlug ?? string.Empty, out var foundExistingVendor)
+                        ? foundExistingVendor
+                        : existing.VendorId;
+
+                    existing.Update(productData.Slug, productData.NameEn, productData.NameAr,
+                        productData.TaglineEn, productData.TaglineAr, productData.DescriptionEn, productData.DescriptionAr,
+                        productData.Brand, productData.Price, productData.CompareAtPrice, productData.StockQuantity,
+                        productData.Image, existingCategoryId, existingVendorId, productData.Features,
+                        productData.IsFeatured, productData.IsBestseller, productData.Badge, "system");
+                    existing.UpdateRating(productData.Rating, productData.ReviewCount, "system");
                     productIdsById[productData.Id] = existing.Id;
-                    logger.LogInformation("Seed product {Slug} already exists. Skipping.", productData.Slug);
+                    logger.LogInformation("Seed product {Slug} found. Syncing from seed file.", productData.Slug);
                     continue;
                 }
 
@@ -244,7 +263,11 @@ namespace DentZone.Persistence.Seeding
                 var existing = await context.Advertisements.FindAsync(new object[] { advertisementData.Id }, cancellationToken);
                 if (existing is not null)
                 {
-                    logger.LogInformation("Seed advertisement {Id} already exists. Skipping.", advertisementData.Id);
+                    existing.Update(advertisementData.TitleEn, advertisementData.TitleAr, advertisementData.Image,
+                        advertisementData.DescriptionEn, advertisementData.DescriptionAr, advertisementData.MobileImage,
+                        advertisementData.CtaLabelEn, advertisementData.CtaLabelAr, advertisementData.CtaTo,
+                        advertisementData.EyebrowEn, advertisementData.EyebrowAr, advertisementData.Theme, advertisementData.IsHero, "system");
+                    logger.LogInformation("Seed advertisement {Id} found. Syncing from seed file.", advertisementData.Id);
                     continue;
                 }
 
