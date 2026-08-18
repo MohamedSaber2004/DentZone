@@ -129,6 +129,7 @@ namespace DentZone_Api
 
             builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =>
             {
+                options.SerializerOptions.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All);
                 options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
             });
 
