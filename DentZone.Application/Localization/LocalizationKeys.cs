@@ -62,6 +62,10 @@
             public const string PasswordTooShort = "Auth.PasswordTooShort";
             public const string ConfirmPasswordRequired = "Auth.ConfirmPasswordRequired";
             public const string PasswordMismatch = "Auth.PasswordMismatch";
+            public const string CurrentPasswordRequired = "Auth.CurrentPasswordRequired";
+            public const string WrongCurrentPassword = "Auth.WrongCurrentPassword";
+            public const string PasswordChanged = "Auth.PasswordChanged";
+            public const string LogoutSuccess = "Auth.LogoutSuccess";
             public const string OtpEmailSubject = "Auth.OtpEmailSubject";
             public const string OtpEmailBody = "Auth.OtpEmailBody";
         }

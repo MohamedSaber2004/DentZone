@@ -2,7 +2,6 @@
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { authService } from '../../application/auth.service'
-import { toastService } from '../../application/toast.service'
 import { t } from '../../i18n'
 import AppInput from '../ui/AppInput.vue'
 import AppButton from '../ui/AppButton.vue'
@@ -29,7 +28,6 @@ const submit = async () => {
     error.value = t(result.error)
     return
   }
-  toastService.success(t('auth.welcomeBackToast', { name: authService.user.value?.firstName ?? '' }))
   const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
   void router.push(redirect)
 }
@@ -70,14 +68,7 @@ const submit = async () => {
       {{ submitting ? t('auth.loggingIn') : t('auth.login') }}
     </AppButton>
 
-    <!--<p class="login-form__no-account">
-      {{ t('auth.noAccount') }}
-      <button type="button" class="login-form__register" @click="toastService.info(t('auth.registerSoon'))">
-        {{ t('auth.register') }}
-      </button>
-    </p>-->
-
-    <!--<p v-if="showDemoHint" class="login-form__hint">
+    <!--<p class="login-form__hint">
       <AppIcon name="key" :size="14" />
       {{ t('auth.demoHint') }}
     </p>-->

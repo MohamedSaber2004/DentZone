@@ -52,6 +52,10 @@
     "PasswordTooShort": "Password must be at least {0} characters",
     "ConfirmPasswordRequired": "Please confirm the new password",
     "PasswordMismatch": "Passwords do not match",
+    "CurrentPasswordRequired": "Current password is required",
+    "WrongCurrentPassword": "Current password is incorrect",
+    "PasswordChanged": "Password changed successfully, you have been signed out everywhere",
+    "LogoutSuccess": "You have been signed out",
     "OtpEmailSubject": "DentZone – Password Reset Code",
     "OtpEmailBody": "Hello {0},<br/><br/>Your verification code is <b>{1}</b>.<br/>The code is valid for {2} minutes."
   }

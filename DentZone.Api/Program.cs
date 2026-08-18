@@ -143,17 +143,19 @@ namespace DentZone_Api
                 {
                     var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
 
-                    if (allowedOrigins is { Length: > 0 })
-                    {
-                        policy.WithOrigins(allowedOrigins);
-                    }
-                    else
-                    {
-                        policy.AllowAnyOrigin();
-                    }
+                    var origins = allowedOrigins is { Length: > 0 }
+                        ? allowedOrigins
+                        : new[]
+                        {
+                            "http://localhost:12577",
+                            "http://localhost:5173",
+                            "https://dent-zone-e7wn-ewawdf2v7-rafeek.vercel.app"
+                        };
 
-                    policy.AllowAnyHeader()
-                          .AllowAnyMethod();
+                    policy.WithOrigins(origins)
+                          .AllowAnyHeader()
+                          .AllowAnyMethod()
+                          .AllowCredentials();
                 });
             });
 

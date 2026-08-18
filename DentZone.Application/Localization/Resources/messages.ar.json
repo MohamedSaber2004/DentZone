@@ -52,6 +52,10 @@
     "PasswordTooShort": "كلمة المرور يجب أن تكون {0} أحرف على الأقل",
     "ConfirmPasswordRequired": "يرجى تأكيد كلمة المرور الجديدة",
     "PasswordMismatch": "كلمتا المرور غير متطابقتين",
+    "CurrentPasswordRequired": "كلمة المرور الحالية مطلوبة",
+    "WrongCurrentPassword": "كلمة المرور الحالية غير صحيحة",
+    "PasswordChanged": "تم تغيير كلمة المرور بنجاح، تم تسجيل خروجك من جميع الأجهزة",
+    "LogoutSuccess": "تم تسجيل خروجك بنجاح",
     "OtpEmailSubject": "دنت زون – رمز إعادة تعيين كلمة المرور",
     "OtpEmailBody": "مرحباً {0}،<br/><br/>رمز التحقق الخاص بك هو <b>{1}</b>.<br/>الرمز صالح لمدة {2} دقيقة."
   }

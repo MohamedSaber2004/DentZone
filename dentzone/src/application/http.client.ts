@@ -1,4 +1,5 @@
 import { locale } from '../i18n'
+import { toastService } from './toast.service'
 
 export const API_BASE_URL = ((import.meta.env.VITE_API_BASE_URL as string | undefined) ?? '').replace(/\/+$/, '')
 
@@ -13,21 +14,18 @@ export interface ApiEnvelope<T> {
 export class ApiError extends Error {
   readonly status: number
   readonly errors: Record<string, string[]>
+  readonly silent: boolean
 
-  constructor(status: number, message: string, errors: Record<string, string[]> = {}) {
+  constructor(status: number, message: string, errors: Record<string, string[]> = {}, silent = false) {
     super(message)
     this.name = 'ApiError'
     this.status = status
     this.errors = errors
+    this.silent = silent
   }
 }
 
-export interface AuthTokens {
-  accessToken: string
-  refreshToken: string
-  accessTokenExpiresAt: string
-  refreshTokenExpiresAt: string
-}
+const ACCESS_TOKEN_COOKIE = 'dz_access_token'
 
 const NO_REFRESH_PREFIXES = [
   '/api/v1/auth/login',
@@ -40,7 +38,8 @@ const NO_REFRESH_PREFIXES = [
 
 const ACCESS_EXPIRY_MARGIN_MS = 30_000
 
-let accessToken = ''
+const GENERIC_OK_MESSAGES = new Set(['Operation completed successfully', 'تمت العملية بنجاح'])
+
 let accessTokenExpiresAt = ''
 let refreshTokenExpiresAt = ''
 let refreshInFlight: Promise<boolean> | null = null
@@ -56,19 +55,22 @@ export const setSessionExpiredHandler = (handler: () => void) => {
   sessionExpiredHandler = handler
 }
 
-export const setTokens = (tokens: AuthTokens) => {
-  accessToken = tokens.accessToken
-  accessTokenExpiresAt = tokens.accessTokenExpiresAt
-  refreshTokenExpiresAt = tokens.refreshTokenExpiresAt
+export const setSessionMeta = (accessExpiresAt: string, refreshExpiresAt: string) => {
+  accessTokenExpiresAt = accessExpiresAt
+  refreshTokenExpiresAt = refreshExpiresAt
 }
 
-export const clearTokens = () => {
-  accessToken = ''
+export const clearSessionMeta = () => {
   accessTokenExpiresAt = ''
   refreshTokenExpiresAt = ''
 }
 
-export const getAccessToken = (): string => accessToken
+export const getAccessToken = (): string => {
+  const match = document.cookie
+    .split('; ')
+    .find((part) => part.startsWith(`${ACCESS_TOKEN_COOKIE}=`))
+  return match ? decodeURIComponent(match.slice(ACCESS_TOKEN_COOKIE.length + 1)) : ''
+}
 
 const isPastOrNear = (iso: string, withinMs: number): boolean => {
   if (!iso) return false
@@ -160,7 +162,7 @@ const policyForPath = (path: string): string => {
 const waitForRateLimit = async (path: string): Promise<void> => {
   const waitMs = RATE_LIMITERS[policyForPath(path)]?.acquire() ?? 0
   if (waitMs <= 0) return
-  if (waitMs > MAX_RATE_LIMIT_WAIT_MS) throw new ApiError(429, 'Rate limit exceeded')
+  if (waitMs > MAX_RATE_LIMIT_WAIT_MS) throw new ApiError(429, 'Rate limit exceeded', {}, true)
   await sleep(waitMs)
 }
 
@@ -180,34 +182,34 @@ const request = async <T>(path: string, options: { method?: string; body?: unkno
   if (body !== undefined) headers['Content-Type'] = 'application/json'
 
   const needsRefresh =
-    accessToken !== '' &&
+    accessTokenExpiresAt !== '' &&
     refreshTokenExpiresAt !== '' &&
     !skipAuthRefresh &&
     !NO_REFRESH_PREFIXES.some((prefix) => path.startsWith(prefix))
 
   if (needsRefresh && isPastOrNear(refreshTokenExpiresAt, 0)) {
-    clearTokens()
+    clearSessionMeta()
     sessionExpiredHandler?.()
-    throw new ApiError(401, 'Session expired')
+    throw new ApiError(401, 'Session expired', {}, true)
   }
 
   if (needsRefresh && isPastOrNear(accessTokenExpiresAt, ACCESS_EXPIRY_MARGIN_MS)) {
     const refreshed = await performRefresh()
-    if (refreshed) {
-      headers['Authorization'] = `Bearer ${accessToken}`
-    } else {
-      clearTokens()
+    if (!refreshed) {
+      clearSessionMeta()
       sessionExpiredHandler?.()
-      throw new ApiError(401, 'Session expired')
+      throw new ApiError(401, 'Session expired', {}, true)
     }
   }
 
+  const accessToken = getAccessToken()
   if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`
 
   const doFetch = (): Promise<Response> =>
     fetch(`${API_BASE_URL}${path}`, {
       method,
       headers,
+      credentials: 'include',
       body: body !== undefined ? JSON.stringify(body) : undefined,
     })
 
@@ -225,10 +227,11 @@ const request = async <T>(path: string, options: { method?: string; body?: unkno
       if (response.status === 401 && !skipAuthRefresh && !NO_REFRESH_PREFIXES.some((prefix) => path.startsWith(prefix))) {
         const refreshed = await performRefresh()
         if (refreshed) {
-          headers['Authorization'] = `Bearer ${accessToken}`
+          const newAccessToken = getAccessToken()
+          if (newAccessToken) headers['Authorization'] = `Bearer ${newAccessToken}`
           continue
         }
-        clearTokens()
+        clearSessionMeta()
         sessionExpiredHandler?.()
       }
 
@@ -244,6 +247,10 @@ const request = async <T>(path: string, options: { method?: string; body?: unkno
 
       if (!response.ok || !envelope?.success) {
         throw new ApiError(response.status, envelope?.message ?? `Request failed with status ${response.status}`, envelope?.errors ?? {})
+      }
+
+      if (envelope.message && !GENERIC_OK_MESSAGES.has(envelope.message) && !path.startsWith('/api/v1/auth/refresh-token')) {
+        toastService.success(envelope.message)
       }
 
       return envelope.data as T

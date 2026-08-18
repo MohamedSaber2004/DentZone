@@ -15,6 +15,7 @@
             public const string VerifyOtp = Base + "/auth/verify-otp";
             public const string GetUserProfile = Base + "/auth/profile";
             public const string UpdateUserProfile = Base + "/auth/profile";
+            public const string ChangePassword = Base + "/auth/change-password";
         }
     }
 }

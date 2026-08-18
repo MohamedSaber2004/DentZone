@@ -148,6 +148,7 @@ export type Messages = {
   profile: {
     title: string
     personalInfo: string
+    personalInfoDesc: string
     firstName: string
     lastName: string
     email: string
@@ -157,9 +158,14 @@ export type Messages = {
     savedToast: string
     security: string
     changePassword: string
+    hideForm: string
+    updatePassword: string
     changePasswordDesc: string
+    changePasswordNote: string
     currentPassword: string
     passwordUpdatedToast: string
+    recordId: string
+    activeAccount: string
     account: string
     logout: string
     shortcuts: string

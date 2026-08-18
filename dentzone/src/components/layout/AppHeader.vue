@@ -90,8 +90,7 @@ onUnmounted(() => {
 
 const logout = () => {
   closeUserMenu()
-  authService.logout()
-  toastService.info(t('auth.logoutToast'))
+  void authService.logout()
   void router.push('/')
 }
 
