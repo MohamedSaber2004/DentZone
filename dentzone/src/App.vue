@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import AppHeader from './components/layout/AppHeader.vue'
 import AppFooter from './components/layout/AppFooter.vue'
 import ToastContainer from './components/ui/ToastContainer.vue'
@@ -8,13 +8,29 @@ import LoadingBar from './components/ui/LoadingBar.vue'
 import ChatWidget from './components/store/ChatWidget.vue'
 
 const router = useRouter()
+const route = useRoute()
 const searchQuery = ref('')
+
+watch(
+  () => route.query.q,
+  (newQ) => {
+    searchQuery.value = typeof newQ === 'string' ? newQ : ''
+  },
+  { immediate: true },
+)
 
 const onSearchSubmit = () => {
   const term = searchQuery.value.trim()
+  const query: Record<string, string> = {}
+  if (typeof route.query.category === 'string' && route.query.category) {
+    query.category = route.query.category
+  }
+  if (term) {
+    query.q = term
+  }
   void router.push({
     path: '/catalog',
-    query: term ? { q: term } : {},
+    query,
   })
 }
 </script>

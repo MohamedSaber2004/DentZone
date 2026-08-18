@@ -49,14 +49,20 @@ namespace DentZone.Application.Features.Catalog.Queries.GetProducts
 
             if (!string.IsNullOrWhiteSpace(request.Search))
             {
-                var search = request.Search.Trim().ToLowerInvariant();
+                var search = $"%{request.Search.Trim()}%";
                 query = query.Where(p =>
-                    p.NameEn.ToLower().Contains(search) ||
-                    p.NameAr.ToLower().Contains(search) ||
-                    p.TaglineEn.ToLower().Contains(search) ||
-                    p.TaglineAr.ToLower().Contains(search) ||
-                    p.Brand.ToLower().Contains(search) ||
-                    p.Slug.ToLower().Contains(search));
+                    EF.Functions.Like(p.NameEn, search) ||
+                    EF.Functions.Like(p.NameAr, search) ||
+                    EF.Functions.Like(p.TaglineEn, search) ||
+                    EF.Functions.Like(p.TaglineAr, search) ||
+                    EF.Functions.Like(p.DescriptionEn, search) ||
+                    EF.Functions.Like(p.DescriptionAr, search) ||
+                    EF.Functions.Like(p.Brand, search) ||
+                    EF.Functions.Like(p.Slug, search) ||
+                    EF.Functions.Like(p.Category.NameEn, search) ||
+                    EF.Functions.Like(p.Category.NameAr, search) ||
+                    EF.Functions.Like(p.Vendor.NameEn, search) ||
+                    EF.Functions.Like(p.Vendor.NameAr, search));
             }
 
             query = request.Sort switch

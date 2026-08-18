@@ -198,7 +198,7 @@ const showAllProducts = () => {
             </button>
           </div>
 
-          <AppSelect v-model="sort" :options="sortOptions" :placeholder="t('catalog.sortBy')" class="vendor__sort" @update:model-value="onSortChange" />
+          <AppSelect :model-value="sort" :options="sortOptions" :placeholder="t('catalog.sortBy')" class="vendor__sort" @update:model-value="onSortChange" />
         </div>
 
         <div v-if="loading" class="vendor__loading" role="status">

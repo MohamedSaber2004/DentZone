@@ -13,6 +13,8 @@ import SkeletonLoader from '../components/ui/SkeletonLoader.vue'
 import AppSelect, { type SelectOption } from '../components/ui/AppSelect.vue'
 import SearchField from '../components/ui/SearchField.vue'
 
+const SORT_VALUES: ProductSort[] = ['featured', 'price-asc', 'price-desc', 'rating', 'newest']
+
 const route = useRoute()
 const router = useRouter()
 
@@ -21,7 +23,28 @@ const loading = ref(true)
 
 const activeCategory = computed(() => (typeof route.query.category === 'string' ? route.query.category : ''))
 const searchQuery = ref(typeof route.query.q === 'string' ? route.query.q : '')
-const sort = ref<ProductSort>('featured')
+
+const sort = computed<ProductSort>({
+  get() {
+    const raw = typeof route.query.sort === 'string' ? route.query.sort : ''
+    return SORT_VALUES.includes(raw as ProductSort) ? (raw as ProductSort) : 'featured'
+  },
+  set(newSort) {
+    const query: Record<string, string> = {}
+    if (activeCategory.value) query.category = activeCategory.value
+    if (searchQuery.value.trim()) query.q = searchQuery.value.trim()
+    if (newSort && newSort !== 'featured') query.sort = newSort
+    void router.push({ path: '/catalog', query })
+  },
+})
+
+watch(
+  () => route.query.q,
+  (newQ) => {
+    searchQuery.value = typeof newQ === 'string' ? newQ : ''
+  },
+  { immediate: true },
+)
 
 const sortOptions = computed<SelectOption[]>(() => [
   { value: 'featured', label: t('catalog.sortFeatured') },
@@ -43,7 +66,7 @@ const loadProducts = async () => {
   loading.value = true
   products.value = await catalogService.getProducts({
     categorySlug: activeCategory.value || undefined,
-    search: searchQuery.value || undefined,
+    search: typeof route.query.q === 'string' ? route.query.q : undefined,
     sort: sort.value,
   })
   loading.value = false
@@ -53,29 +76,35 @@ onMounted(() => {
   void loadProducts()
 })
 
-watch([activeCategory, sort], () => {
-  void loadProducts()
-})
+watch(
+  () => route.query,
+  () => {
+    void loadProducts()
+  },
+  { deep: true },
+)
 
 const selectCategory = (categorySlug: string) => {
-  void router.push({
-    path: '/catalog',
-    query: categorySlug
-      ? { category: categorySlug, ...(searchQuery.value ? { q: searchQuery.value } : {}) }
-      : searchQuery.value
-        ? { q: searchQuery.value }
-        : {},
-  })
+  const query: Record<string, string> = {}
+  if (categorySlug) query.category = categorySlug
+  if (searchQuery.value.trim()) query.q = searchQuery.value.trim()
+  if (sort.value !== 'featured') query.sort = sort.value
+  void router.push({ path: '/catalog', query })
+}
+
+const onSearchInput = (val: string) => {
+  searchQuery.value = val
+  if (!val.trim() && route.query.q) {
+    onSearchSubmit()
+  }
 }
 
 const onSearchSubmit = () => {
-  void router.push({
-    path: '/catalog',
-    query: {
-      ...(activeCategory.value ? { category: activeCategory.value } : {}),
-      ...(searchQuery.value ? { q: searchQuery.value } : {}),
-    },
-  })
+  const query: Record<string, string> = {}
+  if (activeCategory.value) query.category = activeCategory.value
+  if (searchQuery.value.trim()) query.q = searchQuery.value.trim()
+  if (sort.value !== 'featured') query.sort = sort.value
+  void router.push({ path: '/catalog', query })
 }
 
 const clearFilters = () => {
@@ -91,9 +120,10 @@ const filteredCount = computed(() => products.value.length)
     <SectionHeader :title="pageTitle" :subtitle="pageSubtitle">
       <template #action>
         <SearchField
-          v-model="searchQuery"
+          :model-value="searchQuery"
           :placeholder="t('catalog.searchPlaceholder')"
           class="catalog__search"
+          @update:model-value="onSearchInput"
           @submit="onSearchSubmit"
         />
       </template>

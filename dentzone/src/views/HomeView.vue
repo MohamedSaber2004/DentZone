@@ -33,7 +33,7 @@ onMounted(() => {
 })
 
 const selectCategory = (categorySlug: string) => {
-  void router.push({ path: '/vendors', query: { category: categorySlug } })
+  void router.push({ path: '/catalog', query: { category: categorySlug } })
 }
 
 const formattedThreshold = computed(() => formatPrice(catalogService.settings.value.freeShippingThreshold))
