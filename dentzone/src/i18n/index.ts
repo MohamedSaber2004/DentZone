@@ -51,10 +51,21 @@ export const t = (key: MessageKey, params?: Record<string, string | number>): st
   return text
 }
 
+type LocaleChangeListener = (locale: Locale) => void
+const localeChangeListeners: LocaleChangeListener[] = []
+
+export const onLocaleChange = (listener: LocaleChangeListener) => {
+  localeChangeListeners.push(listener)
+}
+
 export const setLocale = (next: Locale) => {
+  if (locale.value === next) return
   locale.value = next
   localStorage.setItem(STORAGE_KEY, next)
   applyDocument(next)
+  for (const listener of localeChangeListeners) {
+    listener(next)
+  }
 }
 
 export const toggleLocale = () => {

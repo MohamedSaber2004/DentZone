@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { onLocaleChange } from '../i18n'
 import type { Category } from '../domain/models/category'
 import type { Product, ProductQuery } from '../domain/models/product'
 import type { Vendor } from '../domain/models/vendor'
@@ -29,6 +30,10 @@ export class CatalogService {
 
   constructor(repository: CatalogRepository = new ApiCatalogRepository()) {
     this.repository = repository
+    onLocaleChange(() => {
+      this.productsCache.clear()
+      void this.init()
+    })
   }
 
   async init(): Promise<void> {
