@@ -200,8 +200,6 @@ const request = async <T>(path: string, options: { method?: string; body?: unkno
   if (needsRefresh && isPastOrNear(accessTokenExpiresAt, ACCESS_EXPIRY_MARGIN_MS)) {
     const refreshed = await performRefresh()
     if (!refreshed) {
-      clearTokens()
-      sessionExpiredHandler?.()
       throw new ApiError(401, 'Session expired', {}, true)
     }
   }
@@ -235,8 +233,7 @@ const request = async <T>(path: string, options: { method?: string; body?: unkno
           if (newAccessToken) headers['Authorization'] = `Bearer ${newAccessToken}`
           continue
         }
-        clearTokens()
-        sessionExpiredHandler?.()
+        throw new ApiError(401, 'Session expired', {}, true)
       }
 
       if (response.status === 429 && attempt < MAX_429_RETRIES) {

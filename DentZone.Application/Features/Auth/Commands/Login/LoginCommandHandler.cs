@@ -85,14 +85,6 @@ namespace DentZone.Application.Features.Auth.Commands
 
         private async Task<(string Token, DateTime ExpiresAt, bool Reused)> GetOrCreateRefreshTokenAsync(Guid userId)
         {
-            var activeTokens = await _refreshTokenRepository.GetActiveByUserIdAsync(userId);
-
-            var validToken = activeTokens.FirstOrDefault(t => t.ExpiryDate > DateTime.Now);
-            if (validToken is not null)
-            {
-                return (validToken.Token, validToken.ExpiryDate, true);
-            }
-
             var refreshToken = await _jwtTokenService.GenerateRefreshToken(userId);
 
             return (refreshToken, DateTime.Now.AddDays(_jwtOptions.RefreshTokenExpiryDays), false);

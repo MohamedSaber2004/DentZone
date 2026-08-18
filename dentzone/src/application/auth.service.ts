@@ -150,7 +150,10 @@ class AuthService {
       )
       this.applyLoginResponse(data)
       return true
-    } catch {
+    } catch (err) {
+      if (err instanceof ApiError && (err.status === 0 || err.status === 429 || err.status >= 500)) {
+        return false
+      }
       this.handleSessionExpired()
       return false
     }
