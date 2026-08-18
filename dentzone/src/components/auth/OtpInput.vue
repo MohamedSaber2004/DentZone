@@ -17,13 +17,28 @@ const emit = defineEmits<{
 const inputs = ref<HTMLInputElement[]>([])
 const digits = ref<string[]>(Array.from({ length: props.length }, () => ''))
 
-watch(digits, (values) => {
-  const value = values.join('')
-  emit('update:modelValue', value)
-  if (value.length === props.length) {
-    emit('complete', value)
-  }
-})
+watch(
+  digits,
+  (values) => {
+    const value = values.join('')
+    emit('update:modelValue', value)
+    if (value.length === props.length) {
+      emit('complete', value)
+    }
+  },
+  { deep: true, immediate: true },
+)
+
+watch(
+  () => props.modelValue,
+  (next) => {
+    const current = digits.value.join('')
+    if (next !== current) {
+      const chars = (next ?? '').split('').slice(0, props.length)
+      digits.value = Array.from({ length: props.length }, (_, i) => chars[i] ?? '')
+    }
+  },
+)
 
 const focusIndex = (index: number) => {
   const input = inputs.value[index]
@@ -39,15 +54,19 @@ const onInput = (index: number, event: Event) => {
     focusIndex(Math.min(chars.length, props.length - 1))
     return
   }
-  digits.value[index] = raw
+  const nextDigits = [...digits.value]
+  nextDigits[index] = raw
+  digits.value = nextDigits
   if (raw && index < props.length - 1) {
     focusIndex(index + 1)
   }
 }
 
 const onKeydown = (index: number, event: KeyboardEvent) => {
-  if (event.key === 'Backspace' && !digits.value[index] && index > 0) {
-    focusIndex(index - 1)
+  if (event.key === 'Backspace') {
+    if (!digits.value[index] && index > 0) {
+      focusIndex(index - 1)
+    }
   }
 }
 
