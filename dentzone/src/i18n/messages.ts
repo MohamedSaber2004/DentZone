@@ -1,8 +1,3 @@
-export type CategoryMessages = {
-  name: string
-  description: string
-}
-
 export type Messages = {
   nav: {
     home: string
@@ -143,7 +138,6 @@ export type Messages = {
     passwordChanged: string
     welcomeBackToast: string
     logoutToast: string
-    ordersComingSoon: string
   }
   profile: {
     title: string
@@ -185,9 +179,11 @@ export type Messages = {
     emptyTitle: string
     emptyDescription: string
     browseProducts: string
+    loading: string
     addedToast: string
     removedToast: string
     clearedToast: string
+    errorToast: string
   }
   chat: {
     agentName: string
@@ -284,13 +280,21 @@ export type Messages = {
     stepConfirmation: string
     nothingToCheckout: string
     emptyDescription: string
+    signInRequired: string
+    signInDescription: string
+    signIn: string
     contactDetails: string
     fullName: string
+    namePlaceholder: string
     emailAddress: string
+    emailPlaceholder: string
     phoneNumber: string
+    phonePlaceholder: string
     shippingAddress: string
     streetAddress: string
+    addressPlaceholder: string
     city: string
+    cityPlaceholder: string
     orderNotes: string
     notesPlaceholder: string
     payment: string
@@ -306,11 +310,13 @@ export type Messages = {
     errCity: string
     errFixFields: string
     orderPlaced: string
+    orderFailed: string
   }
   confirmation: {
     notFoundTitle: string
     notFoundDescription: string
     continueShopping: string
+    loading: string
     thankYou: string
     placedSuccessfully: string
     confirmationEmail: string
@@ -323,6 +329,15 @@ export type Messages = {
     statusProcessing: string
     statusShipped: string
     statusDelivered: string
+  }
+  orders: {
+    title: string
+    subtitle: string
+    loading: string
+    emptyTitle: string
+    emptyDescription: string
+    browseProducts: string
+    itemsCount: string
   }
   footer: {
     newsletterTitle: string
@@ -353,5 +368,4 @@ export type Messages = {
     invalidEmail: string
     subscribed: string
   }
-  categories: Record<string, CategoryMessages>
 }

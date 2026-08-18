@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import type { Product } from '../../domain/models/product'
-import { categoryName, t } from '../../i18n'
+import { catalogService } from '../../application/catalog.service'
+import { t } from '../../i18n'
 import AppIcon, { type IconName } from '../ui/AppIcon.vue'
 import ReviewsSection from './ReviewsSection.vue'
 
@@ -28,11 +29,14 @@ const tabs = computed<{ id: TabId; label: string }[]>(() => [
   { id: 'reviews', label: t('product.reviewsTab') },
 ])
 
-const sku = computed(() => `DZ-${props.product.id.toUpperCase().replace(/^P-/, '')}`)
+const sku = computed(() => `DZ-${props.product.id.slice(0, 8).toUpperCase()}`)
 
 const specs = computed(() => [
   { label: t('product.specBrand'), value: props.product.brand },
-  { label: t('product.specCategory'), value: categoryName(props.product.categoryId) },
+  {
+    label: t('product.specCategory'),
+    value: catalogService.getCategoryBySlug(props.product.categorySlug)?.name ?? props.product.categorySlug,
+  },
   { label: t('product.specSku'), value: sku.value },
   {
     label: t('product.specAvailability'),

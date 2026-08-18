@@ -26,6 +26,8 @@ namespace DentZone.Persistence
         public DbSet<Advertisement> Advertisements => Set<Advertisement>();
         public DbSet<Review> Reviews => Set<Review>();
         public DbSet<WishlistItem> WishlistItems => Set<WishlistItem>();
+        public DbSet<Order> Orders => Set<Order>();
+        public DbSet<OrderLine> OrderLines => Set<OrderLine>();
 
         protected override void OnConfiguring(DbContextOptionsBuilder builder)
         {

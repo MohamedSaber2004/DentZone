@@ -1,18 +1,17 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { toastService } from '../../application/toast.service'
-import { categoryName, t } from '../../i18n'
+import { catalogService } from '../../application/catalog.service'
+import { formatPrice, t } from '../../i18n'
 import AppIcon from '../ui/AppIcon.vue'
 import AppButton from '../ui/AppButton.vue'
 
-const categoryLinks = [
-  { categoryId: 'cat-toothbrushes', to: '/catalog?category=cat-toothbrushes' },
-  { categoryId: 'cat-toothpaste', to: '/catalog?category=cat-toothpaste' },
-  { categoryId: 'cat-mouthwash', to: '/catalog?category=cat-mouthwash' },
-  { categoryId: 'cat-whitening', to: '/catalog?category=cat-whitening' },
-  { categoryId: 'cat-floss', to: '/catalog?category=cat-floss' },
-  { categoryId: 'cat-accessories', to: '/catalog?category=cat-accessories' },
-]
+const categoryLinks = computed(() =>
+  ['toothbrushes', 'toothpaste', 'mouthwash', 'whitening', 'floss', 'accessories'].map((slug) => ({
+    slug,
+    to: `/catalog?category=${slug}`,
+  })),
+)
 
 const companyLinks = computed(() => [
   { label: t('footer.companyAbout'), to: '/' },
@@ -77,7 +76,8 @@ const subscribe = () => {
         </p>
         <div class="app-footer__trust">
           <span class="app-footer__trust-item">
-            <AppIcon name="truck" :size="15" /> {{ t('footer.freeShippingOver') }}
+            <AppIcon name="truck" :size="15" />
+            {{ t('footer.freeShippingOver', { amount: formatPrice(catalogService.settings.value.freeShippingThreshold) }) }}
           </span>
           <span class="app-footer__trust-item">
             <AppIcon name="shield-check" :size="15" /> {{ t('footer.guarantee') }}
@@ -106,11 +106,11 @@ const subscribe = () => {
         <h3 class="app-footer__heading">{{ t('footer.shopHeading') }}</h3>
         <RouterLink
           v-for="link in categoryLinks"
-          :key="link.categoryId"
+          :key="link.slug"
           :to="link.to"
           class="app-footer__link"
         >
-          {{ categoryName(link.categoryId) }}
+          {{ catalogService.getCategoryBySlug(link.slug)?.name ?? link.slug }}
         </RouterLink>
       </nav>
 

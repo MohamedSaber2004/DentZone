@@ -3,7 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { catalogService } from '../application/catalog.service'
 import type { Vendor } from '../domain/models/vendor'
-import { categoryName, t } from '../i18n'
+import { t } from '../i18n'
 import SectionHeader from '../components/ui/SectionHeader.vue'
 import VendorCard from '../components/store/VendorCard.vue'
 import AppSpinner from '../components/ui/AppSpinner.vue'
@@ -20,7 +20,9 @@ const activeCategory = computed(() => (typeof route.query.category === 'string' 
 
 const pageTitle = computed(() =>
   activeCategory.value
-    ? t('vendors.categoryTitle', { category: categoryName(activeCategory.value) })
+    ? t('vendors.categoryTitle', {
+        category: catalogService.getCategoryBySlug(activeCategory.value)?.name ?? activeCategory.value,
+      })
     : t('vendors.allTitle'),
 )
 

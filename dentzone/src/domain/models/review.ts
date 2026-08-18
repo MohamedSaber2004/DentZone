@@ -4,7 +4,7 @@ export interface Review {
   author: string
   rating: number
   content: string
-  date: string
+  createdAt: string
   verifiedPurchase: boolean
   helpfulCount: number
 }

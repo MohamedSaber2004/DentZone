@@ -58,5 +58,27 @@
     "LogoutSuccess": "تم تسجيل خروجك بنجاح",
     "OtpEmailSubject": "دنت زون – رمز إعادة تعيين كلمة المرور",
     "OtpEmailBody": "مرحباً {0}،<br/><br/>رمز التحقق الخاص بك هو <b>{1}</b>.<br/>الرمز صالح لمدة {2} دقيقة."
+  },
+  "Catalog": {
+    "ProductNotFound": "المنتج غير موجود",
+    "VendorNotFound": "المورد غير موجود",
+    "CategoryNotFound": "الفئة غير موجودة"
+  },
+  "Wishlist": {
+    "Added": "تمت الإضافة إلى قائمة الرغبات",
+    "Removed": "تمت الإزالة من قائمة الرغبات",
+    "Cleared": "تم مسح قائمة الرغبات"
+  },
+  "Orders": {
+    "Placed": "تم تقديم الطلب بنجاح",
+    "OrderNotFound": "الطلب غير موجود",
+    "CustomerNameRequired": "الاسم الكامل مطلوب",
+    "CustomerEmailRequired": "البريد الإلكتروني مطلوب",
+    "ShippingAddressRequired": "عنوان الشحن مطلوب",
+    "ShippingCityRequired": "المدينة مطلوبة",
+    "LinesRequired": "سلة التسوق فارغة",
+    "InvalidQuantity": "الكمية يجب أن تكون 1 على الأقل",
+    "ProductUnavailable": "أحد المنتجات في سلة التسوق غير متوفر",
+    "OutOfStock": "عذراً، {0} غير متوفر في المخزون"
   }
 }

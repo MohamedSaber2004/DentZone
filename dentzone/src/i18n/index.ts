@@ -61,12 +61,6 @@ export const toggleLocale = () => {
   setLocale(locale.value === 'en' ? 'ar' : 'en')
 }
 
-export const categoryName = (categoryId: string): string =>
-  messages[locale.value].categories[categoryId]?.name ?? categoryId
-
-export const categoryDescription = (categoryId: string): string =>
-  messages[locale.value].categories[categoryId]?.description ?? ''
-
 export const formatPrice = (value: number): string =>
   new Intl.NumberFormat(locale.value === 'ar' ? 'ar-EG' : 'en-US', {
     style: 'currency',

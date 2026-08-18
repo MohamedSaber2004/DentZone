@@ -69,5 +69,33 @@
             public const string OtpEmailSubject = "Auth.OtpEmailSubject";
             public const string OtpEmailBody = "Auth.OtpEmailBody";
         }
+
+        public static class Catalog
+        {
+            public const string ProductNotFound = "Catalog.ProductNotFound";
+            public const string VendorNotFound = "Catalog.VendorNotFound";
+            public const string CategoryNotFound = "Catalog.CategoryNotFound";
+        }
+
+        public static class Wishlist
+        {
+            public const string Added = "Wishlist.Added";
+            public const string Removed = "Wishlist.Removed";
+            public const string Cleared = "Wishlist.Cleared";
+        }
+
+        public static class Orders
+        {
+            public const string Placed = "Orders.Placed";
+            public const string OrderNotFound = "Orders.OrderNotFound";
+            public const string CustomerNameRequired = "Orders.CustomerNameRequired";
+            public const string CustomerEmailRequired = "Orders.CustomerEmailRequired";
+            public const string ShippingAddressRequired = "Orders.ShippingAddressRequired";
+            public const string ShippingCityRequired = "Orders.ShippingCityRequired";
+            public const string LinesRequired = "Orders.LinesRequired";
+            public const string InvalidQuantity = "Orders.InvalidQuantity";
+            public const string ProductUnavailable = "Orders.ProductUnavailable";
+            public const string OutOfStock = "Orders.OutOfStock";
+        }
     }
 }

@@ -11,6 +11,8 @@ namespace DentZone.Application.Common.Interfaces
         DbSet<Advertisement> Advertisements { get; }
         DbSet<Review> Reviews { get; }
         DbSet<WishlistItem> WishlistItems { get; }
+        DbSet<Order> Orders { get; }
+        DbSet<OrderLine> OrderLines { get; }
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     }

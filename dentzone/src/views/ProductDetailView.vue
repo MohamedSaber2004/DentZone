@@ -5,7 +5,7 @@ import { catalogService } from '../application/catalog.service'
 import { cartService } from '../application/cart.service'
 import { toastService } from '../application/toast.service'
 import { wishlistService } from '../application/wishlist.service'
-import { t } from '../i18n'
+import { formatPrice, t } from '../i18n'
 import type { Product } from '../domain/models/product'
 import type { Vendor } from '../domain/models/vendor'
 import ProductImage from '../components/ui/ProductImage.vue'
@@ -26,24 +26,25 @@ const route = useRoute()
 const product = ref<Product | undefined>()
 const relatedProducts = ref<Product[]>([])
 const vendorProducts = ref<Product[]>([])
+const vendor = ref<Vendor | undefined>()
 const quantity = ref(1)
 const loading = ref(true)
 const added = ref(false)
 
-const vendor = computed<Vendor | undefined>(() =>
-  product.value ? catalogService.getVendorById(product.value.vendorId) : undefined,
-)
-
 const wished = computed(() => (product.value ? wishlistService.has(product.value.id) : false))
 
-const toggleWishlist = () => {
+const toggleWishlist = async () => {
   if (!product.value) return
-  const addedToWishlist = wishlistService.toggle(product.value)
-  toastService[addedToWishlist ? 'success' : 'info'](
-    addedToWishlist
-      ? t('wishlist.addedToast', { name: product.value.name })
-      : t('wishlist.removedToast', { name: product.value.name }),
-  )
+  try {
+    const addedToWishlist = await wishlistService.toggle(product.value)
+    toastService[addedToWishlist ? 'success' : 'info'](
+      addedToWishlist
+        ? t('wishlist.addedToast', { name: product.value.name })
+        : t('wishlist.removedToast', { name: product.value.name }),
+    )
+  } catch {
+    toastService.error(t('wishlist.errorToast'))
+  }
 }
 
 const loadProduct = async (slug: string) => {
@@ -51,13 +52,16 @@ const loadProduct = async (slug: string) => {
   product.value = await catalogService.getProductBySlug(slug)
   relatedProducts.value = []
   vendorProducts.value = []
+  vendor.value = undefined
   if (product.value) {
-    const [related, fromVendor] = await Promise.all([
+    const [related, fromVendor, vendorData] = await Promise.all([
       catalogService.getRelatedProducts(product.value),
-      catalogService.getProductsByVendor(product.value.vendorId),
+      catalogService.getProductsByVendor(product.value.vendorSlug),
+      catalogService.getVendorBySlug(product.value.vendorSlug),
     ])
     relatedProducts.value = related
     vendorProducts.value = fromVendor.filter((candidate) => candidate.id !== product.value?.id).slice(0, 4)
+    vendor.value = vendorData
     quantity.value = 1
   }
   loading.value = false
@@ -167,7 +171,7 @@ const addToCart = () => {
           <ul class="detail__trust">
             <li>
               <AppIcon name="truck" :size="16" />
-              {{ t('product.freeShippingOver', { amount: '$50' }) }}
+              {{ t('product.freeShippingOver', { amount: formatPrice(catalogService.settings.value.freeShippingThreshold) }) }}
             </li>
             <li>
               <AppIcon name="refresh" :size="16" />

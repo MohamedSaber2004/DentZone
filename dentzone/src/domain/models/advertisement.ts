@@ -11,3 +11,8 @@ export interface Advertisement {
   eyebrow?: string
   theme?: AdvertisementTheme
 }
+
+export interface Advertisements {
+  hero: Advertisement | undefined
+  secondary: Advertisement[]
+}

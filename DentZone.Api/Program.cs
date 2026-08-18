@@ -8,11 +8,13 @@ using DentZone.Infrastructure;
 using DentZone.Persistence;
 using DentZone.Persistence.Seeding;
 using DentZone_Api.OpenApi;
+using Microsoft.AspNetCore.Http.Json;
 using Microsoft.AspNetCore.Mvc;
 using Scalar.AspNetCore;
 using Serilog;
 using System.Globalization;
 using System.Reflection;
+using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 
 namespace DentZone_Api
@@ -123,6 +125,11 @@ namespace DentZone_Api
             builder.Services.Configure<MvcOptions>(options =>
             {
                 options.Filters.Add<DentZone_Api.Filters.ApiExceptionFilterAttribute>();
+            });
+
+            builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =>
+            {
+                options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
             });
 
             builder.Services.AddOpenApi("v1", options =>
@@ -248,6 +255,7 @@ namespace DentZone_Api
                 try
                 {
                     await AppDbSeeder.SeedAsync(dbContext, logger);
+                    await AppDbSeeder.SeedStoreAsync(dbContext, logger);
                 }
                 catch (Exception ex)
                 {

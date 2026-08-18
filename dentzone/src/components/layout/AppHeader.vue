@@ -4,7 +4,6 @@ import { useRoute, useRouter } from 'vue-router'
 import { cartService } from '../../application/cart.service'
 import { wishlistService } from '../../application/wishlist.service'
 import { authService } from '../../application/auth.service'
-import { toastService } from '../../application/toast.service'
 import { t, toggleLocale } from '../../i18n'
 import { theme, toggleTheme } from '../../application/theme.service'
 import SearchField from '../ui/SearchField.vue'
@@ -37,8 +36,8 @@ const userInitials = computed(() => {
 const navItems = computed(() => [
   { label: t('nav.home'), to: '/' },
   { label: t('nav.shop'), to: '/catalog' },
-  { label: t('nav.whitening'), to: '/catalog?category=cat-whitening' },
-  { label: t('nav.brushes'), to: '/catalog?category=cat-toothbrushes' },
+  { label: t('nav.whitening'), to: '/catalog?category=whitening' },
+  { label: t('nav.brushes'), to: '/catalog?category=toothbrushes' },
 ])
 
 const searchPlaceholder = computed(() => t('nav.searchPlaceholder'))
@@ -94,9 +93,9 @@ const logout = () => {
   void router.push('/')
 }
 
-const ordersComingSoon = () => {
+const ordersLink = () => {
   closeUserMenu()
-  toastService.info(t('auth.ordersComingSoon'))
+  void router.push('/orders')
 }
 </script>
 
@@ -196,7 +195,7 @@ const ordersComingSoon = () => {
               <AppIcon name="heart" :size="16" />
               {{ t('nav.wishlist') }}
             </RouterLink>
-            <button type="button" class="app-header__dropdown-link" @click="ordersComingSoon">
+            <button type="button" class="app-header__dropdown-link" @click="ordersLink">
               <AppIcon name="box" :size="16" />
               {{ t('nav.myOrders') }}
             </button>

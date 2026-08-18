@@ -1,18 +1,12 @@
 import { computed, reactive, watch } from 'vue'
 import type { CartLine, CartSummary } from '../domain/models/cart'
 import type { Product } from '../domain/models/product'
-import { pricing, products } from '../data/mocks/catalog.data'
+import { catalogService } from './catalog.service'
 
 const STORAGE_KEY = 'dentzone.cart.v1'
 
 interface CartState {
   lines: CartLine[]
-}
-
-const rehydrateProduct = (snapshot: Product): Product | undefined => {
-  const current = products.find((product) => product.id === snapshot.id)
-  if (!current) return undefined
-  return current
 }
 
 const loadPersistedLines = (): CartLine[] => {
@@ -21,8 +15,8 @@ const loadPersistedLines = (): CartLine[] => {
     if (!raw) return []
     const parsed = JSON.parse(raw) as CartLine[]
     return parsed.flatMap((line) => {
-      const product = rehydrateProduct(line.product)
-      return product ? [{ product, quantity: Math.max(1, line.quantity) }] : []
+      if (!line?.product?.id) return []
+      return [{ product: line.product, quantity: Math.max(1, line.quantity) }]
     })
   } catch {
     return []
@@ -51,10 +45,11 @@ export class CartService {
 
   readonly shipping = computed<number>(() => {
     if (this.state.lines.length === 0) return 0
-    return this.subtotal.value >= pricing.freeShippingThreshold ? 0 : pricing.shippingCost
+    const settings = catalogService.settings.value
+    return this.subtotal.value >= settings.freeShippingThreshold ? 0 : settings.shippingCost
   })
 
-  readonly tax = computed<number>(() => (this.subtotal.value - this.discount.value) * pricing.taxRate)
+  readonly tax = computed<number>(() => (this.subtotal.value - this.discount.value) * catalogService.settings.value.taxRate)
 
   readonly total = computed<number>(() =>
     Math.max(0, this.subtotal.value - this.discount.value + this.shipping.value + this.tax.value),
@@ -78,6 +73,15 @@ export class CartService {
       },
       { deep: true },
     )
+  }
+
+  hydrate(products: Product[]): void {
+    const current = new Map(products.map((product) => [product.id, product]))
+    this.state.lines = this.state.lines.flatMap((line) => {
+      const product = current.get(line.product.id)
+      if (!product || !product.inStock) return []
+      return [{ product, quantity: Math.min(line.quantity, Math.max(1, product.stockQuantity)) }]
+    })
   }
 
   add(product: Product, quantity = 1): void {

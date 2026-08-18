@@ -15,14 +15,23 @@ const emit = defineEmits<{
   select: [category: Category]
 }>()
 
-const categoryIcons: Record<string, IconName> = {
-  '': 'store',
-  'cat-toothbrushes': 'brush',
-  'cat-toothpaste': 'tube',
-  'cat-mouthwash': 'droplet',
-  'cat-floss': 'floss',
-  'cat-whitening': 'sparkles',
-  'cat-accessories': 'box',
+const FALLBACK_ICON: IconName = 'store'
+
+const fallback = (category: Category): IconName => {
+  switch (category.slug) {
+    case 'toothbrushes':
+      return 'brush'
+    case 'toothpaste':
+      return 'tube'
+    case 'mouthwash':
+      return 'droplet'
+    case 'floss':
+      return 'floss'
+    case 'whitening':
+      return 'sparkles'
+    default:
+      return 'box'
+  }
 }
 </script>
 
@@ -34,7 +43,8 @@ const categoryIcons: Record<string, IconName> = {
     @click="emit('select', category)"
   >
     <span class="category-pill__icon" :style="{ '--tint': category.tint }">
-      <AppIcon :name="categoryIcons[category.id] ?? 'box'" :size="variant === 'card' ? 20 : 15" />
+      <span v-if="category.emoji" class="category-pill__emoji" aria-hidden="true">{{ category.emoji }}</span>
+      <AppIcon v-else :name="category.slug ? fallback(category) : FALLBACK_ICON" :size="variant === 'card' ? 20 : 15" />
     </span>
     <span class="category-pill__label">
       <span class="category-pill__name">{{ category.name }}</span>
@@ -96,6 +106,11 @@ const categoryIcons: Record<string, IconName> = {
   color: var(--dz-primary);
 }
 
+.category-pill__emoji {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
 .category-pill--card {
   flex-direction: column;
   align-items: flex-start;
@@ -125,6 +140,10 @@ const categoryIcons: Record<string, IconName> = {
   height: 3rem;
   border-radius: var(--dz-radius);
   color: var(--dz-primary);
+}
+
+.category-pill--card .category-pill__emoji {
+  font-size: 1.4rem;
 }
 
 .category-pill--card.category-pill--active .category-pill__name {

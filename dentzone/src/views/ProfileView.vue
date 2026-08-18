@@ -2,7 +2,6 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { authService } from '../application/auth.service'
-import { toastService } from '../application/toast.service'
 import { wishlistService } from '../application/wishlist.service'
 import { locale, setLocale, t } from '../i18n'
 import AppInput from '../components/ui/AppInput.vue'
@@ -122,10 +121,6 @@ const savePassword = async () => {
 const logout = () => {
   void authService.logout()
   void router.push('/')
-}
-
-const ordersComingSoon = () => {
-  toastService.info(t('auth.ordersComingSoon'))
 }
 </script>
 
@@ -257,10 +252,10 @@ const ordersComingSoon = () => {
                   {{ wishlistService.count.value }}
                 </span>
               </RouterLink>
-              <button type="button" class="profile__link" @click="ordersComingSoon">
+              <RouterLink to="/orders" class="profile__link">
                 <AppIcon name="box" :size="17" />
                 {{ t('profile.ordersShortcut') }}
-              </button>
+              </RouterLink>
             </nav>
           </section>
 

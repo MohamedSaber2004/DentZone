@@ -29,6 +29,7 @@ export interface OrderTotals {
 
 export interface Order {
   id: string
+  orderNumber: string
   lines: OrderLine[]
   totals: OrderTotals
   customer: CustomerInfo
@@ -36,8 +37,9 @@ export interface Order {
   createdAt: string
 }
 
-export const createOrder = (id: string, lines: CartLine[], totals: OrderTotals, customer: CustomerInfo): Order => ({
+export const createOrder = (id: string, orderNumber: string, lines: CartLine[], totals: OrderTotals, customer: CustomerInfo): Order => ({
   id,
+  orderNumber,
   lines: lines.map((line) => ({
     productId: line.product.id,
     name: line.product.name,

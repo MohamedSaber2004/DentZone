@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import type { Product } from '../../domain/models/product'
 import type { Review } from '../../domain/models/review'
-import { distributionFor, getReviewsByProduct } from '../../data/mocks/reviews.data'
+import { catalogService } from '../../application/catalog.service'
 import { locale, t } from '../../i18n'
 import RatingStars from '../ui/RatingStars.vue'
 import AppBadge from '../ui/AppBadge.vue'
@@ -16,7 +16,14 @@ const props = defineProps<{
 const reviews = ref<Review[]>([])
 const loading = ref(true)
 
-const distribution = computed(() => distributionFor(props.product.rating))
+const distribution = computed(() => {
+  const total = reviews.value.length
+  if (total === 0) return []
+  return [5, 4, 3, 2, 1].map((stars) => {
+    const count = reviews.value.filter((review) => Math.round(review.rating) === stars).length
+    return { stars, percentage: Math.round((count / total) * 100) }
+  })
+})
 
 const averageLabel = computed(() => props.product.rating.toFixed(1))
 const basedOnLabel = computed(() => t('product.reviewsBasedOn', { count: props.product.reviewCount }))
@@ -38,9 +45,13 @@ const initials = (name: string): string =>
 
 const loadReviews = async () => {
   loading.value = true
-  await new Promise((resolve) => setTimeout(resolve, 350))
-  reviews.value = getReviewsByProduct(props.product.id)
-  loading.value = false
+  try {
+    reviews.value = await catalogService.getReviews(props.product.id)
+  } catch {
+    reviews.value = []
+  } finally {
+    loading.value = false
+  }
 }
 
 onMounted(() => {
@@ -80,7 +91,7 @@ onMounted(() => {
             <span class="review__author">{{ review.author }}</span>
             <div class="review__sub">
               <RatingStars :rating="review.rating" size="sm" />
-              <span class="review__date">{{ formatDate(review.date) }}</span>
+              <span class="review__date">{{ formatDate(review.createdAt) }}</span>
             </div>
           </div>
           <AppBadge v-if="review.verifiedPurchase" tone="success">

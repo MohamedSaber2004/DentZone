@@ -39,6 +39,15 @@ namespace DentZone.Domain.Entities
             MarkAsUpdated(updatedBy);
         }
 
+        public void SetHelpfulCount(int helpfulCount, string updatedBy)
+        {
+            if (helpfulCount < 0)
+                throw new ArgumentOutOfRangeException(nameof(helpfulCount), "Helpful count cannot be negative.");
+
+            HelpfulCount = helpfulCount;
+            MarkAsUpdated(updatedBy);
+        }
+
         private static int ValidateRating(int rating)
         {
             if (rating < 1 || rating > 5)

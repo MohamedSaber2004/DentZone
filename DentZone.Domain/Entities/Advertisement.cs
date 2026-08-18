@@ -17,11 +17,13 @@ namespace DentZone.Domain.Entities
         public string? EyebrowEn { get; private set; }
         public string? EyebrowAr { get; private set; }
         public AdvertisementTheme Theme { get; private set; }
+        public bool IsHero { get; private set; }
 
         public static Advertisement Create(string titleEn, string titleAr, string image,
             string? descriptionEn = null, string? descriptionAr = null, string? mobileImage = null,
             string? ctaLabelEn = null, string? ctaLabelAr = null, string? ctaTo = null,
-            string? eyebrowEn = null, string? eyebrowAr = null, AdvertisementTheme theme = AdvertisementTheme.Dark) => new()
+            string? eyebrowEn = null, string? eyebrowAr = null, AdvertisementTheme theme = AdvertisementTheme.Dark,
+            bool isHero = false) => new()
         {
             TitleEn = ValidateTitle(titleEn, nameof(titleEn)),
             TitleAr = ValidateTitle(titleAr, nameof(titleAr)),
@@ -34,13 +36,14 @@ namespace DentZone.Domain.Entities
             CtaTo = ctaTo,
             EyebrowEn = eyebrowEn,
             EyebrowAr = eyebrowAr,
-            Theme = theme
+            Theme = theme,
+            IsHero = isHero
         };
 
         public void Update(string titleEn, string titleAr, string image,
             string? descriptionEn, string? descriptionAr, string? mobileImage,
             string? ctaLabelEn, string? ctaLabelAr, string? ctaTo,
-            string? eyebrowEn, string? eyebrowAr, AdvertisementTheme theme, string updatedBy)
+            string? eyebrowEn, string? eyebrowAr, AdvertisementTheme theme, bool isHero, string updatedBy)
         {
             TitleEn = ValidateTitle(titleEn, nameof(titleEn));
             TitleAr = ValidateTitle(titleAr, nameof(titleAr));
@@ -54,6 +57,7 @@ namespace DentZone.Domain.Entities
             EyebrowEn = eyebrowEn;
             EyebrowAr = eyebrowAr;
             Theme = theme;
+            IsHero = isHero;
             MarkAsUpdated(updatedBy);
         }
 

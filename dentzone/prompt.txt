@@ -1,6 +1,11 @@
-﻿Failed to load resource: the server responded with a status of 401 ()
-localhost:44361/api/v1/auth/profile:1  Failed to load resource: the server responded with a status of 401 ()
-localhost:44361/api/v1/auth/refresh-token:1  Failed to load resource: the server responded with a status of 415 ()
-index-DIWQPU0Y.js:3 Uncaught (in promise) ApiError: وصول غير مصرح به
-    at u (index-DIWQPU0Y.js:3:28741)
-    at async Ti (index-DIWQPU0Y.js:3:27144)
+﻿{
+    "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+    "title": "One or more validation errors occurred.",
+    "status": 400,
+    "errors": {
+        "$.language": [
+            "The JSON value could not be converted to System.Nullable`1[DentZone.Domain.Enums.LanguageCode]. Path: $.language | LineNumber: 0 | BytePositionInLine: 134."
+        ]
+    },
+    "traceId": "00-ca270aaef60fbcd363ec3e2b0f71235f-f538ec61fd098f9d-00"
+}

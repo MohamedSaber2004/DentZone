@@ -5,4 +5,5 @@ export interface Category {
   description: string
   emoji: string
   tint: string
+  productCount?: number
 }

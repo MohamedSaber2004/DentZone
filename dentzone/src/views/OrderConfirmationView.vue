@@ -14,14 +14,24 @@ import EmptyState from '../components/ui/EmptyState.vue'
 const route = useRoute()
 
 const order = ref<Order | undefined>()
+const loading = ref(true)
 
 const orderId = computed(() => String(route.params.id ?? ''))
 
-const loadOrder = () => {
-  order.value = orderService.getOrderById(orderId.value)
+const loadOrder = async () => {
+  loading.value = true
+  try {
+    order.value = await orderService.getOrderById(orderId.value)
+  } catch {
+    order.value = undefined
+  } finally {
+    loading.value = false
+  }
 }
 
-onMounted(loadOrder)
+onMounted(() => {
+  void loadOrder()
+})
 
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString(locale.value === 'ar' ? 'ar-EG' : 'en-US', {
@@ -50,8 +60,12 @@ const linesAsOrderLines = (order: Order): OrderLineView[] =>
 
 <template>
   <div class="container page">
+    <div v-if="loading" class="confirm__loading" role="status">
+      <AppSpinner size="lg" :label="t('confirmation.loading')" />
+    </div>
+
     <EmptyState
-      v-if="!order"
+      v-else-if="!order"
       icon="alert-circle"
       :title="t('confirmation.notFoundTitle')"
       :description="t('confirmation.notFoundDescription')"
@@ -70,7 +84,7 @@ const linesAsOrderLines = (order: Order): OrderLineView[] =>
         </span>
         <h1 class="confirm__title">{{ t('confirmation.thankYou', { name: order.customer.name.split(' ')[0] ?? '' }) }}</h1>
         <p class="confirm__subtitle">
-          {{ t('confirmation.placedSuccessfully', { id: order.id }) }}
+          {{ t('confirmation.placedSuccessfully', { id: order.orderNumber }) }}
           <br />
           {{ t('confirmation.confirmationEmail', { email: order.customer.email }) }}
         </p>
@@ -105,7 +119,7 @@ const linesAsOrderLines = (order: Order): OrderLineView[] =>
 
       <div class="confirm__meta">
         <span class="confirm__meta-item">{{ t('confirmation.placedOn', { date: formatDate(order.createdAt) }) }}</span>
-        <span class="confirm__meta-item">{{ t('confirmation.orderId', { id: order.id }) }}</span>
+        <span class="confirm__meta-item">{{ t('confirmation.orderId', { id: order.orderNumber }) }}</span>
       </div>
 
       <div class="confirm__actions">
@@ -124,6 +138,12 @@ const linesAsOrderLines = (order: Order): OrderLineView[] =>
   align-items: center;
   text-align: center;
   padding: 3rem 1rem 2rem;
+}
+
+.confirm__loading {
+  display: flex;
+  justify-content: center;
+  padding: 4rem 0;
 }
 
 .confirm__icon {

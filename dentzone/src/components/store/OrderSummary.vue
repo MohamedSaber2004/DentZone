@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { pricing } from '../../data/mocks/catalog.data'
+import { catalogService } from '../../application/catalog.service'
 import { formatPrice, t } from '../../i18n'
 import AppIcon from '../ui/AppIcon.vue'
 
@@ -13,12 +13,12 @@ const props = defineProps<{
   showShippingNote?: boolean
 }>()
 
-const remainingForFreeShipping = computed(() => Math.max(0, pricing.freeShippingThreshold - props.subtotal))
-const freeShippingProgress = computed(() =>
-  Math.min(100, Math.round((props.subtotal / pricing.freeShippingThreshold) * 100)),
-)
+const threshold = computed(() => catalogService.settings.value.freeShippingThreshold)
+
+const remainingForFreeShipping = computed(() => Math.max(0, threshold.value - props.subtotal))
+const freeShippingProgress = computed(() => Math.min(100, Math.round((props.subtotal / threshold.value) * 100)))
 const freeShippingUnlocked = computed(() => remainingForFreeShipping.value === 0)
-const taxRate = Math.round(pricing.taxRate * 100)
+const taxRate = Math.round(catalogService.settings.value.taxRate * 100)
 </script>
 
 <template>

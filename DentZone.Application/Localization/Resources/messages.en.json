@@ -58,5 +58,27 @@
     "LogoutSuccess": "You have been signed out",
     "OtpEmailSubject": "DentZone – Password Reset Code",
     "OtpEmailBody": "Hello {0},<br/><br/>Your verification code is <b>{1}</b>.<br/>The code is valid for {2} minutes."
+  },
+  "Catalog": {
+    "ProductNotFound": "Product not found",
+    "VendorNotFound": "Vendor not found",
+    "CategoryNotFound": "Category not found"
+  },
+  "Wishlist": {
+    "Added": "Added to your wishlist",
+    "Removed": "Removed from your wishlist",
+    "Cleared": "Wishlist cleared"
+  },
+  "Orders": {
+    "Placed": "Order placed successfully",
+    "OrderNotFound": "Order not found",
+    "CustomerNameRequired": "Full name is required",
+    "CustomerEmailRequired": "Email is required",
+    "ShippingAddressRequired": "Shipping address is required",
+    "ShippingCityRequired": "City is required",
+    "LinesRequired": "Your cart is empty",
+    "InvalidQuantity": "Quantity must be at least 1",
+    "ProductUnavailable": "One or more items in your cart are no longer available",
+    "OutOfStock": "Sorry, {0} is out of stock"
   }
 }

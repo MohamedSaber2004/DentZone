@@ -10,6 +10,7 @@ namespace DentZone.Persistence.Seeding
     public static class AppDbSeeder
     {
         private const string SeedingFileName = "Seeding/Data/seed-users.json";
+        private const string StoreSeedingFileName = "Seeding/Data/seed-store.json";
 
         public static async Task SeedAsync(DentZoneContext context, ILogger logger, CancellationToken cancellationToken = default)
         {
@@ -135,6 +136,148 @@ namespace DentZone.Persistence.Seeding
 
                     logger.LogInformation("Assigned role {RoleName} to user {Email}.", roleName, user.Email);
                 }
+            }
+
+            await context.SaveChangesAsync(cancellationToken);
+        }
+
+        public static async Task SeedStoreAsync(DentZoneContext context, ILogger logger, CancellationToken cancellationToken = default)
+        {
+            var seedPath = Path.Combine(AppContext.BaseDirectory, StoreSeedingFileName);
+            if (!File.Exists(seedPath))
+            {
+                logger.LogWarning("Store seeding file not found at {SeedPath}. Skipping store seeding.", seedPath);
+                return;
+            }
+
+            var json = await File.ReadAllTextAsync(seedPath, cancellationToken);
+            var seedingData = JsonSerializer.Deserialize<StoreSeedingData>(json, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
+            });
+
+            if (seedingData is null)
+            {
+                logger.LogWarning("No store seed data found. Skipping store seeding.");
+                return;
+            }
+
+            var categoryIdsBySlug = new Dictionary<string, Guid>();
+            foreach (var categoryData in seedingData.Categories)
+            {
+                var existing = await context.Categories.FirstOrDefaultAsync(c => c.Slug == categoryData.Slug, cancellationToken);
+                if (existing is not null)
+                {
+                    categoryIdsBySlug[categoryData.Slug] = existing.Id;
+                    logger.LogInformation("Seed category {Slug} already exists. Skipping.", categoryData.Slug);
+                    continue;
+                }
+
+                var category = Category.Create(categoryData.NameEn, categoryData.NameAr, categoryData.Slug,
+                    categoryData.DescriptionEn, categoryData.DescriptionAr, categoryData.Emoji, categoryData.Tint);
+                await context.Categories.AddAsync(category, cancellationToken);
+                await context.SaveChangesAsync(cancellationToken);
+                categoryIdsBySlug[categoryData.Slug] = category.Id;
+                logger.LogInformation("Seeding category {Slug} created.", categoryData.Slug);
+            }
+
+            var vendorIdsBySlug = new Dictionary<string, Guid>();
+            foreach (var vendorData in seedingData.Vendors)
+            {
+                var existing = await context.Vendors.FirstOrDefaultAsync(v => v.Slug == vendorData.Slug, cancellationToken);
+                if (existing is not null)
+                {
+                    vendorIdsBySlug[vendorData.Slug] = existing.Id;
+                    logger.LogInformation("Seed vendor {Slug} already exists. Skipping.", vendorData.Slug);
+                    continue;
+                }
+
+                var vendor = Vendor.Create(vendorData.NameEn, vendorData.NameAr, vendorData.Slug,
+                    vendorData.TaglineEn, vendorData.TaglineAr, vendorData.DescriptionEn, vendorData.DescriptionAr,
+                    vendorData.Emoji, vendorData.Tint, vendorData.Verified);
+                vendor.UpdateRating(vendorData.Rating, vendorData.ReviewCount, "system");
+                await context.Vendors.AddAsync(vendor, cancellationToken);
+                await context.SaveChangesAsync(cancellationToken);
+                vendorIdsBySlug[vendorData.Slug] = vendor.Id;
+                logger.LogInformation("Seeding vendor {Slug} created.", vendorData.Slug);
+            }
+
+            var productIdsById = new Dictionary<Guid, Guid>();
+            foreach (var productData in seedingData.Products)
+            {
+                var existing = await context.Products.FirstOrDefaultAsync(p => p.Slug == productData.Slug, cancellationToken);
+                if (existing is not null)
+                {
+                    productIdsById[productData.Id] = existing.Id;
+                    logger.LogInformation("Seed product {Slug} already exists. Skipping.", productData.Slug);
+                    continue;
+                }
+
+                var categoryId = categoryIdsBySlug.TryGetValue(productData.CategorySlug ?? string.Empty, out var foundCategory)
+                    ? foundCategory
+                    : Guid.Empty;
+                var vendorId = vendorIdsBySlug.TryGetValue(productData.VendorSlug ?? string.Empty, out var foundVendor)
+                    ? foundVendor
+                    : Guid.Empty;
+
+                if (categoryId == Guid.Empty || vendorId == Guid.Empty)
+                {
+                    logger.LogWarning("Seed product {Slug} skipped: category or vendor not found.", productData.Slug);
+                    continue;
+                }
+
+                var product = Product.Create(productData.Slug, productData.NameEn, productData.NameAr,
+                    productData.TaglineEn, productData.TaglineAr, productData.DescriptionEn, productData.DescriptionAr,
+                    productData.Brand, productData.Price, productData.CompareAtPrice, productData.StockQuantity,
+                    productData.Image, categoryId, vendorId, productData.Features,
+                    productData.IsFeatured, productData.IsBestseller, productData.Badge);
+                product.UpdateRating(productData.Rating, productData.ReviewCount, "system");
+                await context.Products.AddAsync(product, cancellationToken);
+                await context.SaveChangesAsync(cancellationToken);
+                productIdsById[productData.Id] = product.Id;
+                logger.LogInformation("Seeding product {Slug} created.", productData.Slug);
+            }
+
+            foreach (var advertisementData in seedingData.Advertisements)
+            {
+                var existing = await context.Advertisements.FindAsync(new object[] { advertisementData.Id }, cancellationToken);
+                if (existing is not null)
+                {
+                    logger.LogInformation("Seed advertisement {Id} already exists. Skipping.", advertisementData.Id);
+                    continue;
+                }
+
+                var advertisement = Advertisement.Create(advertisementData.TitleEn, advertisementData.TitleAr,
+                    advertisementData.Image, advertisementData.DescriptionEn, advertisementData.DescriptionAr,
+                    advertisementData.MobileImage, advertisementData.CtaLabelEn, advertisementData.CtaLabelAr,
+                    advertisementData.CtaTo, advertisementData.EyebrowEn, advertisementData.EyebrowAr,
+                    advertisementData.Theme, advertisementData.IsHero);
+                await context.Advertisements.AddAsync(advertisement, cancellationToken);
+                await context.SaveChangesAsync(cancellationToken);
+                logger.LogInformation("Seeding advertisement {Id} created.", advertisementData.Id);
+            }
+
+            foreach (var reviewData in seedingData.Reviews)
+            {
+                var existing = await context.Reviews.FindAsync(new object[] { reviewData.Id }, cancellationToken);
+                if (existing is not null)
+                {
+                    logger.LogInformation("Seed review {Id} already exists. Skipping.", reviewData.Id);
+                    continue;
+                }
+
+                if (!productIdsById.TryGetValue(reviewData.ProductId, out var productId))
+                {
+                    logger.LogWarning("Seed review {Id} skipped: product not found.", reviewData.Id);
+                    continue;
+                }
+
+                var review = Review.Create(productId, reviewData.Rating, reviewData.Content,
+                    reviewData.AuthorName, null, reviewData.VerifiedPurchase);
+                review.SetHelpfulCount(reviewData.HelpfulCount, "system");
+                await context.Reviews.AddAsync(review, cancellationToken);
+                logger.LogInformation("Seeding review {Id} created.", reviewData.Id);
             }
 
             await context.SaveChangesAsync(cancellationToken);

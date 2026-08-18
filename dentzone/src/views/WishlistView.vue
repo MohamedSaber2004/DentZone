@@ -1,15 +1,28 @@
 <script setup lang="ts">
+import { onMounted, ref } from 'vue'
 import { wishlistService } from '../application/wishlist.service'
 import { toastService } from '../application/toast.service'
 import { t } from '../i18n'
 import ProductGrid from '../components/store/ProductGrid.vue'
 import EmptyState from '../components/ui/EmptyState.vue'
 import AppButton from '../components/ui/AppButton.vue'
+import AppSpinner from '../components/ui/AppSpinner.vue'
 import SectionHeader from '../components/ui/SectionHeader.vue'
 
-const clearWishlist = () => {
-  wishlistService.clear()
-  toastService.info(t('wishlist.clearedToast'))
+const loading = ref(true)
+
+onMounted(async () => {
+  await wishlistService.refresh()
+  loading.value = false
+})
+
+const clearWishlist = async () => {
+  try {
+    await wishlistService.clear()
+    toastService.info(t('wishlist.clearedToast'))
+  } catch {
+    toastService.error(t('wishlist.errorToast'))
+  }
 }
 </script>
 
@@ -23,7 +36,11 @@ const clearWishlist = () => {
       </template>
     </SectionHeader>
 
-    <ProductGrid v-if="wishlistService.count.value > 0" :products="wishlistService.items.value" />
+    <div v-if="loading" class="wishlist__loading" role="status">
+      <AppSpinner size="lg" :label="t('wishlist.loading')" />
+    </div>
+
+    <ProductGrid v-else-if="wishlistService.count.value > 0" :products="wishlistService.items.value" />
 
     <EmptyState
       v-else
@@ -39,3 +56,11 @@ const clearWishlist = () => {
     </EmptyState>
   </div>
 </template>
+
+<style scoped>
+.wishlist__loading {
+  display: flex;
+  justify-content: center;
+  padding: 4rem 0;
+}
+</style>

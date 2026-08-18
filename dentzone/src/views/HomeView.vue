@@ -3,8 +3,8 @@ import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { catalogService } from '../application/catalog.service'
 import { advertisementService } from '../application/advertisement.service'
-import { pricing } from '../data/mocks/catalog.data'
-import { categoryName, categoryDescription, formatPrice, t } from '../i18n'
+import { cartService } from '../application/cart.service'
+import { formatPrice, t } from '../i18n'
 import SectionHeader from '../components/ui/SectionHeader.vue'
 import CategoryPill from '../components/ui/CategoryPill.vue'
 import ProductGrid from '../components/store/ProductGrid.vue'
@@ -23,20 +23,26 @@ const heroAd = computed(() => advertisementService.hero.value)
 const secondaryAds = computed(() => advertisementService.secondary.value)
 
 onMounted(() => {
-  void catalogService.init()
+  void (async () => {
+    await catalogService.init()
+    if (cartService.itemCount.value > 0) {
+      cartService.hydrate(await catalogService.getAllProducts())
+    }
+    void advertisementService.load()
+  })()
 })
 
-const selectCategory = (categoryId: string) => {
-  void router.push({ path: '/vendors', query: { category: categoryId } })
+const selectCategory = (categorySlug: string) => {
+  void router.push({ path: '/vendors', query: { category: categorySlug } })
 }
 
-const formattedThreshold = computed(() => formatPrice(pricing.freeShippingThreshold))
+const formattedThreshold = computed(() => formatPrice(catalogService.settings.value.freeShippingThreshold))
 
 const valueProps = computed(() => [
   {
     icon: 'truck' as const,
     title: t('home.freeShipping'),
-    description: t('home.freeShippingDesc', { amount: formatPrice(pricing.freeShippingThreshold) }),
+    description: t('home.freeShippingDesc', { amount: formatPrice(catalogService.settings.value.freeShippingThreshold) }),
   },
   {
     icon: 'shield-check' as const,
@@ -87,9 +93,9 @@ const valueProps = computed(() => [
         <CategoryPill
           v-for="category in catalogService.categories.value"
           :key="category.id"
-          :category="{ ...category, name: categoryName(category.id), description: categoryDescription(category.id) }"
+          :category="category"
           variant="card"
-          @select="selectCategory(category.id)"
+          @select="selectCategory(category.slug)"
         />
       </div>
       <div v-else class="home__loading" role="status">

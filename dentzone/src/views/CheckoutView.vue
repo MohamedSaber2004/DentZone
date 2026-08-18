@@ -1,17 +1,21 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { cartService } from '../application/cart.service'
 import { orderService } from '../application/order.service'
 import { toastService } from '../application/toast.service'
+import { authService } from '../application/auth.service'
 import { t } from '../i18n'
 import AppInput from '../components/ui/AppInput.vue'
 import AppButton from '../components/ui/AppButton.vue'
 import OrderSummary from '../components/store/OrderSummary.vue'
 import OrderLinesList from '../components/store/OrderLinesList.vue'
 import EmptyState from '../components/ui/EmptyState.vue'
+import AppIcon from '../components/ui/AppIcon.vue'
 
 const router = useRouter()
+
+const isAuthenticated = authService.isAuthenticated
 
 const form = reactive({
   name: '',
@@ -32,6 +36,15 @@ const errors = reactive({
 
 const submitting = ref(false)
 
+onMounted(() => {
+  const user = authService.user.value
+  if (user) {
+    if (!form.name) form.name = `${user.firstName} ${user.lastName}`.trim()
+    if (!form.email) form.email = user.email
+    if (!form.phone && user.phone) form.phone = user.phone
+  }
+})
+
 const validate = (): boolean => {
   errors.name = form.name.trim().length < 3 ? t('checkout.errName') : ''
   errors.email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) ? '' : t('checkout.errEmail')
@@ -41,23 +54,29 @@ const validate = (): boolean => {
   return Object.values(errors).every((error) => error === '')
 }
 
-const placeOrder = () => {
+const placeOrder = async () => {
   if (submitting.value) return
   if (!validate()) {
     toastService.error(t('checkout.errFixFields'))
     return
   }
   submitting.value = true
-  const order = orderService.placeOrder({
-    name: form.name.trim(),
-    email: form.email.trim(),
-    phone: form.phone.trim(),
-    address: form.address.trim(),
-    city: form.city.trim(),
-    notes: form.notes.trim() || undefined,
-  })
-  toastService.success(t('checkout.orderPlaced', { id: order.id }))
-  void router.push({ path: `/order/${order.id}` })
+  try {
+    const order = await orderService.placeOrder({
+      name: form.name.trim(),
+      email: form.email.trim(),
+      phone: form.phone.trim(),
+      address: form.address.trim(),
+      city: form.city.trim(),
+      notes: form.notes.trim() || undefined,
+    })
+    toastService.success(t('checkout.orderPlaced', { id: order.orderNumber }))
+    void router.push({ path: `/order/${order.id}` })
+  } catch {
+    toastService.error(t('checkout.orderFailed'))
+  } finally {
+    submitting.value = false
+  }
 }
 </script>
 
@@ -83,7 +102,20 @@ const placeOrder = () => {
     </nav>
 
     <EmptyState
-      v-if="cartService.lines.value.length === 0"
+      v-if="!isAuthenticated"
+      icon="user"
+      :title="t('checkout.signInRequired')"
+      :description="t('checkout.signInDescription')"
+    >
+      <template #action>
+        <RouterLink to="/auth/login" :query="{ redirect: '/checkout' }">
+          <AppButton><AppIcon name="user" :size="16" /> {{ t('checkout.signIn') }}</AppButton>
+        </RouterLink>
+      </template>
+    </EmptyState>
+
+    <EmptyState
+      v-else-if="cartService.lines.value.length === 0"
       icon="cart"
       :title="t('checkout.nothingToCheckout')"
       :description="t('checkout.emptyDescription')"
@@ -100,17 +132,17 @@ const placeOrder = () => {
         <section class="checkout__section">
           <h2 class="checkout__heading">{{ t('checkout.contactDetails') }}</h2>
           <div class="checkout__grid">
-            <AppInput v-model="form.name" :label="t('checkout.fullName')" placeholder="Sarah Johnson" required :error="errors.name" autocomplete="name" class="checkout__full" />
-            <AppInput v-model="form.email" :label="t('checkout.emailAddress')" type="email" placeholder="sarah@example.com" required :error="errors.email" autocomplete="email" class="checkout__full" />
-            <AppInput v-model="form.phone" :label="t('checkout.phoneNumber')" type="tel" placeholder="+1 555 000 0000" required :error="errors.phone" autocomplete="tel" class="checkout__full" />
+            <AppInput v-model="form.name" :label="t('checkout.fullName')" :placeholder="t('checkout.namePlaceholder')" required :error="errors.name" autocomplete="name" class="checkout__full" />
+            <AppInput v-model="form.email" :label="t('checkout.emailAddress')" type="email" :placeholder="t('checkout.emailPlaceholder')" required :error="errors.email" autocomplete="email" class="checkout__full" />
+            <AppInput v-model="form.phone" :label="t('checkout.phoneNumber')" type="tel" :placeholder="t('checkout.phonePlaceholder')" required :error="errors.phone" autocomplete="tel" class="checkout__full" />
           </div>
         </section>
 
         <section class="checkout__section">
           <h2 class="checkout__heading">{{ t('checkout.shippingAddress') }}</h2>
           <div class="checkout__grid">
-            <AppInput v-model="form.address" :label="t('checkout.streetAddress')" placeholder="221B Baker Street" required :error="errors.address" autocomplete="street-address" class="checkout__full" />
-            <AppInput v-model="form.city" :label="t('checkout.city')" placeholder="New York" required :error="errors.city" autocomplete="address-level2" />
+            <AppInput v-model="form.address" :label="t('checkout.streetAddress')" :placeholder="t('checkout.addressPlaceholder')" required :error="errors.address" autocomplete="street-address" class="checkout__full" />
+            <AppInput v-model="form.city" :label="t('checkout.city')" :placeholder="t('checkout.cityPlaceholder')" required :error="errors.city" autocomplete="address-level2" />
             <AppInput v-model="form.notes" :label="t('checkout.orderNotes')" :placeholder="t('checkout.notesPlaceholder')" />
           </div>
         </section>

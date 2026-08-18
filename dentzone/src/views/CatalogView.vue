@@ -3,7 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { catalogService } from '../application/catalog.service'
 import type { Product, ProductSort } from '../domain/models/product'
-import { categoryName, categoryDescription, t } from '../i18n'
+import { t } from '../i18n'
 import SectionHeader from '../components/ui/SectionHeader.vue'
 import CategoryPill from '../components/ui/CategoryPill.vue'
 import ProductGrid from '../components/store/ProductGrid.vue'
@@ -32,7 +32,9 @@ const sortOptions = computed<SelectOption[]>(() => [
 ])
 
 const pageTitle = computed(() =>
-  activeCategory.value ? categoryName(activeCategory.value) : t('catalog.shopAllProducts'),
+  activeCategory.value
+    ? catalogService.getCategoryBySlug(activeCategory.value)?.name ?? t('catalog.shopAllProducts')
+    : t('catalog.shopAllProducts'),
 )
 
 const pageSubtitle = computed(() => t('catalog.productsAvailable', { count: filteredCount.value }))
@@ -40,7 +42,7 @@ const pageSubtitle = computed(() => t('catalog.productsAvailable', { count: filt
 const loadProducts = async () => {
   loading.value = true
   products.value = await catalogService.getProducts({
-    categoryId: activeCategory.value || undefined,
+    categorySlug: activeCategory.value || undefined,
     search: searchQuery.value || undefined,
     sort: sort.value,
   })
@@ -55,11 +57,11 @@ watch([activeCategory, sort], () => {
   void loadProducts()
 })
 
-const selectCategory = (categoryId: string) => {
+const selectCategory = (categorySlug: string) => {
   void router.push({
     path: '/catalog',
-    query: categoryId
-      ? { category: categoryId, ...(searchQuery.value ? { q: searchQuery.value } : {}) }
+    query: categorySlug
+      ? { category: categorySlug, ...(searchQuery.value ? { q: searchQuery.value } : {}) }
       : searchQuery.value
         ? { q: searchQuery.value }
         : {},
@@ -108,9 +110,9 @@ const filteredCount = computed(() => products.value.length)
         <CategoryPill
           v-for="category in catalogService.categories.value"
           :key="category.id"
-          :category="{ ...category, name: categoryName(category.id), description: categoryDescription(category.id) }"
-          :active="activeCategory === category.id"
-          @select="selectCategory(category.id)"
+          :category="category"
+          :active="activeCategory === category.slug"
+          @select="selectCategory(category.slug)"
         />
       </div>
 

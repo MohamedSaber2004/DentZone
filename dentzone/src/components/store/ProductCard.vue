@@ -25,25 +25,29 @@ const wished = computed(() => wishlistService.has(props.product.id))
 
 const addToCart = () => {
   if (!props.product.inStock) {
-    toastService.error(`${props.product.name} is currently out of stock`)
+    toastService.error(t('product.outOfStockToast', { name: props.product.name }))
     return
   }
   cartService.add(props.product)
   added.value = true
-  toastService.success(`${props.product.name} added to cart`)
+  toastService.success(t('product.addToast', { name: props.product.name }))
   if (addedTimer) clearTimeout(addedTimer)
   addedTimer = setTimeout(() => {
     added.value = false
   }, 1200)
 }
 
-const toggleWishlist = () => {
-  const addedToWishlist = wishlistService.toggle(props.product)
-  toastService[addedToWishlist ? 'success' : 'info'](
-    addedToWishlist
-      ? t('wishlist.addedToast', { name: props.product.name })
-      : t('wishlist.removedToast', { name: props.product.name }),
-  )
+const toggleWishlist = async () => {
+  try {
+    const addedToWishlist = await wishlistService.toggle(props.product)
+    toastService[addedToWishlist ? 'success' : 'info'](
+      addedToWishlist
+        ? t('wishlist.addedToast', { name: props.product.name })
+        : t('wishlist.removedToast', { name: props.product.name }),
+    )
+  } catch {
+    toastService.error(t('wishlist.errorToast'))
+  }
 }
 
 const viewProduct = () => {
@@ -91,7 +95,7 @@ const viewProduct = () => {
 
     <div class="product-card__body">
       <div class="product-card__top">
-        <AppBadge v-if="!product.inStock" tone="neutral">Out of stock</AppBadge>
+        <AppBadge v-if="!product.inStock" tone="neutral">{{ t('product.outOfStock') }}</AppBadge>
         <span class="product-card__brand">{{ product.brand }}</span>
       </div>
 

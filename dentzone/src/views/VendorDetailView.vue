@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { catalogService } from '../application/catalog.service'
 import type { Product, ProductSort } from '../domain/models/product'
 import type { Vendor } from '../domain/models/vendor'
-import { categoryName, t } from '../i18n'
+import { t } from '../i18n'
 import ProductGrid from '../components/store/ProductGrid.vue'
 import AppSpinner from '../components/ui/AppSpinner.vue'
 import EmptyState from '../components/ui/EmptyState.vue'
@@ -40,17 +40,20 @@ const sortOptions = computed<SelectOption[]>(() => [
 const productLabel = computed(() => t('vendors.productCount', { count: products.value.length }))
 
 const categoriesOfVendor = computed(() => {
-  const ids = [...new Set(allProducts.value.map((product) => product.categoryId))]
-  return ids.map((id) => ({ id, name: categoryName(id) }))
+  const slugs = [...new Set(allProducts.value.map((product) => product.categorySlug))]
+  return slugs.map((slug) => ({
+    slug,
+    name: catalogService.getCategoryBySlug(slug)?.name ?? slug,
+  }))
 })
 
 const loadVendor = async (slug: string) => {
   loading.value = true
   vendor.value = await catalogService.getVendorBySlug(slug)
   if (vendor.value) {
-    allProducts.value = await catalogService.getProductsByVendor(vendor.value.id)
-    products.value = await catalogService.getProductsByVendor(vendor.value.id, {
-      categoryId: activeCategory.value || undefined,
+    allProducts.value = await catalogService.getProductsByVendor(vendor.value.slug)
+    products.value = await catalogService.getProductsByVendor(vendor.value.slug, {
+      categorySlug: activeCategory.value || undefined,
       sort: sort.value,
     })
   } else {
@@ -63,8 +66,8 @@ const loadVendor = async (slug: string) => {
 const reloadProducts = async () => {
   if (!vendor.value) return
   loading.value = true
-  products.value = await catalogService.getProductsByVendor(vendor.value.id, {
-    categoryId: activeCategory.value || undefined,
+  products.value = await catalogService.getProductsByVendor(vendor.value.slug, {
+    categorySlug: activeCategory.value || undefined,
     sort: sort.value,
   })
   loading.value = false
@@ -85,9 +88,9 @@ watch([activeCategory, sort], () => {
   void reloadProducts()
 })
 
-const selectCategory = (categoryId: string) => {
+const selectCategory = (categorySlug: string) => {
   const query: Record<string, string> = {}
-  if (categoryId) query.category = categoryId
+  if (categorySlug) query.category = categorySlug
   if (sort.value !== 'featured') query.sort = sort.value
   void router.replace({ path: `/vendor/${route.params.slug}`, query })
 }
@@ -163,7 +166,11 @@ const showAllProducts = () => {
 
       <section class="vendor__products">
         <SectionHeader
-          :title="activeCategory ? categoryName(activeCategory) : t('vendors.productsTitle', { name: vendor.name })"
+          :title="
+            activeCategory
+              ? catalogService.getCategoryBySlug(activeCategory)?.name ?? activeCategory
+              : t('vendors.productsTitle', { name: vendor.name })
+          "
           :subtitle="productLabel"
         />
 
@@ -180,12 +187,12 @@ const showAllProducts = () => {
             </button>
             <button
               v-for="category in categoriesOfVendor"
-              :key="category.id"
+              :key="category.slug"
               type="button"
               class="vendor__pill"
-              :class="{ 'vendor__pill--active': activeCategory === category.id }"
-              :aria-pressed="activeCategory === category.id"
-              @click="selectCategory(category.id)"
+              :class="{ 'vendor__pill--active': activeCategory === category.slug }"
+              :aria-pressed="activeCategory === category.slug"
+              @click="selectCategory(category.slug)"
             >
               {{ category.name }}
             </button>

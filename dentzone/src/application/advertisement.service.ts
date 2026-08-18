@@ -1,12 +1,26 @@
-import { computed } from 'vue'
+import { ref } from 'vue'
 import type { Advertisement } from '../domain/models/advertisement'
-import { advertisements } from '../data/mocks/advertisements.data'
-import { locale } from '../i18n'
+import { catalogService } from './catalog.service'
 
 export class AdvertisementService {
-  readonly hero = computed<Advertisement | undefined>(() => advertisements[locale.value].hero)
+  readonly hero = ref<Advertisement | undefined>(undefined)
 
-  readonly secondary = computed<Advertisement[]>(() => advertisements[locale.value].secondary)
+  readonly secondary = ref<Advertisement[]>([])
+
+  private loaded = false
+
+  async load(): Promise<void> {
+    if (this.loaded) return
+    try {
+      const advertisements = await catalogService.getAdvertisements()
+      this.hero.value = advertisements.hero
+      this.secondary.value = advertisements.secondary
+      this.loaded = true
+    } catch {
+      this.hero.value = undefined
+      this.secondary.value = []
+    }
+  }
 }
 
 export const advertisementService = new AdvertisementService()

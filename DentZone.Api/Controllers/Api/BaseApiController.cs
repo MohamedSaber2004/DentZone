@@ -1,5 +1,6 @@
 ﻿using DentZone.Application.Common.Models;
 using DentZone.Application.Localization;
+using DentZone.Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -15,6 +16,12 @@ namespace DentZone_Api.Controllers.Api
         {
             _mediator = mediator;
             _localizationProvider = localizationProvider;
+        }
+
+        protected LanguageCode ResolveLanguage()
+        {
+            var header = Request.Headers.AcceptLanguage.ToString();
+            return header.Contains("ar", StringComparison.OrdinalIgnoreCase) ? LanguageCode.ar : LanguageCode.en;
         }
 
         protected IActionResult Ok(string message) => base.Ok(ApiResponse<string>.Ok(null, message ?? _localizationProvider.GetLocalizedString(LocalizationKeys.ActionResults.Ok)));

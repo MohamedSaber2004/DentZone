@@ -7,7 +7,9 @@ export interface Product {
   tagline: string
   description: string
   categoryId: string
+  categorySlug: string
   vendorId: string
+  vendorSlug: string
   brand: string
   price: number
   compareAtPrice?: number
@@ -23,7 +25,7 @@ export interface Product {
 }
 
 export interface ProductQuery {
-  categoryId?: string
+  categorySlug?: string
   search?: string
   sort?: ProductSort
 }
