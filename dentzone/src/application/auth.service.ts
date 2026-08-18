@@ -7,10 +7,10 @@ import { toastService } from './toast.service'
 import router from '../router'
 import {
   ApiError,
-  clearSessionMeta,
+  clearTokens,
   http,
   setSessionExpiredHandler,
-  setSessionMeta,
+  setTokens,
   setTokenRefreshHandler,
 } from './http.client'
 
@@ -20,6 +20,8 @@ const SESSION_KEY = 'dentzone-auth'
 const TINTS = ['#0ea5e9', '#8b5cf6', '#f59e0b', '#10b981', '#ec4899']
 
 interface StoredSession {
+  accessToken: string
+  refreshToken: string
   accessTokenExpiresAt: string
   refreshTokenExpiresAt: string
   user: User
@@ -93,10 +95,10 @@ class AuthService {
     if (!raw) return
     try {
       const session = JSON.parse(raw) as StoredSession
-      if (session?.user && session?.refreshTokenExpiresAt) {
+      if (session?.accessToken && session?.refreshToken && session?.user) {
         this.session = session
         this.user.value = session.user
-        setSessionMeta(session.accessTokenExpiresAt, session.refreshTokenExpiresAt)
+        setTokens(session)
       }
     } catch {
       localStorage.removeItem(SESSION_KEY)
@@ -106,12 +108,14 @@ class AuthService {
   private applyLoginResponse(data: LoginResponseDto): void {
     const user = nameToUser(data.userId, data.fullName, data.email, this.user.value ?? undefined)
     this.session = {
+      accessToken: data.accessToken,
+      refreshToken: data.refreshToken,
       accessTokenExpiresAt: data.accessTokenExpiresAt,
       refreshTokenExpiresAt: data.refreshTokenExpiresAt,
       user,
     }
     this.user.value = user
-    setSessionMeta(data.accessTokenExpiresAt, data.refreshTokenExpiresAt)
+    setTokens(this.session)
     localStorage.setItem(SESSION_KEY, JSON.stringify(this.session))
   }
 
@@ -139,7 +143,11 @@ class AuthService {
   async refreshSession(): Promise<boolean> {
     if (!this.session) return false
     try {
-      const data = await http.post<LoginResponseDto>('/api/v1/auth/refresh-token', undefined, { skipAuthRefresh: true })
+      const data = await http.post<LoginResponseDto>(
+        '/api/v1/auth/refresh-token',
+        { refreshToken: this.session.refreshToken },
+        { skipAuthRefresh: true },
+      )
       this.applyLoginResponse(data)
       return true
     } catch {
@@ -232,7 +240,7 @@ class AuthService {
     this.user.value = null
     this.pendingEmail = ''
     this.pendingOtp = ''
-    clearSessionMeta()
+    clearTokens()
     localStorage.removeItem(SESSION_KEY)
   }
 
@@ -244,11 +252,14 @@ class AuthService {
   }
 
   async logout(): Promise<void> {
+    const token = this.session?.refreshToken
     this.expireSession()
-    try {
-      await http.post('/api/v1/auth/logout', undefined, { skipAuthRefresh: true })
-    } catch {
-      /* server revoke is best-effort */
+    if (token) {
+      try {
+        await http.post('/api/v1/auth/logout', { refreshToken: token }, { skipAuthRefresh: true })
+      } catch {
+        /* server revoke is best-effort */
+      }
     }
   }
 }

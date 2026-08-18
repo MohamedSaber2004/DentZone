@@ -49,8 +49,9 @@ namespace DentZone_Api.Controllers.Api.V1
         [Route(ApiRoutes.Auth.RefreshToken)]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> Refresh([FromBody] RefreshTokenCommand command, CancellationToken cancellationToken)
+        public async Task<IActionResult> Refresh([FromBody] RefreshTokenCommand? command, CancellationToken cancellationToken)
         {
+            command ??= new RefreshTokenCommand();
             if (string.IsNullOrWhiteSpace(command.RefreshToken))
                 command.RefreshToken = Request.Cookies[RefreshTokenCookie] ?? string.Empty;
 
@@ -63,14 +64,15 @@ namespace DentZone_Api.Controllers.Api.V1
         [Route(ApiRoutes.Auth.Logout)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> Logout([FromBody] LogoutCommand command, CancellationToken cancellationToken)
+        public async Task<IActionResult> Logout([FromBody] LogoutCommand? command, CancellationToken cancellationToken)
         {
+            command ??= new LogoutCommand();
             if (string.IsNullOrWhiteSpace(command.RefreshToken))
                 command.RefreshToken = Request.Cookies[RefreshTokenCookie] ?? string.Empty;
 
             var result = await _mediator.Send(command, cancellationToken);
             ClearAuthCookies();
-            return Ok(result);
+            return Ok(result, _localizationProvider.GetLocalizedString(LocalizationKeys.Auth.LogoutSuccess));
         }
 
         [HttpPost]

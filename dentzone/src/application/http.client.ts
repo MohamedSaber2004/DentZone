@@ -40,6 +40,7 @@ const ACCESS_EXPIRY_MARGIN_MS = 30_000
 
 const GENERIC_OK_MESSAGES = new Set(['Operation completed successfully', 'تمت العملية بنجاح'])
 
+let accessToken = ''
 let accessTokenExpiresAt = ''
 let refreshTokenExpiresAt = ''
 let refreshInFlight: Promise<boolean> | null = null
@@ -55,17 +56,20 @@ export const setSessionExpiredHandler = (handler: () => void) => {
   sessionExpiredHandler = handler
 }
 
-export const setSessionMeta = (accessExpiresAt: string, refreshExpiresAt: string) => {
-  accessTokenExpiresAt = accessExpiresAt
-  refreshTokenExpiresAt = refreshExpiresAt
+export const setTokens = (tokens: { accessToken: string; accessTokenExpiresAt: string; refreshTokenExpiresAt: string }) => {
+  accessToken = tokens.accessToken
+  accessTokenExpiresAt = tokens.accessTokenExpiresAt
+  refreshTokenExpiresAt = tokens.refreshTokenExpiresAt
 }
 
-export const clearSessionMeta = () => {
+export const clearTokens = () => {
+  accessToken = ''
   accessTokenExpiresAt = ''
   refreshTokenExpiresAt = ''
 }
 
 export const getAccessToken = (): string => {
+  if (accessToken) return accessToken
   const match = document.cookie
     .split('; ')
     .find((part) => part.startsWith(`${ACCESS_TOKEN_COOKIE}=`))
@@ -182,13 +186,13 @@ const request = async <T>(path: string, options: { method?: string; body?: unkno
   if (body !== undefined) headers['Content-Type'] = 'application/json'
 
   const needsRefresh =
-    accessTokenExpiresAt !== '' &&
+    accessToken !== '' &&
     refreshTokenExpiresAt !== '' &&
     !skipAuthRefresh &&
     !NO_REFRESH_PREFIXES.some((prefix) => path.startsWith(prefix))
 
   if (needsRefresh && isPastOrNear(refreshTokenExpiresAt, 0)) {
-    clearSessionMeta()
+    clearTokens()
     sessionExpiredHandler?.()
     throw new ApiError(401, 'Session expired', {}, true)
   }
@@ -196,14 +200,14 @@ const request = async <T>(path: string, options: { method?: string; body?: unkno
   if (needsRefresh && isPastOrNear(accessTokenExpiresAt, ACCESS_EXPIRY_MARGIN_MS)) {
     const refreshed = await performRefresh()
     if (!refreshed) {
-      clearSessionMeta()
+      clearTokens()
       sessionExpiredHandler?.()
       throw new ApiError(401, 'Session expired', {}, true)
     }
   }
 
-  const accessToken = getAccessToken()
-  if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`
+  const activeToken = getAccessToken()
+  if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`
 
   const doFetch = (): Promise<Response> =>
     fetch(`${API_BASE_URL}${path}`, {
@@ -231,7 +235,7 @@ const request = async <T>(path: string, options: { method?: string; body?: unkno
           if (newAccessToken) headers['Authorization'] = `Bearer ${newAccessToken}`
           continue
         }
-        clearSessionMeta()
+        clearTokens()
         sessionExpiredHandler?.()
       }
 
