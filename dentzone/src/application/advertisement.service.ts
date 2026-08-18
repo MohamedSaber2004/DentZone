@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import type { Advertisement } from '../domain/models/advertisement'
 import { catalogService } from './catalog.service'
+import { onLocaleChange } from '../i18n'
 
 export class AdvertisementService {
   readonly hero = ref<Advertisement | undefined>(undefined)
@@ -9,8 +10,14 @@ export class AdvertisementService {
 
   private loaded = false
 
+  constructor() {
+    onLocaleChange(() => {
+      this.loaded = false
+      void this.load()
+    })
+  }
+
   async load(): Promise<void> {
-    if (this.loaded) return
     try {
       const advertisements = await catalogService.getAdvertisements()
       this.hero.value = advertisements.hero
