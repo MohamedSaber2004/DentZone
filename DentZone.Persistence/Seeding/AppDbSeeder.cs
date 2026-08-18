@@ -21,6 +21,15 @@ namespace DentZone.Persistence.Seeding
                 return;
             }
 
+            // Skip seeding entirely if roles or users tables already have data (not first run)
+            var hasRoles = await context.Roles.AnyAsync(cancellationToken);
+            var hasUsers = await context.Users.AnyAsync(cancellationToken);
+            if (hasRoles && hasUsers)
+            {
+                logger.LogInformation("Users and roles tables already contain data. Skipping user/role seeding.");
+                return;
+            }
+
             var json = await File.ReadAllTextAsync(seedPath, System.Text.Encoding.UTF8, cancellationToken);
             var seedingData = JsonSerializer.Deserialize<SeedingData>(json, new JsonSerializerOptions
             {
@@ -163,7 +172,21 @@ namespace DentZone.Persistence.Seeding
                 return;
             }
 
+            // ── Categories ────────────────────────────────────────────────────────────
             var categoryIdsBySlug = new Dictionary<string, Guid>();
+            var hasCategories = await context.Categories.AnyAsync(cancellationToken);
+            if (hasCategories)
+            {
+                logger.LogInformation("Categories table already contains data. Skipping category seeding.");
+                // Still populate the lookup map from the DB so products/ads can resolve slugs
+                var dbCategories = await context.Categories
+                    .Select(c => new { c.Id, c.Slug })
+                    .ToListAsync(cancellationToken);
+                foreach (var c in dbCategories)
+                    categoryIdsBySlug[c.Slug] = c.Id;
+            }
+            else
+            {
             foreach (var categoryData in seedingData.Categories)
             {
                 var existing = await context.Categories.FirstOrDefaultAsync(c => c.Slug == categoryData.Slug, cancellationToken);
@@ -171,6 +194,7 @@ namespace DentZone.Persistence.Seeding
                 {
                     existing.Update(categoryData.NameEn, categoryData.NameAr, categoryData.Slug,
                         categoryData.DescriptionEn, categoryData.DescriptionAr, categoryData.Emoji, categoryData.Tint, "system");
+                    await context.SaveChangesAsync(cancellationToken);
                     categoryIdsBySlug[categoryData.Slug] = existing.Id;
                     logger.LogInformation("Seed category {Slug} found. Syncing from seed file.", categoryData.Slug);
                     continue;
@@ -183,8 +207,22 @@ namespace DentZone.Persistence.Seeding
                 categoryIdsBySlug[categoryData.Slug] = category.Id;
                 logger.LogInformation("Seeding category {Slug} created.", categoryData.Slug);
             }
+            } // end !hasCategories
 
+            // ── Vendors ───────────────────────────────────────────────────────────────
             var vendorIdsBySlug = new Dictionary<string, Guid>();
+            var hasVendors = await context.Vendors.AnyAsync(cancellationToken);
+            if (hasVendors)
+            {
+                logger.LogInformation("Vendors table already contains data. Skipping vendor seeding.");
+                var dbVendors = await context.Vendors
+                    .Select(v => new { v.Id, v.Slug })
+                    .ToListAsync(cancellationToken);
+                foreach (var v in dbVendors)
+                    vendorIdsBySlug[v.Slug] = v.Id;
+            }
+            else
+            {
             foreach (var vendorData in seedingData.Vendors)
             {
                 var existing = await context.Vendors.FirstOrDefaultAsync(v => v.Slug == vendorData.Slug, cancellationToken);
@@ -194,6 +232,7 @@ namespace DentZone.Persistence.Seeding
                         vendorData.TaglineEn, vendorData.TaglineAr, vendorData.DescriptionEn, vendorData.DescriptionAr,
                         vendorData.Emoji, vendorData.Tint, vendorData.Verified, "system");
                     existing.UpdateRating(vendorData.Rating, vendorData.ReviewCount, "system");
+                    await context.SaveChangesAsync(cancellationToken);
                     vendorIdsBySlug[vendorData.Slug] = existing.Id;
                     logger.LogInformation("Seed vendor {Slug} found. Syncing from seed file.", vendorData.Slug);
                     continue;
@@ -208,8 +247,27 @@ namespace DentZone.Persistence.Seeding
                 vendorIdsBySlug[vendorData.Slug] = vendor.Id;
                 logger.LogInformation("Seeding vendor {Slug} created.", vendorData.Slug);
             }
+            } // end !hasVendors
 
+            // ── Products ──────────────────────────────────────────────────────────────
             var productIdsById = new Dictionary<Guid, Guid>();
+            var hasProducts = await context.Products.AnyAsync(cancellationToken);
+            if (hasProducts)
+            {
+                logger.LogInformation("Products table already contains data. Skipping product seeding.");
+                var dbProducts = await context.Products
+                    .Select(p => new { p.Id, p.Slug })
+                    .ToListAsync(cancellationToken);
+                // Map seed JSON Id → actual DB Id by matching slugs
+                foreach (var productData in seedingData.Products)
+                {
+                    var match = dbProducts.FirstOrDefault(p => p.Slug == productData.Slug);
+                    if (match is not null)
+                        productIdsById[productData.Id] = match.Id;
+                }
+            }
+            else
+            {
             foreach (var productData in seedingData.Products)
             {
                 var existing = await context.Products.FirstOrDefaultAsync(p => p.Slug == productData.Slug, cancellationToken);
@@ -228,6 +286,7 @@ namespace DentZone.Persistence.Seeding
                         productData.Image, existingCategoryId, existingVendorId, productData.Features,
                         productData.IsFeatured, productData.IsBestseller, productData.Badge, "system");
                     existing.UpdateRating(productData.Rating, productData.ReviewCount, "system");
+                    await context.SaveChangesAsync(cancellationToken);
                     productIdsById[productData.Id] = existing.Id;
                     logger.LogInformation("Seed product {Slug} found. Syncing from seed file.", productData.Slug);
                     continue;
@@ -257,16 +316,26 @@ namespace DentZone.Persistence.Seeding
                 productIdsById[productData.Id] = product.Id;
                 logger.LogInformation("Seeding product {Slug} created.", productData.Slug);
             }
+            } // end !hasProducts
 
+            // ── Advertisements ────────────────────────────────────────────────────────
+            var hasAdvertisements = await context.Advertisements.AnyAsync(cancellationToken);
+            if (hasAdvertisements)
+            {
+                logger.LogInformation("Advertisements table already contains data. Skipping advertisement seeding.");
+            }
+            else
+            {
             foreach (var advertisementData in seedingData.Advertisements)
             {
-                var existing = await context.Advertisements.FindAsync(new object[] { advertisementData.Id }, cancellationToken);
+                var existing = await context.Advertisements.FirstOrDefaultAsync(a => a.Id == advertisementData.Id, cancellationToken);
                 if (existing is not null)
                 {
                     existing.Update(advertisementData.TitleEn, advertisementData.TitleAr, advertisementData.Image,
                         advertisementData.DescriptionEn, advertisementData.DescriptionAr, advertisementData.MobileImage,
                         advertisementData.CtaLabelEn, advertisementData.CtaLabelAr, advertisementData.CtaTo,
                         advertisementData.EyebrowEn, advertisementData.EyebrowAr, advertisementData.Theme, advertisementData.IsHero, "system");
+                    await context.SaveChangesAsync(cancellationToken);
                     logger.LogInformation("Seed advertisement {Id} found. Syncing from seed file.", advertisementData.Id);
                     continue;
                 }
@@ -276,11 +345,22 @@ namespace DentZone.Persistence.Seeding
                     advertisementData.MobileImage, advertisementData.CtaLabelEn, advertisementData.CtaLabelAr,
                     advertisementData.CtaTo, advertisementData.EyebrowEn, advertisementData.EyebrowAr,
                     advertisementData.Theme, advertisementData.IsHero);
+                // Force the stable seed Id so FindAsync works on future restarts
+                advertisement.Id = advertisementData.Id;
                 await context.Advertisements.AddAsync(advertisement, cancellationToken);
                 await context.SaveChangesAsync(cancellationToken);
                 logger.LogInformation("Seeding advertisement {Id} created.", advertisementData.Id);
             }
+            } // end !hasAdvertisements
 
+            // ── Reviews ───────────────────────────────────────────────────────────────
+            var hasReviews = await context.Reviews.AnyAsync(cancellationToken);
+            if (hasReviews)
+            {
+                logger.LogInformation("Reviews table already contains data. Skipping review seeding.");
+            }
+            else
+            {
             foreach (var reviewData in seedingData.Reviews)
             {
                 var existing = await context.Reviews.FindAsync(new object[] { reviewData.Id }, cancellationToken);
@@ -304,6 +384,7 @@ namespace DentZone.Persistence.Seeding
             }
 
             await context.SaveChangesAsync(cancellationToken);
+            } // end !hasReviews
         }
     }
 }

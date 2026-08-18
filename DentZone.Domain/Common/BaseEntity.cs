@@ -1,4 +1,4 @@
-﻿using DentZone.Domain.Common.Interfaces;
+using DentZone.Domain.Common.Interfaces;
 using System.ComponentModel.DataAnnotations;
 
 namespace DentZone.Domain.Common
@@ -60,7 +60,7 @@ namespace DentZone.Domain.Common
     public class BaseEntity<TKey> : BaseEntity, IBaseEntity<TKey> where TKey : IEquatable<TKey>
     {
         [Key]
-        public TKey Id { get; protected set; } = default!;
+        public TKey Id { get; set; } = default!;
 
         public BaseEntity()
         {

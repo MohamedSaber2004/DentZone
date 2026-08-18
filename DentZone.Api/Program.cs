@@ -261,6 +261,7 @@ namespace DentZone_Api
                 var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("DentZoneDbSeeder");
                 try
                 {
+                    await dbContext.Database.MigrateAsync();
                     await AppDbSeeder.SeedAsync(dbContext, logger);
                     await AppDbSeeder.SeedStoreAsync(dbContext, logger);
                 }
