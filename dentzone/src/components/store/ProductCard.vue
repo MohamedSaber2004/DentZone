@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import type { Product } from '../../domain/models/product'
 import { cartService } from '../../application/cart.service'
+import { authService } from '../../application/auth.service'
 import { toastService } from '../../application/toast.service'
 import { wishlistService } from '../../application/wishlist.service'
 import { t } from '../../i18n'
@@ -38,6 +39,11 @@ const addToCart = () => {
 }
 
 const toggleWishlist = async () => {
+  if (!authService.isAuthenticated) {
+    toastService.info(t('auth.loginTitle'))
+    void router.push({ name: 'login', query: { redirect: router.currentRoute.value.fullPath } })
+    return
+  }
   try {
     const addedToWishlist = await wishlistService.toggle(props.product)
     toastService[addedToWishlist ? 'success' : 'info'](

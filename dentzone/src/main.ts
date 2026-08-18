@@ -7,8 +7,8 @@ import { catalogService } from './application/catalog.service'
 import { chatService } from './application/chat.service'
 import { initI18n, t } from './i18n'
 
-void catalogService.init()
 initI18n()
+void catalogService.init()
 
 chatService.configure((userText) => {
   const text = userText.toLowerCase()

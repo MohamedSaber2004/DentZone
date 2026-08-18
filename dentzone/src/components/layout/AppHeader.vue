@@ -147,7 +147,7 @@ const ordersLink = () => {
         <button class="app-header__theme" type="button" :aria-label="themeLabel" @click="toggleTheme">
           <AppIcon :name="theme === 'dark' ? 'sun' : 'moon'" :size="17" />
         </button>
-        <RouterLink to="/wishlist" class="app-header__wishlist" :aria-label="t('nav.wishlist')">
+        <RouterLink v-if="isAuthenticated" to="/wishlist" class="app-header__wishlist" :aria-label="t('nav.wishlist')">
           <AppIcon name="heart" :size="18" />
           <span v-if="wishlistService.count.value > 0" class="app-header__cart-count">
             {{ wishlistService.count.value > 99 ? '99+' : wishlistService.count.value }}

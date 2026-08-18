@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { catalogService } from '../application/catalog.service'
 import { cartService } from '../application/cart.service'
+import { authService } from '../application/auth.service'
 import { toastService } from '../application/toast.service'
 import { wishlistService } from '../application/wishlist.service'
 import { formatPrice, t } from '../i18n'
@@ -22,6 +23,7 @@ import ProductInfoTabs from '../components/store/ProductInfoTabs.vue'
 import EmptyState from '../components/ui/EmptyState.vue'
 
 const route = useRoute()
+const router = useRouter()
 
 const product = ref<Product | undefined>()
 const relatedProducts = ref<Product[]>([])
@@ -35,6 +37,11 @@ const wished = computed(() => (product.value ? wishlistService.has(product.value
 
 const toggleWishlist = async () => {
   if (!product.value) return
+  if (!authService.isAuthenticated) {
+    toastService.info(t('auth.loginTitle'))
+    void router.push({ name: 'login', query: { redirect: route.fullPath } })
+    return
+  }
   try {
     const addedToWishlist = await wishlistService.toggle(product.value)
     toastService[addedToWishlist ? 'success' : 'info'](

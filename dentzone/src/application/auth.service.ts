@@ -57,6 +57,8 @@ const nameToUser = (id: string, fullName: string, email: string, existing?: User
 const toMessageKey = (err: unknown, fallback: MessageKey): MessageKey => {
   if (err instanceof ApiError) {
     switch (err.status) {
+      case 401:
+        return 'auth.errSessionExpired'
       case 404:
         return 'auth.errEmailNotFound'
       case 429:
@@ -239,7 +241,7 @@ class AuthService {
       this.persistUser()
       return { ok: true }
     } catch (err) {
-      return { ok: false, error: toMessageKey(err, 'auth.errSessionExpired') }
+      return { ok: false, error: toMessageKey(err, 'auth.errGeneric') }
     }
   }
 

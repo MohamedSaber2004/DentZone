@@ -29,6 +29,7 @@ const router = createRouter({
       path: '/wishlist',
       name: 'wishlist',
       component: () => import('../views/WishlistView.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/product/:slug',
