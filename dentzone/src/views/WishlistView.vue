@@ -9,13 +9,6 @@ import AppButton from '../components/ui/AppButton.vue'
 import SkeletonLoader from '../components/ui/SkeletonLoader.vue'
 import SectionHeader from '../components/ui/SectionHeader.vue'
 
-const loading = ref(true)
-
-onMounted(async () => {
-  await wishlistService.refresh()
-  loading.value = false
-})
-
 const clearWishlist = async () => {
   try {
     await wishlistService.clear()
@@ -36,7 +29,7 @@ const clearWishlist = async () => {
       </template>
     </SectionHeader>
 
-    <div v-if="loading" class="wishlist__loading" role="status">
+    <div v-if="wishlistService.loading.value" class="wishlist__loading" role="status">
       <SkeletonLoader variant="grid" :count="4" />
     </div>
 

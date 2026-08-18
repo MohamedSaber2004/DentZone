@@ -37,11 +37,6 @@ const wished = computed(() => (product.value ? wishlistService.has(product.value
 
 const toggleWishlist = async () => {
   if (!product.value) return
-  if (!authService.isAuthenticated) {
-    toastService.info(t('auth.loginTitle'))
-    void router.push({ name: 'login', query: { redirect: route.fullPath } })
-    return
-  }
   try {
     const addedToWishlist = await wishlistService.toggle(product.value)
     toastService[addedToWishlist ? 'success' : 'info'](

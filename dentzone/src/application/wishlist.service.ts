@@ -21,12 +21,22 @@ export class WishlistService {
   private localIds = reactive<string[]>(loadPersistedIds())
 
   readonly items = ref<Product[]>([])
-
   readonly loading = ref(false)
 
-  private idSet = new Set<string>(this.localIds)
+  readonly idSet = computed<Set<string>>(() => {
+    const set = new Set<string>()
+    for (const item of this.items.value) {
+      set.add(item.id)
+    }
+    if (!this.authed) {
+      for (const id of this.localIds) {
+        set.add(id)
+      }
+    }
+    return set
+  })
 
-  readonly count = computed<number>(() => this.idSet.size)
+  readonly count = computed<number>(() => this.idSet.value.size)
 
   private get authed(): boolean {
     return authService.isAuthenticated
@@ -37,28 +47,29 @@ export class WishlistService {
       this.localIds,
       (ids) => {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(ids))
-        this.idSet = new Set(ids)
       },
       { deep: true },
     )
+
     watch(
       () => authService.user.value,
       () => {
         void this.refresh()
       },
+      { immediate: true },
     )
   }
 
   has(productId: string): boolean {
-    return this.idSet.has(productId)
+    return this.idSet.value.has(productId)
   }
 
   async refresh(): Promise<void> {
     if (this.authed) {
       this.loading.value = true
       try {
-        this.items.value = await http.get<Product[]>('/api/v1/wishlist')
-        this.idSet = new Set(this.items.value.map((product) => product.id))
+        const fetched = await http.get<Product[]>('/api/v1/wishlist')
+        this.items.value = Array.isArray(fetched) ? fetched : []
       } catch {
         this.items.value = []
       } finally {
@@ -67,13 +78,23 @@ export class WishlistService {
       return
     }
 
-    const products = await catalogService.getProducts()
-    const byId = new Map(products.map((product) => [product.id, product]))
-    this.items.value = this.localIds.flatMap((id) => {
-      const product = byId.get(id)
-      return product ? [product] : []
-    })
-    this.idSet = new Set(this.localIds)
+    this.loading.value = true
+    try {
+      if (this.localIds.length === 0) {
+        this.items.value = []
+        return
+      }
+      const products = await catalogService.getAllProducts()
+      const byId = new Map(products.map((product) => [product.id, product]))
+      this.items.value = this.localIds.flatMap((id) => {
+        const product = byId.get(id)
+        return product ? [product] : []
+      })
+    } catch {
+      this.items.value = []
+    } finally {
+      this.loading.value = false
+    }
   }
 
   async toggle(product: Product): Promise<boolean> {
@@ -82,11 +103,9 @@ export class WishlistService {
     if (this.authed) {
       if (present) {
         await http.del(`/api/v1/wishlist/${encodeURIComponent(product.id)}`)
-        this.idSet.delete(product.id)
         this.items.value = this.items.value.filter((item) => item.id !== product.id)
       } else {
         await http.post(`/api/v1/wishlist/${encodeURIComponent(product.id)}`)
-        this.idSet.add(product.id)
         this.items.value = [product, ...this.items.value.filter((item) => item.id !== product.id)]
       }
       return !present
@@ -95,31 +114,36 @@ export class WishlistService {
     const index = this.localIds.indexOf(product.id)
     if (index !== -1) {
       this.localIds.splice(index, 1)
+      this.items.value = this.items.value.filter((item) => item.id !== product.id)
     } else {
-      this.localIds.push(product.id)
+      this.localIds.unshift(product.id)
+      this.items.value = [product, ...this.items.value.filter((item) => item.id !== product.id)]
     }
-    this.idSet = new Set(this.localIds)
     return !present
   }
 
   async remove(productId: string): Promise<void> {
     if (this.authed) {
       await http.del(`/api/v1/wishlist/${encodeURIComponent(productId)}`)
-      this.idSet.delete(productId)
       this.items.value = this.items.value.filter((item) => item.id !== productId)
       return
     }
-    this.localIds = this.localIds.filter((id) => id !== productId)
+
+    const index = this.localIds.indexOf(productId)
+    if (index !== -1) {
+      this.localIds.splice(index, 1)
+    }
+    this.items.value = this.items.value.filter((item) => item.id !== productId)
   }
 
   async clear(): Promise<void> {
     if (this.authed) {
       await http.del('/api/v1/wishlist')
-      this.idSet.clear()
       this.items.value = []
       return
     }
-    this.localIds = []
+    this.localIds.splice(0, this.localIds.length)
+    this.items.value = []
   }
 }
 
