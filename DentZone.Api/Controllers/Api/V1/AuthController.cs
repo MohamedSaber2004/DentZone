@@ -37,6 +37,7 @@ namespace DentZone_Api.Controllers.Api.V1
         }
 
         [HttpPost]
+        [EnableRateLimiting("General")]
         [Route(ApiRoutes.Auth.RefreshToken)]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]

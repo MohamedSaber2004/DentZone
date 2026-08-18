@@ -202,6 +202,19 @@ namespace DentZone_Api
                     });
                 });
 
+                options.AddPolicy("General", context =>
+                {
+                    var clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+                    return RateLimitPartition.GetFixedWindowLimiter(clientIp, _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = rateLimiting.PermitLimit,
+                        Window = rateLimiting.Window,
+                        QueueLimit = rateLimiting.QueueLimit,
+                        AutoReplenishment = true
+                    });
+                });
+
                 options.AddPolicy("Login", context =>
                 {
                     var clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
