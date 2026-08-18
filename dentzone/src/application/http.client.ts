@@ -274,7 +274,8 @@ const request = async <T>(path: string, options: { method?: string; body?: unkno
   const isRefreshTokenCall = path.startsWith('/api/v1/auth/refresh-token')
 
   if (method === 'GET' && !isRefreshTokenCall) {
-    const dedupeKey = `${method} ${path}`
+    const langHeader = headers['Accept-Language'] ?? locale.value
+    const dedupeKey = `${method} ${path} [${langHeader}]`
     const existing = dedupeMap.get(dedupeKey) as Promise<T> | undefined
     if (existing) return existing
     const promise = tracked(path, () => withSlot(run))
