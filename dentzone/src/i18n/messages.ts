@@ -152,7 +152,11 @@ export type Messages = {
     firstName: string
     lastName: string
     email: string
+    emailReadOnly: string
     phone: string
+    birthDate: string
+    language: string
+    errBirthDateFuture: string
     saveChanges: string
     saving: string
     savedToast: string

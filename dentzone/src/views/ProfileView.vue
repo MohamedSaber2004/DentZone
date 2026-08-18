@@ -4,22 +4,35 @@ import { useRouter } from 'vue-router'
 import { authService } from '../application/auth.service'
 import { toastService } from '../application/toast.service'
 import { wishlistService } from '../application/wishlist.service'
-import { t } from '../i18n'
+import { locale, setLocale, t } from '../i18n'
 import AppInput from '../components/ui/AppInput.vue'
 import AppButton from '../components/ui/AppButton.vue'
 import AppIcon from '../components/ui/AppIcon.vue'
+import AppSelect, { type SelectOption } from '../components/ui/AppSelect.vue'
 import SectionHeader from '../components/ui/SectionHeader.vue'
 
 const router = useRouter()
 
 const user = computed(() => authService.user.value)
 
-const form = reactive({
+const form = reactive<{
+  firstName: string
+  lastName: string
+  email: string
+  birthDate: string
+  language: string
+}>({
   firstName: user.value?.firstName ?? '',
   lastName: user.value?.lastName ?? '',
   email: user.value?.email ?? '',
-  phone: user.value?.phone ?? '',
+  birthDate: user.value?.birthDate ?? '',
+  language: locale.value,
 })
+
+const languageOptions: SelectOption[] = [
+  { value: 'ar', label: 'العربية' },
+  { value: 'en', label: 'English' },
+]
 
 const saving = ref(false)
 const formError = ref('')
@@ -39,9 +52,15 @@ watch(authService.user, (next) => {
     form.firstName = next.firstName
     form.lastName = next.lastName
     form.email = next.email
-    form.phone = next.phone
+    form.birthDate = next.birthDate ?? ''
+    form.language = locale.value
   }
 })
+
+const onLanguageChange = (value: string) => {
+  form.language = value
+  setLocale(value as 'en' | 'ar')
+}
 
 const saveProfile = async () => {
   formError.value = ''
@@ -49,12 +68,15 @@ const saveProfile = async () => {
     formError.value = t('profile.errRequired')
     return
   }
+  if (form.birthDate && new Date(form.birthDate).getTime() > Date.now()) {
+    formError.value = t('profile.errBirthDateFuture')
+    return
+  }
   saving.value = true
   const result = await authService.updateProfile({
     firstName: form.firstName.trim(),
     lastName: form.lastName.trim(),
-    email: form.email.trim(),
-    phone: form.phone.trim(),
+    birthDate: form.birthDate,
   })
   saving.value = false
   if (!result.ok) {
@@ -143,11 +165,24 @@ const ordersComingSoon = () => {
               <AppIcon name="alert-circle" :size="16" />
               {{ formError }}
             </div>
+            <div class="profile__email-row">
+              <span class="profile__email-icon">
+                <AppIcon name="mail" :size="16" />
+              </span>
+              <div class="profile__email-info">
+                <span class="profile__email-label">{{ t('profile.email') }}</span>
+                <span class="profile__email-value">{{ form.email }}</span>
+              </div>
+              <span class="profile__email-note">{{ t('profile.emailReadOnly') }}</span>
+            </div>
             <div class="profile__form">
               <AppInput v-model="form.firstName" :label="t('profile.firstName')" required autocomplete="given-name" />
               <AppInput v-model="form.lastName" :label="t('profile.lastName')" required autocomplete="family-name" />
-              <AppInput v-model="form.email" :label="t('profile.email')" type="email" required autocomplete="email" />
-              <AppInput v-model="form.phone" :label="t('profile.phone')" type="tel" autocomplete="tel" />
+              <AppInput v-model="form.birthDate" :label="t('profile.birthDate')" type="date" autocomplete="bday" />
+              <label class="profile__field">
+                <span class="profile__field-label">{{ t('profile.language') }}</span>
+                <AppSelect :model-value="form.language" :options="languageOptions" @update:model-value="onLanguageChange" />
+              </label>
             </div>
             <div class="profile__actions">
               <AppButton :disabled="saving" @click="saveProfile">
@@ -433,6 +468,81 @@ const ordersComingSoon = () => {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
+}
+
+.profile__email-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.8rem 1rem;
+  margin-bottom: 1rem;
+  border-radius: var(--dz-radius);
+  background: var(--dz-surface-soft);
+  border: 1px solid var(--dz-border);
+}
+
+.profile__email-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  border-radius: var(--dz-radius-full);
+  background: var(--dz-primary-faint);
+  color: var(--dz-primary-strong);
+}
+
+.profile__email-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.profile__email-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dz-muted);
+}
+
+.profile__email-value {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--dz-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile__email-note {
+  margin-inline-start: auto;
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--dz-muted);
+}
+
+.profile__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.profile__field-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--dz-ink-soft);
+}
+
+.profile__field .app-select {
+  width: 100%;
+}
+
+.profile__field .app-select__native {
+  width: 100%;
+  padding: 0.65rem 2.4rem 0.65rem 0.9rem;
 }
 
 .profile__password {

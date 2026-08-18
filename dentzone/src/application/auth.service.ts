@@ -30,11 +30,15 @@ interface StoredSession {
 export interface ProfilePatch {
   firstName: string
   lastName: string
-  email: string
-  phone: string
+  birthDate: string
 }
 
-const nameToUser = (id: string, fullName: string, email: string, existing?: User): User => {
+const toDateInput = (iso: string | null | undefined): string => {
+  if (!iso) return ''
+  return iso.slice(0, 10)
+}
+
+const nameToUser = (id: string, fullName: string, email: string, existing?: User, birthDate?: string): User => {
   const parts = fullName.trim().split(/\s+/)
   const firstName = parts[0] ?? ''
   const lastName = parts.slice(1).join(' ') || '…'
@@ -46,6 +50,7 @@ const nameToUser = (id: string, fullName: string, email: string, existing?: User
     email,
     phone: existing?.phone ?? '',
     tint: existing?.tint ?? TINTS[seed % TINTS.length] ?? '#0ea5e9',
+    birthDate: birthDate ?? existing?.birthDate,
   }
 }
 
@@ -201,7 +206,13 @@ class AuthService {
     if (!this.session) return
     try {
       const profile = await http.get<UserProfileDto>('/api/v1/auth/profile')
-      this.user.value = nameToUser(profile.id, profile.fullName, profile.email, this.user.value ?? undefined)
+      this.user.value = nameToUser(
+        profile.id,
+        profile.fullName,
+        profile.email,
+        this.user.value ?? undefined,
+        toDateInput(profile.birthDate),
+      )
       this.persistUser()
     } catch {
       /* interceptor handles session expiry */
@@ -215,11 +226,16 @@ class AuthService {
       await http.put('/api/v1/auth/profile', {
         userId: current.id,
         fullName: `${patch.firstName} ${patch.lastName}`.trim(),
-        birthDate: null,
+        birthDate: patch.birthDate || null,
         profilePictureName: null,
         language: locale.value,
       })
-      this.user.value = { ...current, ...patch }
+      this.user.value = {
+        ...current,
+        firstName: patch.firstName,
+        lastName: patch.lastName,
+        birthDate: patch.birthDate || undefined,
+      }
       this.persistUser()
       return { ok: true }
     } catch (err) {

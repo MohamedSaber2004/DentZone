@@ -27,7 +27,9 @@ namespace DentZone.Application.Features.Auth.Commands.UpdateUserProfile
                 throw new NotFoundException(_localizer[LocalizationKeys.Auth.UserNotFound]);
 
             user.UpdateProfile(request.FullName, request.BirthDate, request.ProfilePictureName, request.UserId.ToString());
-            user.SetLanguage(request.Language, request.UserId.ToString());
+
+            if (request.Language.HasValue)
+                user.SetLanguage(request.Language.Value, request.UserId.ToString());
 
             var result = await _userManager.UpdateAsync(user);
             if (!result.Succeeded)

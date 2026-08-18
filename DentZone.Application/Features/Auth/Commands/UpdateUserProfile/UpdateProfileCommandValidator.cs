@@ -3,6 +3,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Localization;
 using DentZone.Domain.Entities;
+using DentZone.Domain.Enums;
 
 namespace DentZone.Application.Features.Auth.Commands.UpdateUserProfile
 {
@@ -26,7 +27,8 @@ namespace DentZone.Application.Features.Auth.Commands.UpdateUserProfile
                 .LessThan(DateTime.Now).WithMessage(localizer[LocalizationKeys.Auth.BirthDateInFuture]);
 
             RuleFor(x => x.Language)
-                .IsInEnum().WithMessage(localizer[LocalizationKeys.Auth.EmailInvalid]);
+                .Must(language => language is null || Enum.IsDefined(typeof(LanguageCode), language.Value))
+                .WithMessage(localizer[LocalizationKeys.Auth.EmailInvalid]);
         }
 
         private async Task<bool> UserExistsAsync(Guid userId, CancellationToken cancellationToken)

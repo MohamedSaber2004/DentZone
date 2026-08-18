@@ -10,6 +10,6 @@ namespace DentZone.Application.Features.Auth.Commands.UpdateUserProfile
         public string FullName { get; set; } = null!;
         public DateTime? BirthDate { get; set; }
         public string? ProfilePictureName { get; set; }
-        public LanguageCode Language { get; set; }
+        public LanguageCode? Language { get; set; }
     }
 }

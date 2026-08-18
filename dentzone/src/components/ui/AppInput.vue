@@ -6,7 +6,7 @@ const props = withDefaults(
   defineProps<{
     modelValue?: string
     label: string
-    type?: 'text' | 'email' | 'tel' | 'password'
+    type?: 'text' | 'email' | 'tel' | 'password' | 'date'
     placeholder?: string
     required?: boolean
     error?: string
