@@ -17,7 +17,6 @@ export type Messages = {
     cart: string
     wishlist: string
     toggleMenu: string
-    switchLang: string
     toggleTheme: string
     login: string
     profile: string
@@ -163,7 +162,6 @@ export type Messages = {
     emailReadOnly: string
     phone: string
     birthDate: string
-    language: string
     errBirthDateFuture: string
     saveChanges: string
     saving: string

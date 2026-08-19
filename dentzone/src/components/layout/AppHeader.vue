@@ -3,7 +3,7 @@ import { services } from '../../di/container'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 const { cartService, wishlistService, authService } = services
 import { useRoute, useRouter } from 'vue-router'
-import { t, toggleLocale } from '../../i18n'
+import { t } from '../../i18n'
 import { theme, toggleTheme } from '../../application/theme.service'
 import SearchField from '../ui/SearchField.vue'
 import AppIcon from '../ui/AppIcon.vue'
@@ -40,7 +40,6 @@ const navItems = computed(() => [
 ])
 
 const searchPlaceholder = computed(() => t('nav.searchPlaceholder'))
-const switchLangLabel = computed(() => t('nav.switchLang'))
 const themeLabel = computed(() => t('nav.toggleTheme'))
 
 const isNavActive = (to: string) => {
@@ -130,10 +129,6 @@ const ordersLink = () => {
           {{ item.label }}
         </RouterLink>
         <div class="app-header__nav-tools">
-          <button class="app-header__lang" type="button" :aria-label="switchLangLabel" @click="toggleLocale">
-            <AppIcon name="globe" :size="16" />
-            <span class="app-header__lang-text">{{ switchLangLabel }}</span>
-          </button>
           <button class="app-header__theme" type="button" :aria-label="themeLabel" @click="toggleTheme">
             <AppIcon :name="theme === 'dark' ? 'sun' : 'moon'" :size="17" />
           </button>
@@ -149,10 +144,6 @@ const ordersLink = () => {
           @submit="emit('submit')"
         />
         <div class="app-header__tools">
-          <button class="app-header__lang" type="button" :aria-label="switchLangLabel" @click="toggleLocale">
-            <AppIcon name="globe" :size="16" />
-            <span class="app-header__lang-text">{{ switchLangLabel }}</span>
-          </button>
           <button class="app-header__theme" type="button" :aria-label="themeLabel" @click="toggleTheme">
             <AppIcon :name="theme === 'dark' ? 'sun' : 'moon'" :size="17" />
           </button>
@@ -369,33 +360,6 @@ const ordersLink = () => {
   font-size: 0.66rem;
   font-weight: 600;
   box-shadow: var(--dz-shadow-sm);
-}
-
-.app-header__lang {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.45rem 0.8rem;
-  border-radius: var(--dz-radius-full);
-  border: 1px solid var(--dz-border);
-  background: var(--dz-surface);
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--dz-ink-soft);
-  transition:
-    border-color 0.2s,
-    color 0.2s,
-    background-color 0.2s;
-}
-
-.app-header__lang:hover {
-  border-color: var(--dz-primary);
-  color: var(--dz-primary-strong);
-  background: var(--dz-primary-faint);
-}
-
-.app-header__lang svg {
-  color: var(--dz-primary);
 }
 
 .app-header__theme {
@@ -646,22 +610,12 @@ const ordersLink = () => {
     height: 2.45rem;
   }
 
-  .app-header__lang-text {
-    display: none;
-  }
-
   .app-header__login-text {
     display: none;
   }
 
   .app-header__login {
     width: 2.45rem;
-    padding: 0;
-    justify-content: center;
-  }
-
-  .app-header__lang {
-    width: 2.7rem;
     padding: 0;
     justify-content: center;
   }

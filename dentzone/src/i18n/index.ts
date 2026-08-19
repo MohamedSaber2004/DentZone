@@ -58,20 +58,6 @@ export const onLocaleChange = (listener: LocaleChangeListener) => {
   localeChangeListeners.push(listener)
 }
 
-export const setLocale = (next: Locale) => {
-  if (locale.value === next) return
-  locale.value = next
-  localStorage.setItem(STORAGE_KEY, next)
-  applyDocument(next)
-  for (const listener of localeChangeListeners) {
-    listener(next)
-  }
-}
-
-export const toggleLocale = () => {
-  setLocale(locale.value === 'en' ? 'ar' : 'en')
-}
-
 export const formatPrice = (value: number): string =>
   new Intl.NumberFormat(locale.value === 'ar' ? 'ar-EG' : 'en-US', {
     style: 'currency',

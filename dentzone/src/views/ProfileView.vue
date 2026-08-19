@@ -3,11 +3,10 @@ import { services } from '../di/container'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 const { authService, wishlistService, orderService } = services
 import { useRouter } from 'vue-router'
-import { locale, setLocale, t } from '../i18n'
+import { t } from '../i18n'
 import AppInput from '../components/ui/AppInput.vue'
 import AppButton from '../components/ui/AppButton.vue'
 import AppIcon from '../components/ui/AppIcon.vue'
-import AppSelect, { type SelectOption } from '../components/ui/AppSelect.vue'
 import SectionHeader from '../components/ui/SectionHeader.vue'
 
 const router = useRouter()
@@ -19,19 +18,12 @@ const form = reactive<{
   lastName: string
   email: string
   birthDate: string
-  language: string
 }>({
   firstName: user.value?.firstName ?? '',
   lastName: user.value?.lastName ?? '',
   email: user.value?.email ?? '',
   birthDate: user.value?.birthDate ?? '',
-  language: locale.value,
 })
-
-const languageOptions: SelectOption[] = [
-  { value: 'ar', label: 'العربية' },
-  { value: 'en', label: 'English' },
-]
 
 const saving = ref(false)
 const formError = ref('')
@@ -54,14 +46,8 @@ watch(authService.user, (next) => {
     form.lastName = next.lastName
     form.email = next.email
     form.birthDate = next.birthDate ?? ''
-    form.language = locale.value
   }
 })
-
-const onLanguageChange = (value: string) => {
-  form.language = value
-  setLocale(value as 'en' | 'ar')
-}
 
 const saveProfile = async () => {
   formError.value = ''
@@ -175,10 +161,6 @@ const logout = () => {
               <AppInput v-model="form.firstName" :label="t('profile.firstName')" required autocomplete="given-name" />
               <AppInput v-model="form.lastName" :label="t('profile.lastName')" required autocomplete="family-name" />
               <AppInput v-model="form.birthDate" :label="t('profile.birthDate')" type="date" autocomplete="bday" />
-              <label class="profile__field">
-                <span class="profile__field-label">{{ t('profile.language') }}</span>
-                <AppSelect :model-value="form.language" :options="languageOptions" @update:model-value="onLanguageChange" />
-              </label>
             </div>
             <div class="profile__actions">
               <AppButton :disabled="saving" @click="saveProfile">
@@ -521,27 +503,6 @@ const logout = () => {
   font-size: 0.72rem;
   font-weight: 600;
   color: var(--dz-muted);
-}
-
-.profile__field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.profile__field-label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--dz-ink-soft);
-}
-
-.profile__field .app-select {
-  width: 100%;
-}
-
-.profile__field .app-select__native {
-  width: 100%;
-  padding: 0.65rem 2.4rem 0.65rem 0.9rem;
 }
 
 .profile__password {
