@@ -28,6 +28,11 @@ export const en: Messages = {
   },
   home: {
     trustBadge: 'Trusted by 2,000+ dental clinics',
+    eyebrow: 'Online dental supply store — for doctors & clinics',
+    heroTagline: 'Dental tools · Equipment · Clinic supplies',
+    chipTools: 'Dental tools',
+    chipSuppliers: 'Trusted suppliers',
+    chipDelivery: 'Fast delivery',
     titleLine1: 'Professional dental supplies,',
     titleAccent: 'for your practice.',
     subtitle:

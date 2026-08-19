@@ -26,6 +26,11 @@ export type Messages = {
   }
   home: {
     trustBadge: string
+    eyebrow: string
+    heroTagline: string
+    chipTools: string
+    chipSuppliers: string
+    chipDelivery: string
     titleLine1: string
     titleAccent: string
     subtitle: string

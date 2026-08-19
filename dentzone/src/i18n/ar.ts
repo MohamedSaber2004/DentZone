@@ -28,6 +28,11 @@ export const ar: Messages = {
   },
   home: {
     trustBadge: 'موثوق من أكثر من 2,000 عيادة أسنان',
+    eyebrow: 'متجر مستلزمات أسنان أونلاين — للأطباء والعيادات',
+    heroTagline: 'أدوات أسنان · معدات · مستلزمات عيادات',
+    chipTools: 'أدوات أسنان',
+    chipSuppliers: 'موردون موثوقون',
+    chipDelivery: 'توصيل سريع',
     titleLine1: 'مستلزمات أسنان احترافية،',
     titleAccent: 'لممارستك الطبية.',
     subtitle:

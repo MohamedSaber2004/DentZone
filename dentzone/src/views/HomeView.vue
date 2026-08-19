@@ -8,7 +8,7 @@ import SectionHeader from '../components/ui/SectionHeader.vue'
 import CategoryPill from '../components/ui/CategoryPill.vue'
 import ProductGrid from '../components/store/ProductGrid.vue'
 import VendorCard from '../components/store/VendorCard.vue'
-import HeroAdvertisement from '../components/store/HeroAdvertisement.vue'
+import PlatformHero from '../components/store/PlatformHero.vue'
 import PromotionalGrid from '../components/store/PromotionalGrid.vue'
 import AppButton from '../components/ui/AppButton.vue'
 import SkeletonLoader from '../components/ui/SkeletonLoader.vue'
@@ -18,7 +18,6 @@ const router = useRouter()
 
 const isReady = computed(() => catalogService.initialized.value)
 
-const heroAd = computed(() => advertisementService.hero.value)
 const secondaryAds = computed(() => advertisementService.secondary.value)
 
 onMounted(() => {
@@ -63,7 +62,7 @@ const valueProps = computed(() => [
 
 <template>
   <div>
-    <HeroAdvertisement v-if="heroAd" :advertisement="heroAd" />
+    <PlatformHero />
 
     <section class="container page">
       <div class="value-props">
