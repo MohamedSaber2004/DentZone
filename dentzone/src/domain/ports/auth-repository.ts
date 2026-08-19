@@ -1,33 +1,30 @@
 import type { LoginResponseDto, UserProfileDto } from '../models/auth'
 
 export interface LoginCredentials {
-  email: string
+  usernameOrEmail: string
   password: string
 }
 
-export interface ProfileUpdate {
-  userId: string
+export interface UpdateUserProfilePayload {
   fullName: string
-  birthDate: string | null
-  profilePictureName: string | null
-  language: string
+  phoneNumber: string
+  isActive: boolean
+  isPopular: boolean | null
+  orderNum: number | null
+  profileImage?: File
 }
 
-export interface PasswordChange {
-  currentPassword: string
-  newPassword: string
-  confirmPassword: string
+export interface VerifyOtpResult {
+  message: string
+  isVerified: boolean
 }
 
 export interface AuthRepository {
   login(credentials: LoginCredentials): Promise<LoginResponseDto>
-  loginGuest(credentials: LoginCredentials): Promise<LoginResponseDto>
-  refreshSession(refreshToken?: string): Promise<LoginResponseDto>
-  logout(refreshToken?: string): Promise<void>
-  requestOtp(email: string): Promise<void>
-  verifyOtp(email: string, otpCode: string): Promise<void>
-  resetPassword(email: string, otpCode: string, newPassword: string, confirmPassword: string): Promise<void>
-  getProfile(): Promise<UserProfileDto>
-  updateProfile(patch: ProfileUpdate): Promise<void>
-  changePassword(payload: PasswordChange): Promise<void>
+  getUserProfile(userId: string): Promise<UserProfileDto>
+  updateUserProfile(userId: string, payload: UpdateUserProfilePayload): Promise<UserProfileDto>
+  forgotPassword(email: string): Promise<void>
+  verifyOtp(email: string, code: string): Promise<VerifyOtpResult>
+  resetPassword(email: string, newPassword: string): Promise<void>
+  resendOtp(email: string): Promise<void>
 }

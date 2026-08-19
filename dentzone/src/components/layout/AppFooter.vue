@@ -1,27 +1,13 @@
 <script setup lang="ts">
-import { services } from '../../di/container'
-import { computed, ref } from 'vue'
-const { catalogService } = services
-import { toastService } from '../../infrastructure/feedback/toast.service'
-import { formatPrice, t } from '../../i18n'
+import { t } from '../../i18n'
 import AppIcon from '../ui/AppIcon.vue'
-import AppButton from '../ui/AppButton.vue'
 
-const categoryLinks = computed(() =>
-  ['toothbrushes', 'toothpaste', 'mouthwash', 'whitening', 'floss', 'accessories'].map((slug) => ({
-    slug,
-    to: `/catalog?category=${slug}`,
-  })),
-)
-
-const companyLinks = computed(() => [
+const companyLinks = [
   { label: t('footer.companyAbout'), to: '/' },
   { label: t('footer.companyContact'), to: '/' },
   { label: t('footer.companyShipping'), to: '/' },
   { label: t('footer.companyPrivacy'), to: '/' },
-])
-
-const newsletterEmail = ref('')
+]
 
 const socialLinks = [
   { name: 'Facebook', icon: 'facebook' as const, href: 'https://facebook.com/dentzone' },
@@ -30,40 +16,10 @@ const socialLinks = [
   { name: 'YouTube', icon: 'youtube' as const, href: 'https://youtube.com/@dentzone' },
   { name: 'TikTok', icon: 'tiktok' as const, href: 'https://tiktok.com/@dentzone' },
 ]
-
-const subscribe = () => {
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newsletterEmail.value)) {
-    toastService.error(t('footer.invalidEmail'))
-    return
-  }
-  toastService.success(t('footer.subscribed'))
-  newsletterEmail.value = ''
-}
 </script>
 
 <template>
   <footer class="app-footer">
-    <div class="app-footer__newsletter">
-      <div class="container app-footer__newsletter-inner">
-        <div>
-          <h3 class="app-footer__newsletter-title">{{ t('footer.newsletterTitle') }}</h3>
-          <p class="app-footer__newsletter-sub">
-            {{ t('footer.newsletterSub') }}
-          </p>
-        </div>
-        <form class="app-footer__newsletter-form" @submit.prevent="subscribe">
-          <input
-            v-model="newsletterEmail"
-            class="app-footer__newsletter-input"
-            type="email"
-            :placeholder="t('footer.emailPlaceholder')"
-            :aria-label="t('footer.emailAria')"
-          />
-          <AppButton type="submit">{{ t('footer.subscribe') }}</AppButton>
-        </form>
-      </div>
-    </div>
-
     <div class="container app-footer__inner">
       <div class="app-footer__brand">
         <RouterLink to="/" class="app-footer__logo">
@@ -76,10 +32,6 @@ const subscribe = () => {
           {{ t('footer.tagline') }}
         </p>
         <div class="app-footer__trust">
-          <span class="app-footer__trust-item">
-            <AppIcon name="truck" :size="15" />
-            {{ t('footer.freeShippingOver', { amount: formatPrice(catalogService.settings.value.freeShippingThreshold) }) }}
-          </span>
           <span class="app-footer__trust-item">
             <AppIcon name="shield-check" :size="15" /> {{ t('footer.guarantee') }}
           </span>
@@ -102,18 +54,6 @@ const subscribe = () => {
           </div>
         </div>
       </div>
-
-      <nav class="app-footer__col" :aria-label="t('footer.shopHeading')">
-        <h3 class="app-footer__heading">{{ t('footer.shopHeading') }}</h3>
-        <RouterLink
-          v-for="link in categoryLinks"
-          :key="link.slug"
-          :to="link.to"
-          class="app-footer__link"
-        >
-          {{ catalogService.getCategoryBySlug(link.slug)?.name ?? link.slug }}
-        </RouterLink>
-      </nav>
 
       <nav class="app-footer__col" :aria-label="t('footer.companyHeading')">
         <h3 class="app-footer__heading">{{ t('footer.companyHeading') }}</h3>
@@ -175,73 +115,9 @@ const subscribe = () => {
   border-top: 1px solid var(--dz-border);
 }
 
-.app-footer__newsletter {
-  background: var(--dz-band);
-  border-bottom: 1px solid var(--dz-border);
-}
-
-.app-footer__newsletter-inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1.5rem;
-  padding-top: 2.2rem;
-  padding-bottom: 2.2rem;
-}
-
-.app-footer__newsletter-title {
-  color: var(--dz-white);
-  font-size: 1.25rem;
-}
-
-.app-footer__newsletter-sub {
-  color: rgb(255 255 255 / 0.72);
-  font-size: 0.9rem;
-  margin-top: 0.2rem;
-}
-
-.app-footer__newsletter-form {
-  display: flex;
-  gap: 0.6rem;
-  flex-shrink: 0;
-}
-
-.app-footer__newsletter-input {
-  width: 240px;
-  padding: 0.65rem 1rem;
-  border: 1px solid rgb(255 255 255 / 0.25);
-  border-radius: var(--dz-radius);
-  background: rgb(255 255 255 / 0.08);
-  color: var(--dz-white);
-  font-size: 0.9rem;
-  transition:
-    background-color 0.2s,
-    border-color 0.2s;
-}
-
-.app-footer__newsletter-input::placeholder {
-  color: rgb(255 255 255 / 0.5);
-}
-
-.app-footer__newsletter-input:focus {
-  outline: none;
-  background: rgb(255 255 255 / 0.14);
-  border-color: var(--dz-gold);
-}
-
-.app-footer__newsletter :deep(.app-button--primary) {
-  background: var(--dz-gold);
-  color: var(--dz-on-gold);
-  box-shadow: none;
-}
-
-.app-footer__newsletter :deep(.app-button--primary:hover) {
-  background: var(--dz-gold-strong);
-}
-
 .app-footer__inner {
   display: grid;
-  grid-template-columns: 1.5fr 1fr 1fr 1fr 1.2fr;
+  grid-template-columns: 1.5fr 1fr 1fr 1.2fr;
   gap: 2rem;
   padding-top: 3rem;
   padding-bottom: 2.5rem;
@@ -420,22 +296,6 @@ const subscribe = () => {
 
 .app-footer__heart {
   color: var(--dz-danger);
-}
-
-@media (max-width: 900px) {
-  .app-footer__newsletter-inner {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .app-footer__newsletter-form {
-    width: 100%;
-  }
-
-  .app-footer__newsletter-input {
-    flex: 1;
-    width: auto;
-  }
 }
 
 @media (max-width: 1000px) {

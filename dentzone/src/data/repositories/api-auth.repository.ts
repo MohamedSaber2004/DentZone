@@ -1,7 +1,12 @@
-import type { AuthRepository, LoginCredentials, PasswordChange, ProfileUpdate } from '../../domain/ports/auth-repository'
+import type { AuthRepository, LoginCredentials, UpdateUserProfilePayload, VerifyOtpResult } from '../../domain/ports/auth-repository'
 import type { LoginResponseDto, UserProfileDto } from '../../domain/models/auth'
-import { AUTH_ROUTES } from '../../config/api.config'
+import { AUTH_ROUTES, PASSWORD_ROUTES, USER_ROUTES } from '../../config/api.config'
 import type { HttpClient } from '../../infrastructure/http/http-client'
+
+const query = (params: Record<string, string>): string => {
+  const search = new URLSearchParams(params)
+  return `?${search.toString()}`
+}
 
 export class ApiAuthRepository implements AuthRepository {
   constructor(private readonly http: HttpClient) {}
@@ -9,68 +14,47 @@ export class ApiAuthRepository implements AuthRepository {
   login(credentials: LoginCredentials): Promise<LoginResponseDto> {
     return this.http.post<LoginResponseDto>(
       AUTH_ROUTES.login,
-      { email: credentials.email, password: credentials.password },
-      { headers: { 'X-Attempt-Email': credentials.email }, showFeedback: false },
+      { usernameOrEmail: credentials.usernameOrEmail, password: credentials.password },
+      { headers: { 'X-Attempt-Email': credentials.usernameOrEmail }, showFeedback: false },
     )
   }
 
-  loginGuest(credentials: LoginCredentials): Promise<LoginResponseDto> {
-    return this.http.post<LoginResponseDto>(
-      AUTH_ROUTES.loginGuest,
-      { email: credentials.email, password: credentials.password },
-      { headers: { 'X-Attempt-Email': credentials.email }, showFeedback: false },
-    )
+  getUserProfile(userId: string): Promise<UserProfileDto> {
+    return this.http.get<UserProfileDto>(USER_ROUTES.profile(userId), { showFeedback: false })
   }
 
-  refreshSession(refreshToken?: string): Promise<LoginResponseDto> {
-    return this.http.post<LoginResponseDto>(
-      AUTH_ROUTES.refreshToken,
-      { refreshToken: refreshToken ?? undefined },
-      { skipAuthRefresh: true, showFeedback: false },
-    )
+  updateUserProfile(userId: string, payload: UpdateUserProfilePayload): Promise<UserProfileDto> {
+    const formData = new FormData()
+    formData.append('FullName', payload.fullName)
+    formData.append('PhoneNumber', payload.phoneNumber)
+    formData.append('IsActive', String(payload.isActive))
+    if (payload.isPopular !== null && payload.isPopular !== undefined) {
+      formData.append('IsPopular', String(payload.isPopular))
+    }
+    if (payload.orderNum !== null && payload.orderNum !== undefined) {
+      formData.append('OrderNum', String(payload.orderNum))
+    }
+    if (payload.profileImage) formData.append('UploudProfileImage', payload.profileImage)
+    return this.http.put<UserProfileDto>(USER_ROUTES.update(userId), formData, { showFeedback: false })
   }
 
-  logout(refreshToken?: string): Promise<void> {
-    return this.http.post<void>(
-      AUTH_ROUTES.logout,
-      { refreshToken: refreshToken ?? undefined },
-      { skipAuthRefresh: true, showFeedback: false },
-    )
+  forgotPassword(email: string): Promise<void> {
+    return this.http.post<void>(`${PASSWORD_ROUTES.forgot}${query({ email })}`, undefined, { showFeedback: false })
   }
 
-  requestOtp(email: string): Promise<void> {
-    return this.http.post<void>(
-      AUTH_ROUTES.forgotPassword,
-      { email },
-      { showFeedback: false },
-    )
+  verifyOtp(email: string, code: string): Promise<VerifyOtpResult> {
+    return this.http.post<VerifyOtpResult>(`${PASSWORD_ROUTES.verifyOtp}${query({ email, code })}`, undefined, {
+      showFeedback: false,
+    })
   }
 
-  verifyOtp(email: string, otpCode: string): Promise<void> {
-    return this.http.post<void>(
-      AUTH_ROUTES.verifyOtp,
-      { email, otpCode },
-      { showFeedback: false },
-    )
+  resetPassword(email: string, newPassword: string): Promise<void> {
+    return this.http.post<void>(`${PASSWORD_ROUTES.reset}${query({ email, newPassword })}`, undefined, {
+      showFeedback: false,
+    })
   }
 
-  resetPassword(email: string, otpCode: string, newPassword: string, confirmPassword: string): Promise<void> {
-    return this.http.post<void>(
-      AUTH_ROUTES.resetPassword,
-      { email, otpCode, newPassword, confirmPassword },
-      { showFeedback: false },
-    )
-  }
-
-  getProfile(): Promise<UserProfileDto> {
-    return this.http.get<UserProfileDto>(AUTH_ROUTES.profile)
-  }
-
-  updateProfile(patch: ProfileUpdate): Promise<void> {
-    return this.http.put<void>(AUTH_ROUTES.profile, patch)
-  }
-
-  changePassword(payload: PasswordChange): Promise<void> {
-    return this.http.put<void>(AUTH_ROUTES.changePassword, payload)
+  resendOtp(email: string): Promise<void> {
+    return this.http.post<void>(`${PASSWORD_ROUTES.resendOtp}${query({ email })}`, undefined, { showFeedback: false })
   }
 }

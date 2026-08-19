@@ -8,7 +8,7 @@ export default defineConfig({
         port: 12577,
         proxy: {
             '/api': {
-                target: process.env.VITE_PROXY_TARGET ?? 'https://dentzone-api.runasp.net',
+                target: process.env.VITE_PROXY_TARGET ?? 'https://dentzoneapi.runasp.net',
                 changeOrigin: true,
                 secure: false,
             },

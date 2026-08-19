@@ -14,29 +14,18 @@ export interface HttpClientDependencies {
 
 export interface RequestOptions {
   headers?: Record<string, string>
-  skipAuthRefresh?: boolean
   showFeedback?: boolean
 }
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE'
 
-const NO_REFRESH_PATHS = [
-  AUTH_ROUTES.login,
-  AUTH_ROUTES.logout,
-  AUTH_ROUTES.forgotPassword,
-  AUTH_ROUTES.verifyOtp,
-  AUTH_ROUTES.resetPassword,
-  AUTH_ROUTES.refreshToken,
-]
+const NO_FEEDBACK_PATHS = [AUTH_ROUTES.login]
 
 const MAX_RATE_LIMIT_WAIT_MS = 10_000
 const MAX_429_RETRIES = 2
 const MAX_429_WAIT_MS = 10_000
 
 const isMutation = (method: HttpMethod): boolean => method !== 'GET'
-
-const pathMatches = (path: string, candidates: string[]): boolean =>
-  candidates.some((candidate) => path.startsWith(candidate))
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -68,15 +57,12 @@ export class HttpClient {
   private readonly authBridge: AuthBridge
   private readonly feedback: ModalService
 
-  private refreshInFlight: Promise<boolean> | null = null
-
   private maxConcurrency = 4
   private inFlightCount = 0
   private waitQueue: (() => void)[] = []
 
   private rateLimiters: Record<string, FixedWindowLimiter> = {
     login: new FixedWindowLimiter(3, 60_000),
-    otp: new FixedWindowLimiter(5, 60_000),
     general: new FixedWindowLimiter(60, 60_000),
   }
 
@@ -110,25 +96,13 @@ export class HttpClient {
     body: unknown,
     options: RequestOptions = {},
   ): Promise<T> {
-    const { headers: extraHeaders, skipAuthRefresh = false, showFeedback } = options
+    const { headers: extraHeaders, showFeedback } = options
     const mutation = isMutation(method)
     const wantsFeedback = showFeedback ?? mutation
-    const canRefresh = !skipAuthRefresh && !pathMatches(path, NO_REFRESH_PATHS)
+    const silentPath = NO_FEEDBACK_PATHS.some((candidate) => path.startsWith(candidate))
 
     const headers: Record<string, string> = { ...extraHeaders, 'Accept-Language': locale.value }
-    if (body !== undefined) headers['Content-Type'] = 'application/json'
-
-    if (this.tokenStore.hasAccessToken() && canRefresh) {
-      if (this.tokenStore.isRefreshTokenExpired()) {
-        this.tokenStore.clear()
-        this.authBridge.onSessionExpired()
-        throw new ApiError(401, 'Session expired', {}, true)
-      }
-      if (this.tokenStore.isAccessTokenExpiring()) {
-        const refreshed = await this.performRefresh()
-        if (!refreshed) throw new ApiError(401, 'Session expired', {}, true)
-      }
-    }
+    if (body !== undefined && !(body instanceof FormData)) headers['Content-Type'] = 'application/json'
 
     const activeToken = this.tokenStore.getAccessToken()
     if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`
@@ -137,8 +111,7 @@ export class HttpClient {
       fetch(`${API_BASE_URL}${path}`, {
         method,
         headers,
-        credentials: 'include',
-        body: body !== undefined ? JSON.stringify(body) : undefined,
+        body: body !== undefined ? (body instanceof FormData ? body : JSON.stringify(body)) : undefined,
       })
 
     const run = async (): Promise<T> => {
@@ -154,13 +127,9 @@ export class HttpClient {
           throw error
         }
 
-        if (response.status === 401 && canRefresh) {
-          const refreshed = await this.performRefresh()
-          if (refreshed) {
-            const newAccessToken = this.tokenStore.getAccessToken()
-            if (newAccessToken) headers['Authorization'] = `Bearer ${newAccessToken}`
-            continue
-          }
+        if (response.status === 401 && !silentPath) {
+          this.tokenStore.clear()
+          this.authBridge.onSessionExpired()
           throw new ApiError(401, 'Session expired', {}, true)
         }
 
@@ -172,9 +141,14 @@ export class HttpClient {
           continue
         }
 
-        const envelope = (await response.json().catch(() => null)) as ApiEnvelope<T> | null
+        const body = (await response.json().catch(() => null)) as Record<string, unknown> | null
 
-        if (!response.ok || !envelope?.success) {
+        const isEnvelope = body !== null && typeof body === 'object' && 'success' in body
+        const envelope: ApiEnvelope<T> = isEnvelope
+          ? (body as unknown as ApiEnvelope<T>)
+          : { success: response.ok, errors: null, data: body as T, message: null, statusCode: response.status }
+
+        if (!response.ok || !envelope.success) {
           const error = new ApiError(
             response.status,
             envelope?.message ?? `Request failed with status ${response.status}`,
@@ -184,7 +158,7 @@ export class HttpClient {
           throw error
         }
 
-        if (wantsFeedback) {
+        if (wantsFeedback && !silentPath) {
           const message =
             envelope.message && !GENERIC_OK_MESSAGES.has(envelope.message)
               ? envelope.message
@@ -210,17 +184,6 @@ export class HttpClient {
     }
 
     return this.tracked(path, () => this.withSlot(run))
-  }
-
-  private performRefresh(): Promise<boolean> {
-    if (!this.refreshInFlight) {
-      this.refreshInFlight = this.authBridge
-        .refresh()
-        .finally(() => {
-          this.refreshInFlight = null
-        })
-    }
-    return this.refreshInFlight
   }
 
   private async tracked<T>(path: string, run: () => Promise<T>): Promise<T> {
@@ -257,7 +220,6 @@ export class HttpClient {
 
   private policyForPath(path: string): string {
     if (path.startsWith(AUTH_ROUTES.login)) return 'login'
-    if (['forgot-password', 'verify-otp', 'reset-password'].some((segment) => path.includes(segment))) return 'otp'
     return 'general'
   }
 

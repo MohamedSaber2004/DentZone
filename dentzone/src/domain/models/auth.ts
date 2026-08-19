@@ -23,10 +23,21 @@ export interface AddressDto {
 export interface UserProfileDto {
   id: string
   fullName: string
+  userName: string | null
   email: string
-  birthDate: string | null
-  profilePictureName: string | null
-  language: string
-  userType: number
-  ordersCount?: number
+  phoneNumber: string | null
+  isPopular: boolean | null
+  orderNum: number | null
+  isActive: boolean
+  isDeleted: boolean
+  createdAt: string
+  fcmToken: string | null
+  profileImage: string | null
+  addresses: AddressDto[]
+  roles: UserRoleDto[]
+}
+
+export interface UserRoleDto {
+  id: string
+  name: string
 }

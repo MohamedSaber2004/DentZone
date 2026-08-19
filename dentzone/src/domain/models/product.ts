@@ -1,33 +1,30 @@
-export type ProductBadge = 'new' | 'bestseller' | 'sale' | 'eco'
-
-export interface Product {
+export interface ProviderProductDto {
   id: string
-  slug: string
-  name: string
-  tagline: string
+  productId: string
+  productPriceId: string
+  productName: string
+  productArabicName: string
+  preef: string
+  arabicPreef: string | null
   description: string
-  categoryId: string
-  categorySlug: string
-  vendorId: string
-  vendorSlug: string
-  brand: string
-  price: number
-  compareAtPrice?: number
-  rating: number
-  reviewCount: number
-  inStock: boolean
+  arabicDescription: string | null
+  createdAt: string
+  updatedAt: string
+  categoryName: string | null
+  purchasePrice: number
+  salesPrice: number
+  flashSaleFromDate: string | null
+  flashSaleToDate: string | null
+  priceBeforeFlashSale: number
+  priceAfterFlashSale: number | null
+  isFlashSaleActive: boolean
+  effectiveSalesPrice: number
+  creationDate: string
+  inventoryUserId: string
+  inventoryUserName: string | null
   stockQuantity: number
-  image: string
-  badge?: ProductBadge
-  isFeatured: boolean
-  isBestseller: boolean
-  features: string[]
+  discountRate: number
+  maxQuantity: number
+  productCode: string
+  revenuePercentage: number
 }
-
-export interface ProductQuery {
-  categorySlug?: string
-  search?: string
-  sort?: ProductSort
-}
-
-export type ProductSort = 'featured' | 'price-asc' | 'price-desc' | 'rating' | 'newest'

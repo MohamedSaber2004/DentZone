@@ -1,21 +1,38 @@
-﻿{
-    "id": "5ab0f2ab-3890-4a13-9dfb-2a777d335875",
-    "fullName": "ahmed alaa",
-    "email": "ahmeddev9705@gmail.com",
-    "phoneNumber": "01232333333",
-    "addresses": [
-        {
-            "id": "fcfd5579-40b5-482b-b6ce-6e24e9d53783",
-            "userId": "5ab0f2ab-3890-4a13-9dfb-2a777d335875",
-            "addressLine": "Masr W Al Sudan Street 157, Cairo, Egypt",
-            "latitude": null,
-            "longitude": null,
-            "floorNum": null,
-            "apartmentNum": null
+﻿ "/api/Products/search-product-category": {
+      "get": {
+        "tags": [
+          "Products"
+        ],
+        "parameters": [
+          {
+            "name": "catId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "inventoryId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
         }
-    ],
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjVhYjBmMmFiLTM4OTAtNGExMy05ZGZiLTJhNzc3ZDMzNTg3NSIsInN1YiI6IjVhYjBmMmFiLTM4OTAtNGExMy05ZGZiLTJhNzc3ZDMzNTg3NSIsImVtYWlsIjoiYWhtZWRkZXY5NzA1QGdtYWlsLmNvbSIsImZ1bGxOYW1lIjoiYWhtZWQgYWxhYSIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IkRvY3RvciIsImV4cCI6MTc4OTcyNTUyNSwiaXNzIjoiaHR0cHM6Ly9sb2NhbGhvc3Q6NzIzMy8iLCJhdWQiOiJEcmFnemFBUElVc2VycyJ9.fvRxoEVwcxUkf7jftat8b0Xu583dP1MFpfxETlO741k",
-    "hasDetails": true,
-    "message": null,
-    "role": "Doctor"
-}
+      }
+    } replace that endpoint with that   byProvider: (inventoryId: string, search?: string) =>
+    `${base}/Products/GetProducts-byProvider?inventoryId=${inventoryId}${search ? `&search=${encodeURIComponent(search)}` : ''}`,

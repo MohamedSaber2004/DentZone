@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { t } from '../../i18n'
 import AppIcon from './AppIcon.vue'
 
 const props = withDefaults(
@@ -11,8 +12,10 @@ const props = withDefaults(
     required?: boolean
     error?: string
     autocomplete?: string
+    disabled?: boolean
+    autofocus?: boolean
   }>(),
-  { modelValue: '', type: 'text', placeholder: '', required: false, error: '', autocomplete: 'off' },
+  { modelValue: '', type: 'text', placeholder: '', required: false, error: '', autocomplete: 'off', disabled: false, autofocus: false },
 )
 
 const emit = defineEmits<{
@@ -43,19 +46,23 @@ const onInput = (event: Event) => {
     >
       <input
         class="app-input__field"
+        :class="{ 'app-input__field--ltr': type === 'email' || type === 'tel' }"
         :type="fieldType()"
         :value="modelValue"
         :placeholder="placeholder"
         :required="required"
         :autocomplete="autocomplete"
+        :disabled="disabled"
+        :autofocus="autofocus"
+        :dir="type === 'email' || type === 'tel' ? 'ltr' : undefined"
         @input="onInput"
       />
       <button
         v-if="type === 'password'"
         class="app-input__toggle"
         type="button"
-        :aria-label="showPassword ? 'Hide password' : 'Show password'"
-        :title="showPassword ? 'Hide password' : 'Show password'"
+        :aria-label="showPassword ? t('auth.hidePassword') : t('auth.showPassword')"
+        :title="showPassword ? t('auth.hidePassword') : t('auth.showPassword')"
         @click="showPassword = !showPassword"
       >
         <AppIcon :name="showPassword ? 'eye-off' : 'eye'" :size="17" />
@@ -99,6 +106,10 @@ const onInput = (event: Event) => {
     box-shadow 0.2s;
 }
 
+.app-input__field--ltr {
+  text-align: left;
+}
+
 .app-input__field-wrap--password .app-input__field {
   padding-inline-end: 2.8rem;
 }
@@ -111,6 +122,12 @@ const onInput = (event: Event) => {
   outline: none;
   border-color: var(--dz-primary);
   box-shadow: 0 0 0 3px var(--dz-primary-soft);
+}
+
+.app-input__field:disabled {
+  opacity: 0.6;
+  background: var(--dz-surface-soft);
+  cursor: not-allowed;
 }
 
 .app-input__field-wrap--invalid .app-input__field {

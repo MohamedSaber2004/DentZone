@@ -1,642 +1,494 @@
 <script setup lang="ts">
+import { computed, onMounted, ref } from 'vue'
 import { services } from '../di/container'
-import { computed, onMounted, reactive, ref, watch } from 'vue'
-const { authService, wishlistService, orderService } = services
-import { useRouter } from 'vue-router'
 import { t } from '../i18n'
-import AppInput from '../components/ui/AppInput.vue'
 import AppButton from '../components/ui/AppButton.vue'
+import AppInput from '../components/ui/AppInput.vue'
 import AppIcon from '../components/ui/AppIcon.vue'
-import SectionHeader from '../components/ui/SectionHeader.vue'
+import { toastService } from '../infrastructure/feedback/toast.service'
+import { API_BASE_URL } from '../config/api.config'
+import type { AddressDto } from '../domain/models/auth'
 
-const router = useRouter()
+const { authService } = services
 
-const user = computed(() => authService.user.value)
-
-const form = reactive<{
-  firstName: string
-  lastName: string
-  email: string
-  birthDate: string
-}>({
-  firstName: user.value?.firstName ?? '',
-  lastName: user.value?.lastName ?? '',
-  email: user.value?.email ?? '',
-  birthDate: user.value?.birthDate ?? '',
-})
-
+const fullName = ref('')
+const phoneNumber = ref('')
+const email = ref('')
+const userName = ref('')
+const isActive = ref(true)
+const isPopular = ref(false)
+const orderNum = ref('')
+const addresses = ref<AddressDto[]>([])
+const serverImageUrl = ref('')
+const profileImage = ref<File | null>(null)
+const previewUrl = ref('')
+const error = ref('')
+const loading = ref(true)
 const saving = ref(false)
-const formError = ref('')
 
-const initials = computed(() =>
-  `${form.firstName.charAt(0)}${form.lastName.charAt(0)}`.toUpperCase() || 'DZ',
-)
+const user = authService.user
+const userInitials = () => {
+  const u = user.value
+  if (!u) return 'DZ'
+  return `${u.firstName.charAt(0)}${u.lastName.charAt(0)}`.toUpperCase()
+}
 
-const recordId = computed(() => (user.value?.id ?? 'dz').slice(0, 8).toUpperCase())
-const ordersCount = computed(() => orderService.orders.value.length || user.value?.ordersCount || 0)
+const resolveImageUrl = (path: string | null): string => {
+  if (!path) return ''
+  if (/^https?:\/\//i.test(path)) return path
+  return `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`
+}
 
-onMounted(() => {
-  void authService.fetchProfile()
-  void orderService.fetchOrders()
-})
+const avatarSrc = computed(() => previewUrl.value || serverImageUrl.value)
 
-watch(authService.user, (next) => {
-  if (next) {
-    form.firstName = next.firstName
-    form.lastName = next.lastName
-    form.email = next.email
-    form.birthDate = next.birthDate ?? ''
-  }
-})
+const canSave = computed(() => fullName.value.trim().length > 0 && !saving.value)
 
-const saveProfile = async () => {
-  formError.value = ''
-  if (!form.firstName.trim() || !form.lastName.trim()) {
-    formError.value = t('profile.errRequired')
-    return
-  }
-  if (form.birthDate && new Date(form.birthDate).getTime() > Date.now()) {
-    formError.value = t('profile.errBirthDateFuture')
+const onPickImage = (event: Event) => {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  profileImage.value = file
+  previewUrl.value = URL.createObjectURL(file)
+}
+
+const save = async () => {
+  error.value = ''
+  if (!fullName.value.trim()) {
+    error.value = t('profile.errRequired')
     return
   }
   saving.value = true
+  const parsedOrder = orderNum.value.trim() === '' ? null : Number(orderNum.value)
   const result = await authService.updateProfile({
-    firstName: form.firstName.trim(),
-    lastName: form.lastName.trim(),
-    birthDate: form.birthDate,
+    fullName: fullName.value.trim(),
+    phoneNumber: phoneNumber.value.trim(),
+    isActive: isActive.value,
+    isPopular: isPopular.value,
+    orderNum: Number.isFinite(parsedOrder) ? parsedOrder : null,
+    profileImage: profileImage.value ?? undefined,
   })
   saving.value = false
   if (!result.ok) {
+    error.value = result.error
     return
+  }
+  toastService.success(t('profile.savedToast'))
+  profileImage.value = null
+  if (previewUrl.value) URL.revokeObjectURL(previewUrl.value)
+  previewUrl.value = ''
+  const refreshed = await authService.loadProfile()
+  if (refreshed.ok && refreshed.profile) {
+    applyProfile(refreshed.profile)
   }
 }
 
-const passwordOpen = ref(false)
-const currentPassword = ref('')
-const newPassword = ref('')
-const confirmPassword = ref('')
-const passwordError = ref('')
-const changing = ref(false)
+const applyProfile = (profile: NonNullable<Awaited<ReturnType<typeof authService.loadProfile>>['profile']>) => {
+  fullName.value = profile.fullName
+  phoneNumber.value = profile.phoneNumber ?? ''
+  email.value = profile.email
+  userName.value = profile.userName ?? ''
+  isActive.value = profile.isActive
+  isPopular.value = profile.isPopular ?? false
+  orderNum.value = profile.orderNum === null || profile.orderNum === undefined ? '' : String(profile.orderNum)
+  addresses.value = profile.addresses ?? []
+  serverImageUrl.value = resolveImageUrl(profile.profileImage ?? '')
+}
 
-const savePassword = async () => {
-  passwordError.value = ''
-  if (!currentPassword.value) {
-    passwordError.value = t('profile.errCurrentPassword')
-    return
-  }
-  if (newPassword.value.length < 8) {
-    passwordError.value = t('auth.passwordMin')
-    return
-  }
-  if (newPassword.value !== confirmPassword.value) {
-    passwordError.value = t('auth.passwordMismatch')
-    return
-  }
-  changing.value = true
-  const result = await authService.changePassword(currentPassword.value, newPassword.value, confirmPassword.value)
-  changing.value = false
+onMounted(async () => {
+  const result = await authService.loadProfile()
+  loading.value = false
   if (!result.ok) {
+    error.value = result.error
     return
   }
-  passwordOpen.value = false
-  currentPassword.value = ''
-  newPassword.value = ''
-  confirmPassword.value = ''
-  void router.push({ name: 'login' })
-}
-
-const logout = () => {
-  void authService.logout()
-  void router.push('/')
-}
+  if (result.profile) applyProfile(result.profile)
+})
 </script>
 
 <template>
-  <div class="container page">
-    <SectionHeader :title="t('profile.title')" />
+  <div class="profile">
+    <section class="container profile__inner">
+      <div class="profile__card">
+        <div class="profile__head">
+          <div>
+            <p class="profile__eyebrow">{{ t('profile.title') }}</p>
+            <h1 class="profile__title">{{ t('profile.personalInfo') }}</h1>
+            <p class="profile__subtitle">{{ t('profile.personalInfoDesc') }}</p>
+          </div>
+        </div>
 
-    <div v-if="user" class="profile">
-      <section class="chart" :style="{ '--tint': user.tint }">
-        <span class="chart__stamp" aria-hidden="true">{{ initials }}</span>
-        <div class="chart__identity">
-          <p class="chart__eyebrow">
-            {{ t('profile.recordId') }} <span class="chart__code">{{ recordId }}</span>
+        <div v-if="loading" class="profile__loading">
+          <AppIcon name="refresh" :size="22" class="profile__spinner" />
+          <span>{{ t('common.loading') }}</span>
+        </div>
+
+        <form v-else class="profile__form" novalidate @submit.prevent="save">
+          <div class="profile__avatar-wrap">
+            <div class="profile__avatar" :style="{ '--tint': user?.tint ?? '' }">
+              <img v-if="avatarSrc" :src="avatarSrc" alt="" class="profile__avatar-img" />
+              <span v-else>{{ userInitials() }}</span>
+            </div>
+            <div class="profile__avatar-actions">
+              <label class="profile__upload">
+                <AppIcon name="camera" :size="15" />
+                <span>{{ t('profile.changePhoto') }}</span>
+                <input class="profile__upload-input" type="file" accept="image/*" @change="onPickImage" />
+              </label>
+              <p v-if="profileImage" class="profile__upload-hint">{{ profileImage.name }}</p>
+            </div>
+          </div>
+
+          <div class="profile__section">
+            <p class="profile__section-title">{{ t('profile.account') }}</p>
+            <AppInput v-model="fullName" :label="t('checkout.fullName')" required />
+            <AppInput v-model="phoneNumber" :label="t('profile.phone')" type="tel" />
+            <AppInput v-model="email" :label="t('profile.email')" type="email" disabled />
+            <div v-if="userName" class="profile__readonly">
+              <span class="profile__readonly-label">{{ t('profile.username') }}</span>
+              <span class="profile__readonly-value" dir="ltr">{{ userName }}</span>
+            </div>
+          </div>
+
+          <div class="profile__section">
+            <p class="profile__section-title">{{ t('profile.preferences') }}</p>
+            <label class="profile__toggle">
+              <span class="profile__toggle-text">
+                <span class="profile__toggle-title">{{ t('profile.activeAccount') }}</span>
+              </span>
+              <input v-model="isActive" type="checkbox" class="profile__toggle-input" />
+              <span class="profile__toggle-track" aria-hidden="true">
+                <span class="profile__toggle-thumb" />
+              </span>
+            </label>
+            <!--<label class="profile__toggle">
+              <span class="profile__toggle-text">
+                <span class="profile__toggle-title">{{ t('profile.popular') }}</span>
+              </span>
+              <input v-model="isPopular" type="checkbox" class="profile__toggle-input" />
+              <span class="profile__toggle-track" aria-hidden="true">
+                <span class="profile__toggle-thumb" />
+              </span>
+            </label>-->
+            <!--<AppInput v-model="orderNum" :label="t('profile.orderNum')" type="text" inputmode="numeric" />-->
+          </div>
+
+          <div v-if="addresses.length" class="profile__section">
+            <p class="profile__section-title">{{ t('profile.addresses') }}</p>
+            <div v-for="address in addresses" :key="address.id" class="profile__address">
+              <AppIcon name="map-pin" :size="16" />
+              <div class="profile__address-body">
+                <p class="profile__address-line" dir="auto">{{ address.addressLine }}</p>
+                <p class="profile__address-meta">
+                  {{ t('profile.floor') }}: {{ address.floorNum ?? '—' }}
+                  · {{ t('profile.apartment') }}: {{ address.apartmentNum ?? '—' }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <p v-if="error" class="profile__error" role="alert">
+            <AppIcon name="alert-circle" :size="16" />
+            {{ error }}
           </p>
-          <h2 class="chart__name">{{ user.firstName }} {{ user.lastName }}</h2>
-          <p class="chart__email">{{ user.email }}</p>
-        </div>
-        <span class="chart__status">
-          <span class="chart__status-dot" />
-          {{ t('profile.activeAccount') }}
-        </span>
-      </section>
 
-      <div class="profile__grid">
-        <div class="profile__main">
-          <section class="profile__card">
-            <div class="profile__card-head">
-              <span class="profile__card-icon">
-                <AppIcon name="user" :size="17" />
-              </span>
-              <div>
-                <h3 class="profile__heading">{{ t('profile.personalInfo') }}</h3>
-                <p class="profile__muted">{{ t('profile.personalInfoDesc') }}</p>
-              </div>
-            </div>
-            <div v-if="formError" class="profile__alert" role="alert">
-              <AppIcon name="alert-circle" :size="16" />
-              {{ formError }}
-            </div>
-            <div class="profile__email-row">
-              <span class="profile__email-icon">
-                <AppIcon name="mail" :size="16" />
-              </span>
-              <div class="profile__email-info">
-                <span class="profile__email-label">{{ t('profile.email') }}</span>
-                <span class="profile__email-value">{{ form.email }}</span>
-              </div>
-              <span class="profile__email-note">{{ t('profile.emailReadOnly') }}</span>
-            </div>
-            <div class="profile__form">
-              <AppInput v-model="form.firstName" :label="t('profile.firstName')" required autocomplete="given-name" />
-              <AppInput v-model="form.lastName" :label="t('profile.lastName')" required autocomplete="family-name" />
-              <AppInput v-model="form.birthDate" :label="t('profile.birthDate')" type="date" autocomplete="bday" />
-            </div>
-            <div class="profile__actions">
-              <AppButton :disabled="saving" @click="saveProfile">
-                {{ saving ? t('profile.saving') : t('profile.saveChanges') }}
-              </AppButton>
-            </div>
-          </section>
-
-          <section class="profile__card">
-            <div class="profile__card-head">
-              <span class="profile__card-icon profile__card-icon--lock">
-                <AppIcon name="lock" :size="17" />
-              </span>
-              <div>
-                <h3 class="profile__heading">{{ t('profile.security') }}</h3>
-                <p class="profile__muted">{{ t('profile.changePasswordDesc') }}</p>
-              </div>
-              <AppButton variant="outline" size="sm" class="profile__toggle" @click="passwordOpen = !passwordOpen">
-                <AppIcon name="key" :size="14" />
-                {{ passwordOpen ? t('profile.hideForm') : t('profile.changePassword') }}
-              </AppButton>
-            </div>
-            <div v-if="passwordOpen" class="profile__password">
-              <p class="profile__note">
-                <AppIcon name="shield-check" :size="15" />
-                {{ t('profile.changePasswordNote') }}
-              </p>
-              <div class="profile__form">
-                <AppInput
-                  v-model="currentPassword"
-                  :label="t('profile.currentPassword')"
-                  type="password"
-                  required
-                  autocomplete="current-password"
-                />
-                <AppInput
-                  v-model="newPassword"
-                  :label="t('auth.newPassword')"
-                  type="password"
-                  required
-                  autocomplete="new-password"
-                />
-                <AppInput
-                  v-model="confirmPassword"
-                  :label="t('auth.confirmPassword')"
-                  type="password"
-                  required
-                  autocomplete="new-password"
-                />
-              </div>
-              <div v-if="passwordError" class="profile__alert" role="alert">
-                <AppIcon name="alert-circle" :size="16" />
-                {{ passwordError }}
-              </div>
-              <div class="profile__actions">
-                <AppButton :disabled="changing" @click="savePassword">
-                  {{ changing ? t('profile.saving') : t('profile.updatePassword') }}
-                </AppButton>
-              </div>
-            </div>
-          </section>
-        </div>
-
-        <aside class="profile__side">
-          <section class="profile__card profile__card--flush">
-            <h3 class="profile__heading profile__heading--padded">{{ t('profile.shortcuts') }}</h3>
-            <nav class="profile__links">
-              <RouterLink to="/wishlist" class="profile__link">
-                <AppIcon name="heart" :size="17" />
-                {{ t('profile.wishlistShortcut') }}
-                <span v-if="wishlistService.count.value" class="profile__link-count">
-                  {{ wishlistService.count.value }}
-                </span>
-              </RouterLink>
-              <RouterLink to="/orders" class="profile__link">
-                <AppIcon name="box" :size="17" />
-                {{ t('profile.ordersShortcut') }}
-                <span v-if="ordersCount" class="profile__link-count">
-                  {{ ordersCount }}
-                </span>
-              </RouterLink>
-            </nav>
-          </section>
-
-          <section class="profile__card profile__card--flush">
-            <h3 class="profile__heading profile__heading--padded">{{ t('profile.account') }}</h3>
-            <nav class="profile__links">
-              <button type="button" class="profile__link profile__link--danger" @click="logout">
-                <AppIcon name="logout" :size="17" />
-                {{ t('profile.logout') }}
-              </button>
-            </nav>
-          </section>
-        </aside>
+          <AppButton type="submit" :disabled="!canSave" block>
+            <AppIcon v-if="saving" name="refresh" :size="17" class="profile__spinner" />
+            {{ saving ? t('profile.saving') : t('profile.saveChanges') }}
+          </AppButton>
+        </form>
       </div>
-    </div>
+    </section>
   </div>
 </template>
 
 <style scoped>
 .profile {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.chart {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  padding: 1.75rem 2rem;
-  border-radius: var(--dz-radius-lg);
-  border: 1px solid var(--dz-border);
+  min-height: calc(100vh - var(--dz-header-height));
   background:
-    linear-gradient(120deg, color-mix(in srgb, var(--tint) 12%, var(--dz-surface)) 0%, var(--dz-surface) 55%),
-    var(--dz-surface);
-  box-shadow: var(--dz-shadow-sm);
-  overflow: hidden;
+    radial-gradient(40rem 22rem at 15% -5%, var(--dz-primary-soft) 0%, transparent 60%),
+    var(--dz-paper);
+  padding: 3rem var(--dz-gutter);
 }
 
-.chart::before {
-  content: '';
-  position: absolute;
-  inset-inline-start: 0;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--tint) 85%, transparent), color-mix(in srgb, var(--tint) 35%, transparent));
-}
-
-.chart__stamp {
+.profile__inner {
   display: flex;
-  align-items: center;
   justify-content: center;
-  width: 5.25rem;
-  height: 5.25rem;
-  flex-shrink: 0;
-  border-radius: var(--dz-radius-full);
-  background: color-mix(in srgb, var(--tint) 16%, var(--dz-surface-soft));
-  border: 1px solid color-mix(in srgb, var(--tint) 30%, var(--dz-border));
-  outline: 6px solid color-mix(in srgb, var(--tint) 8%, transparent);
-  color: color-mix(in srgb, var(--tint) 85%, var(--dz-ink));
-  font-family: var(--dz-font-display);
-  font-size: 1.9rem;
-  font-weight: 700;
-}
-
-.chart__identity {
-  min-width: 0;
-}
-
-.chart__eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--dz-muted);
-}
-
-.chart__code {
-  font-family: var(--dz-font-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.12em;
-  padding: 0.15rem 0.45rem;
-  border-radius: var(--dz-radius-sm);
-  background: var(--dz-surface-soft);
-  border: 1px dashed var(--dz-border-strong);
-  color: var(--dz-ink-soft);
-}
-
-.chart__name {
-  font-family: var(--dz-font-display);
-  font-size: 1.5rem;
-  margin-top: 0.35rem;
-}
-
-.chart__email {
-  color: var(--dz-muted);
-  font-size: 0.9rem;
-  margin-top: 0.2rem;
-}
-
-.chart__status {
-  margin-inline-start: auto;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.3rem 0.75rem;
-  border-radius: var(--dz-radius-full);
-  background: var(--dz-success-soft);
-  color: var(--dz-success);
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.chart__status-dot {
-  width: 0.45rem;
-  height: 0.45rem;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-.profile__grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
-  gap: 1.5rem;
-  align-items: start;
-}
-
-.profile__main {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.profile__side {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  position: sticky;
-  top: calc(var(--dz-header-height) + 1.25rem);
 }
 
 .profile__card {
-  padding: 1.5rem;
+  width: min(100%, 540px);
+  padding: 2.5rem 2.25rem;
   background: var(--dz-surface);
   border: 1px solid var(--dz-border);
   border-radius: var(--dz-radius-lg);
-  box-shadow: var(--dz-shadow-sm);
+  box-shadow: var(--dz-shadow-lg);
 }
 
-.profile__card--flush {
-  padding: 0;
-  overflow: hidden;
-}
-
-.profile__card-head {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.9rem;
-  margin-bottom: 1.25rem;
-}
-
-.profile__card-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  flex-shrink: 0;
-  border-radius: var(--dz-radius);
-  background: var(--dz-primary-faint);
+.profile__eyebrow {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--dz-primary-strong);
 }
 
-.profile__card-icon--lock {
-  background: var(--dz-warning-soft);
-  color: var(--dz-warning);
+.profile__title {
+  font-family: var(--dz-font-display);
+  font-size: 1.6rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin-top: 0.25rem;
 }
 
-.profile__toggle {
-  margin-inline-start: auto;
-}
-
-.profile__heading {
-  font-size: 1rem;
-}
-
-.profile__heading--padded {
-  padding: 1.25rem 1.5rem 0.9rem;
-  margin-bottom: 0;
-  border-bottom: 1px solid var(--dz-border);
-}
-
-.profile__muted {
+.profile__subtitle {
+  font-size: 0.9rem;
   color: var(--dz-muted);
-  font-size: 0.82rem;
-  margin-top: 0.15rem;
+  margin-top: 0.3rem;
+  margin-bottom: 0.5rem;
+}
+
+.profile__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 3rem 0;
+  color: var(--dz-muted);
+}
+
+.profile__spinner {
+  animation: profile-spin 0.8s linear infinite;
+}
+
+@keyframes profile-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .profile__form {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
 }
 
-.profile__email-row {
+.profile__avatar-wrap {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.8rem 1rem;
-  margin-bottom: 1rem;
-  border-radius: var(--dz-radius);
-  background: var(--dz-surface-soft);
-  border: 1px solid var(--dz-border);
+  gap: 1.1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--dz-border);
 }
 
-.profile__email-icon {
+.profile__avatar {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
+  width: 4.5rem;
+  height: 4.5rem;
   flex-shrink: 0;
   border-radius: var(--dz-radius-full);
-  background: var(--dz-primary-faint);
-  color: var(--dz-primary-strong);
-}
-
-.profile__email-info {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.profile__email-label {
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--dz-muted);
-}
-
-.profile__email-value {
-  font-size: 0.92rem;
-  font-weight: 600;
-  color: var(--dz-ink);
+  background: color-mix(in srgb, var(--tint) 16%, var(--dz-surface-soft));
+  border: 1px solid color-mix(in srgb, var(--tint) 26%, var(--dz-border));
+  color: color-mix(in srgb, var(--tint) 80%, var(--dz-ink));
+  font-family: var(--dz-font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.profile__email-note {
-  margin-inline-start: auto;
-  flex-shrink: 0;
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--dz-muted);
+.profile__avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.profile__password {
-  border-top: 1px solid var(--dz-border);
-  padding-top: 1.25rem;
+.profile__avatar-actions {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  align-items: flex-start;
+  gap: 0.3rem;
 }
 
-.profile__note {
-  display: flex;
+.profile__upload {
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.65rem 0.85rem;
-  border-radius: var(--dz-radius);
-  background: var(--dz-primary-faint);
-  border: 1px solid color-mix(in srgb, var(--dz-primary) 18%, var(--dz-border));
-  color: var(--dz-primary-strong);
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-.profile__actions {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.profile__alert {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.65rem 0.85rem;
-  margin-bottom: 1rem;
-  border-radius: var(--dz-radius);
-  background: var(--dz-danger-soft);
-  border: 1px solid color-mix(in srgb, var(--dz-danger) 25%, var(--dz-border));
-  color: var(--dz-danger);
+  gap: 0.45rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--dz-radius-full);
+  border: 1px solid var(--dz-primary);
+  background: var(--dz-surface);
   font-size: 0.82rem;
   font-weight: 600;
-}
-
-.profile__links {
-  display: flex;
-  flex-direction: column;
-  padding: 0.5rem;
-  gap: 0.2rem;
-}
-
-.profile__link {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  padding: 0.75rem 0.9rem;
-  border-radius: var(--dz-radius);
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--dz-ink-soft);
-  text-align: start;
+  color: var(--dz-primary-strong);
+  cursor: pointer;
   transition:
     background-color 0.2s,
     color 0.2s;
 }
 
-.profile__link:hover {
-  background: var(--dz-primary-faint);
-  color: var(--dz-primary-strong);
+.profile__upload:hover {
+  background: var(--dz-primary);
+  color: var(--dz-on-primary);
 }
 
-.profile__link svg {
-  color: var(--dz-primary);
-  flex-shrink: 0;
+.profile__upload-input {
+  display: none;
 }
 
-.profile__link--danger {
-  color: var(--dz-danger);
+.profile__upload-hint {
+  font-size: 0.72rem;
+  color: var(--dz-muted);
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.profile__link--danger:hover {
-  background: var(--dz-danger-soft);
-  color: var(--dz-danger);
+.profile__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
 }
 
-.profile__link--danger svg {
-  color: var(--dz-danger);
+.profile__section-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--dz-muted);
+  padding-bottom: 0.15rem;
 }
 
-.profile__link-count {
-  margin-inline-start: auto;
+.profile__readonly {
   display: flex;
   align-items: center;
-  justify-content: center;
-  min-width: 1.4rem;
-  height: 1.4rem;
-  padding: 0 0.35rem;
-  border-radius: var(--dz-radius-full);
-  background: var(--dz-primary-soft);
-  font-family: var(--dz-font-mono);
-  font-size: 0.7rem;
+  justify-content: space-between;
+  padding: 0.65rem 0.9rem;
+  border: 1px dashed var(--dz-border-strong);
+  border-radius: var(--dz-radius);
+  background: var(--dz-surface-soft);
+}
+
+.profile__readonly-label {
+  font-size: 0.82rem;
   font-weight: 600;
+  color: var(--dz-muted);
+}
+
+.profile__readonly-value {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--dz-ink);
+  text-align: end;
+}
+
+.profile__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid var(--dz-border);
+  border-radius: var(--dz-radius);
+  background: var(--dz-surface);
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background-color 0.2s;
+}
+
+.profile__toggle:hover {
+  border-color: var(--dz-primary-soft);
+  background: var(--dz-primary-faint);
+}
+
+.profile__toggle-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--dz-ink);
+}
+
+.profile__toggle-input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.profile__toggle-track {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 2.6rem;
+  height: 1.45rem;
+  flex-shrink: 0;
+  border-radius: var(--dz-radius-full);
+  background: var(--dz-border-strong);
+  transition: background-color 0.2s;
+}
+
+.profile__toggle-thumb {
+  position: absolute;
+  inset-inline-start: 0.2rem;
+  width: 1.05rem;
+  height: 1.05rem;
+  border-radius: 50%;
+  background: var(--dz-surface);
+  box-shadow: var(--dz-shadow-sm);
+  transition:
+    inset-inline-start 0.2s,
+    background-color 0.2s;
+}
+
+.profile__toggle-input:checked + .profile__toggle-track {
+  background: var(--dz-primary);
+}
+
+.profile__toggle-input:checked + .profile__toggle-track .profile__toggle-thumb {
+  inset-inline-start: 1.35rem;
+}
+
+.profile__addresses {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.profile__address {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--dz-border);
+  border-radius: var(--dz-radius);
+  background: var(--dz-surface-soft);
   color: var(--dz-primary-strong);
 }
 
-@media (max-width: 900px) {
-  .profile__grid {
-    grid-template-columns: 1fr;
-  }
-
-  .profile__side {
-    position: static;
-  }
+.profile__address-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
 }
 
-@media (max-width: 640px) {
-  .chart {
-    flex-wrap: wrap;
-    padding: 1.5rem;
-  }
+.profile__address-line {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--dz-ink);
+}
 
-  .chart__status {
-    margin-inline-start: 0;
-  }
+.profile__address-meta {
+  font-size: 0.75rem;
+  color: var(--dz-muted);
+}
 
-  .profile__form {
-    grid-template-columns: 1fr;
-  }
-
-  .profile__card-head {
-    flex-wrap: wrap;
-  }
-
-  .profile__toggle {
-    margin-inline-start: 0;
-    width: 100%;
-  }
+.profile__error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--dz-danger);
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--dz-radius);
+  background: var(--dz-danger-soft);
 }
 </style>

@@ -1,9 +1,19 @@
-export interface Category {
+export interface CategoryDto {
   id: string
   name: string
-  slug: string
+  pref: string
   description: string
-  emoji: string
-  tint: string
-  productCount?: number
+  companyPercentage: number | null
+  orderNum: number
+  arabicName: string
+  imageName: string
+}
+
+export interface InventoryDto {
+  inventoryId: string
+  fullName: string
+  email: string
+  addresses: string
+  phoneNumber: string
+  isAvailableNow: boolean
 }

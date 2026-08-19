@@ -11,6 +11,7 @@ export type Messages = {
   nav: {
     home: string
     shop: string
+    categories: string
     whitening: string
     brushes: string
     searchPlaceholder: string
@@ -39,6 +40,7 @@ export type Messages = {
     statCustomers: string
     statRating: string
     statProducts: string
+    viewAllCategories: string
     freeShipping: string
     freeShippingDesc: string
     guarantee: string
@@ -107,12 +109,51 @@ export type Messages = {
     emptyFilteredDescription: string
     showAllProducts: string
   }
+  categories: {
+    title: string
+    subtitle: string
+    count: string
+    loading: string
+    errorTitle: string
+    errorDescription: string
+    retry: string
+    emptyTitle: string
+    emptyDescription: string
+    inventoriesTitle: string
+    inventoriesSubtitle: string
+    inventoriesCount: string
+    noInventoriesTitle: string
+    noInventoriesDescription: string
+    backToCategories: string
+    backToInventories: string
+    available: string
+    notAvailable: string
+    address: string
+    phone: string
+    email: string
+  }
+  products: {
+    title: string
+    subtitle: string
+    count: string
+    searchPlaceholder: string
+    search: string
+    clearSearch: string
+    loading: string
+    emptyTitle: string
+    emptyDescription: string
+    noResultsTitle: string
+    noResultsDescription: string
+    code: string
+    inStock: string
+    outOfStock: string
+    maxPerOrder: string
+    sale: string
+    currency: string
+  }
   auth: {
     loginTitle: string
     loginSubtitle: string
-    ordinalLogin: string
-    guestLogin: string
-    guestSubtitle: string
     email: string
     password: string
     showPassword: string
@@ -124,6 +165,9 @@ export type Messages = {
     register: string
     registerSoon: string
     errInvalidCredentials: string
+    errEmailRequired: string
+    errEmailInvalid: string
+    errPasswordRequired: string
     demoHint: string
     backToLogin: string
     forgotTitle: string
@@ -170,6 +214,14 @@ export type Messages = {
     saveChanges: string
     saving: string
     savedToast: string
+    changePhoto: string
+    username: string
+    addresses: string
+    floor: string
+    apartment: string
+    preferences: string
+    popular: string
+    orderNum: string
     security: string
     changePassword: string
     hideForm: string
