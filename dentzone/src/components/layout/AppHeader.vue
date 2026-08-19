@@ -129,6 +129,15 @@ const ordersLink = () => {
         >
           {{ item.label }}
         </RouterLink>
+        <div class="app-header__nav-tools">
+          <button class="app-header__lang" type="button" :aria-label="switchLangLabel" @click="toggleLocale">
+            <AppIcon name="globe" :size="16" />
+            <span class="app-header__lang-text">{{ switchLangLabel }}</span>
+          </button>
+          <button class="app-header__theme" type="button" :aria-label="themeLabel" @click="toggleTheme">
+            <AppIcon :name="theme === 'dark' ? 'sun' : 'moon'" :size="17" />
+          </button>
+        </div>
       </nav>
 
       <div class="app-header__actions">
@@ -139,13 +148,15 @@ const ordersLink = () => {
           @update:model-value="emit('update:query', $event)"
           @submit="emit('submit')"
         />
-        <button class="app-header__lang" type="button" :aria-label="switchLangLabel" @click="toggleLocale">
-          <AppIcon name="globe" :size="16" />
-          <span class="app-header__lang-text">{{ switchLangLabel }}</span>
-        </button>
-        <button class="app-header__theme" type="button" :aria-label="themeLabel" @click="toggleTheme">
-          <AppIcon :name="theme === 'dark' ? 'sun' : 'moon'" :size="17" />
-        </button>
+        <div class="app-header__tools">
+          <button class="app-header__lang" type="button" :aria-label="switchLangLabel" @click="toggleLocale">
+            <AppIcon name="globe" :size="16" />
+            <span class="app-header__lang-text">{{ switchLangLabel }}</span>
+          </button>
+          <button class="app-header__theme" type="button" :aria-label="themeLabel" @click="toggleTheme">
+            <AppIcon :name="theme === 'dark' ? 'sun' : 'moon'" :size="17" />
+          </button>
+        </div>
         <RouterLink v-if="isAuthenticated" to="/wishlist" class="app-header__wishlist" :aria-label="t('nav.wishlist')">
           <AppIcon name="heart" :size="18" />
           <span v-if="wishlistService.count.value > 0" class="app-header__cart-count">
@@ -305,6 +316,16 @@ const ordersLink = () => {
   display: flex;
   align-items: center;
   gap: 0.55rem;
+}
+
+.app-header__tools {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.app-header__nav-tools {
+  display: none;
 }
 
 .app-header__cart,
@@ -582,6 +603,8 @@ const ordersLink = () => {
     background: var(--dz-surface);
     border-bottom: 1px solid var(--dz-border);
     box-shadow: var(--dz-shadow);
+    max-height: calc(100vh - var(--dz-header-height));
+    overflow-y: auto;
   }
 
   .app-header__nav--open {
@@ -594,6 +617,35 @@ const ordersLink = () => {
 }
 
 @media (max-width: 560px) {
+  .app-header__inner {
+    gap: 0.85rem;
+  }
+
+  .app-header__actions {
+    gap: 0.4rem;
+  }
+
+  .app-header__tools {
+    display: none;
+  }
+
+  .app-header__nav-tools {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin-top: 0.7rem;
+    padding-top: 0.7rem;
+    border-top: 1px solid var(--dz-border);
+  }
+
+  .app-header__cart,
+  .app-header__wishlist,
+  .app-header__avatar,
+  .app-header__login {
+    width: 2.45rem;
+    height: 2.45rem;
+  }
+
   .app-header__lang-text {
     display: none;
   }
@@ -603,7 +655,7 @@ const ordersLink = () => {
   }
 
   .app-header__login {
-    width: 2.7rem;
+    width: 2.45rem;
     padding: 0;
     justify-content: center;
   }
