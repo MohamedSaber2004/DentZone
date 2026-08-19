@@ -126,12 +126,12 @@ html[dir='rtl'] h4 {
 }
 
 .page {
-  padding: 2.5rem 0 4rem;
+  padding: 2.5rem var(--dz-gutter) 4rem;
 }
 
 @media (max-width: 640px) {
   .page {
-    padding: 1.5rem 0 3rem;
+    padding: 1.5rem var(--dz-gutter) 3rem;
   }
 }
 
