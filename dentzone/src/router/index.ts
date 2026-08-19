@@ -2,8 +2,6 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import { services } from '../di/container'
 
-const authService = services.authService
-
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -98,6 +96,7 @@ const router = createRouter({
 })
 
 router.beforeEach((to) => {
+  const authService = services.authService
   if (to.meta.requiresAuth) {
     if (!authService.isAuthenticated) {
       return { name: 'login', query: { redirect: to.fullPath } }

@@ -1,1 +1,2 @@
-﻿https://dentzone-api.runasp.net/
+﻿Uncaught TypeError: Cannot read properties of undefined (reading 'authService')
+    at index-CHcx_m28.js:3:96213
