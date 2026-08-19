@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { services } from '../../di/container'
 import { computed, ref, watch } from 'vue'
+const { catalogService } = services
 import type { Product } from '../../domain/models/product'
-import { catalogService } from '../../application/catalog.service'
 import { t } from '../../i18n'
 import AppIcon, { type IconName } from '../ui/AppIcon.vue'
 import ReviewsSection from './ReviewsSection.vue'

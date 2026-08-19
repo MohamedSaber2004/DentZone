@@ -1,20 +1,18 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { wishlistService } from '../application/wishlist.service'
-import { toastService } from '../application/toast.service'
+import { services } from '../di/container'
 import { t } from '../i18n'
 import ProductGrid from '../components/store/ProductGrid.vue'
 import EmptyState from '../components/ui/EmptyState.vue'
 import AppButton from '../components/ui/AppButton.vue'
 import SkeletonLoader from '../components/ui/SkeletonLoader.vue'
 import SectionHeader from '../components/ui/SectionHeader.vue'
+const { wishlistService } = services
 
 const clearWishlist = async () => {
   try {
     await wishlistService.clear()
-    toastService.info(t('wishlist.clearedToast'))
   } catch {
-    toastService.error(t('wishlist.errorToast'))
+    /* backend result is shown in the result modal */
   }
 }
 </script>

@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { services } from '../../di/container'
 import { ref } from 'vue'
+const { authService } = services
 import { useRoute, useRouter } from 'vue-router'
-import { authService } from '../../application/auth.service'
 import { t } from '../../i18n'
 import AppInput from '../ui/AppInput.vue'
 import AppButton from '../ui/AppButton.vue'

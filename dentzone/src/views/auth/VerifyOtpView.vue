@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { services } from '../../di/container'
 import { computed, onMounted, ref } from 'vue'
+const { authService } = services
 import { useRouter } from 'vue-router'
-import { authService } from '../../application/auth.service'
 import { t } from '../../i18n'
 import AuthLayout from '../../components/auth/AuthLayout.vue'
 import OtpInput from '../../components/auth/OtpInput.vue'

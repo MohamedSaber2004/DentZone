@@ -1,10 +1,9 @@
 <script setup lang="ts">
+import { services } from '../di/container'
 import { computed, onMounted, reactive, ref } from 'vue'
+const { cartService, orderService, authService } = services
 import { useRouter } from 'vue-router'
-import { cartService } from '../application/cart.service'
-import { orderService } from '../application/order.service'
-import { toastService } from '../application/toast.service'
-import { authService } from '../application/auth.service'
+import { toastService } from '../infrastructure/feedback/toast.service'
 import { t } from '../i18n'
 import AppInput from '../components/ui/AppInput.vue'
 import AppButton from '../components/ui/AppButton.vue'
@@ -70,10 +69,9 @@ const placeOrder = async () => {
       city: form.city.trim(),
       notes: form.notes.trim() || undefined,
     })
-    toastService.success(t('checkout.orderPlaced', { id: order.orderNumber }))
     void router.push({ path: `/order/${order.id}` })
   } catch {
-    toastService.error(t('checkout.orderFailed'))
+    /* backend result is shown in the result modal */
   } finally {
     submitting.value = false
   }

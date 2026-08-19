@@ -1,9 +1,8 @@
 <script setup lang="ts">
+import { services } from '../../di/container'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+const { cartService, wishlistService, authService } = services
 import { useRoute, useRouter } from 'vue-router'
-import { cartService } from '../../application/cart.service'
-import { wishlistService } from '../../application/wishlist.service'
-import { authService } from '../../application/auth.service'
 import { t, toggleLocale } from '../../i18n'
 import { theme, toggleTheme } from '../../application/theme.service'
 import SearchField from '../ui/SearchField.vue'

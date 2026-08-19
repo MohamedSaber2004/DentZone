@@ -5,6 +5,12 @@ export const en: Messages = {
     loading: 'Loading…',
     dataLoaded: 'Data loaded successfully',
     loadFailed: 'Failed to load data. Please try again.',
+    success: 'Success',
+    error: 'Error',
+    notice: 'Notice',
+    ok: 'OK',
+    operationDone: 'Operation completed successfully',
+    networkError: 'Unable to reach the server. Please try again.',
   },
   nav: {
     home: 'Home',

@@ -3,6 +3,12 @@ export type Messages = {
     loading: string
     dataLoaded: string
     loadFailed: string
+    success: string
+    error: string
+    notice: string
+    ok: string
+    operationDone: string
+    networkError: string
   }
   nav: {
     home: string

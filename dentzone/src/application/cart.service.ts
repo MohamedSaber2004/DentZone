@@ -1,7 +1,7 @@
 import { computed, reactive, watch } from 'vue'
 import type { CartLine, CartSummary } from '../domain/models/cart'
 import type { Product } from '../domain/models/product'
-import { catalogService } from './catalog.service'
+import type { CatalogService } from './catalog.service'
 
 const STORAGE_KEY = 'dentzone.cart.v1'
 
@@ -24,6 +24,8 @@ const loadPersistedLines = (): CartLine[] => {
 }
 
 export class CartService {
+  private readonly catalogService: CatalogService
+
   private state = reactive<CartState>({ lines: loadPersistedLines() })
 
   readonly lines = computed<CartLine[]>(() => this.state.lines)
@@ -45,11 +47,11 @@ export class CartService {
 
   readonly shipping = computed<number>(() => {
     if (this.state.lines.length === 0) return 0
-    const settings = catalogService.settings.value
+    const settings = this.catalogService.settings.value
     return this.subtotal.value >= settings.freeShippingThreshold ? 0 : settings.shippingCost
   })
 
-  readonly tax = computed<number>(() => (this.subtotal.value - this.discount.value) * catalogService.settings.value.taxRate)
+  readonly tax = computed<number>(() => (this.subtotal.value - this.discount.value) * this.catalogService.settings.value.taxRate)
 
   readonly total = computed<number>(() =>
     Math.max(0, this.subtotal.value - this.discount.value + this.shipping.value + this.tax.value),
@@ -65,7 +67,8 @@ export class CartService {
     total: this.total.value,
   }))
 
-  constructor() {
+  constructor(catalogService: CatalogService) {
+    this.catalogService = catalogService
     watch(
       this.lines,
       (lines) => {
@@ -111,5 +114,3 @@ export class CartService {
     this.state.lines = []
   }
 }
-
-export const cartService = new CartService()

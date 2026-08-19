@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { cartService } from '../application/cart.service'
-import { toastService } from '../application/toast.service'
+import { services } from '../di/container'
+import { toastService } from '../infrastructure/feedback/toast.service'
+const { cartService } = services
 import { formatPrice, t } from '../i18n'
 import ProductImage from '../components/ui/ProductImage.vue'
 import QuantityStepper from '../components/ui/QuantityStepper.vue'

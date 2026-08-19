@@ -1,9 +1,8 @@
 <script setup lang="ts">
+import { services } from '../di/container'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
+const { authService, wishlistService, orderService } = services
 import { useRouter } from 'vue-router'
-import { authService } from '../application/auth.service'
-import { wishlistService } from '../application/wishlist.service'
-import { orderService } from '../application/order.service'
 import { locale, setLocale, t } from '../i18n'
 import AppInput from '../components/ui/AppInput.vue'
 import AppButton from '../components/ui/AppButton.vue'
@@ -82,7 +81,7 @@ const saveProfile = async () => {
   })
   saving.value = false
   if (!result.ok) {
-    formError.value = result.error
+    return
   }
 }
 
@@ -111,7 +110,6 @@ const savePassword = async () => {
   const result = await authService.changePassword(currentPassword.value, newPassword.value, confirmPassword.value)
   changing.value = false
   if (!result.ok) {
-    passwordError.value = result.error
     return
   }
   passwordOpen.value = false

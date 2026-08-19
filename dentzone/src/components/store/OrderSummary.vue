@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { services } from '../../di/container'
 import { computed } from 'vue'
-import { catalogService } from '../../application/catalog.service'
+const { catalogService } = services
 import { formatPrice, t } from '../../i18n'
 import AppIcon from '../ui/AppIcon.vue'
 

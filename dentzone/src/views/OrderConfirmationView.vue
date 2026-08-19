@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { services } from '../di/container'
 import { computed, onMounted, ref } from 'vue'
+const { orderService } = services
 import { useRoute } from 'vue-router'
-import { orderService } from '../application/order.service'
 import { locale, t, type MessageKey } from '../i18n'
 import type { Order, OrderStatus } from '../domain/models/order'
 import AppButton from '../components/ui/AppButton.vue'

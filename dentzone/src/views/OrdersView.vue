@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import { services } from '../di/container'
 import { computed, onMounted } from 'vue'
-import { orderService } from '../application/order.service'
-import { authService } from '../application/auth.service'
+const { orderService, authService } = services
 import { formatPrice, locale, t, type MessageKey } from '../i18n'
-import type { Order, OrderStatus } from '../domain/models/order'
+import type { OrderStatus } from '../domain/models/order'
 import SectionHeader from '../components/ui/SectionHeader.vue'
 import EmptyState from '../components/ui/EmptyState.vue'
 import AppButton from '../components/ui/AppButton.vue'

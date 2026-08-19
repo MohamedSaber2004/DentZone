@@ -1,9 +1,8 @@
 <script setup lang="ts">
+import { services } from '../di/container'
 import { computed, onMounted } from 'vue'
+const { catalogService, advertisementService, cartService } = services
 import { useRouter } from 'vue-router'
-import { catalogService } from '../application/catalog.service'
-import { advertisementService } from '../application/advertisement.service'
-import { cartService } from '../application/cart.service'
 import { formatPrice, t } from '../i18n'
 import SectionHeader from '../components/ui/SectionHeader.vue'
 import CategoryPill from '../components/ui/CategoryPill.vue'

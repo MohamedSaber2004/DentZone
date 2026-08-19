@@ -1,8 +1,8 @@
 import { computed, reactive, ref, watch } from 'vue'
 import type { Product } from '../domain/models/product'
-import { authService } from './auth.service'
-import { catalogService } from './catalog.service'
-import { http } from './http.client'
+import type { WishlistRepository } from '../domain/ports/wishlist-repository'
+import type { AuthService } from './auth.service'
+import type { CatalogService } from './catalog.service'
 
 const STORAGE_KEY = 'dentzone.wishlist.v1'
 
@@ -18,6 +18,10 @@ const loadPersistedIds = (): string[] => {
 }
 
 export class WishlistService {
+  private readonly wishlistRepository: WishlistRepository
+  private readonly authService: AuthService
+  private readonly catalogService: CatalogService
+
   private localIds = reactive<string[]>(loadPersistedIds())
 
   readonly items = ref<Product[]>([])
@@ -39,10 +43,14 @@ export class WishlistService {
   readonly count = computed<number>(() => this.idSet.value.size)
 
   private get authed(): boolean {
-    return authService.isAuthenticated
+    return this.authService.isAuthenticated
   }
 
-  constructor() {
+  constructor(wishlistRepository: WishlistRepository, authService: AuthService, catalogService: CatalogService) {
+    this.wishlistRepository = wishlistRepository
+    this.authService = authService
+    this.catalogService = catalogService
+
     watch(
       this.localIds,
       (ids) => {
@@ -52,7 +60,7 @@ export class WishlistService {
     )
 
     watch(
-      () => authService.user.value,
+      () => this.authService.user.value,
       () => {
         void this.refresh()
       },
@@ -68,7 +76,7 @@ export class WishlistService {
     if (this.authed) {
       this.loading.value = true
       try {
-        const fetched = await http.get<Product[]>('/api/v1/wishlist')
+        const fetched = await this.wishlistRepository.get()
         this.items.value = Array.isArray(fetched) ? fetched : []
       } catch {
         this.items.value = []
@@ -84,7 +92,7 @@ export class WishlistService {
         this.items.value = []
         return
       }
-      const products = await catalogService.getAllProducts()
+      const products = await this.catalogService.getAllProducts()
       const byId = new Map(products.map((product) => [product.id, product]))
       this.items.value = this.localIds.flatMap((id) => {
         const product = byId.get(id)
@@ -102,10 +110,10 @@ export class WishlistService {
 
     if (this.authed) {
       if (present) {
-        await http.del(`/api/v1/wishlist/${encodeURIComponent(product.id)}`)
+        await this.wishlistRepository.remove(product.id)
         this.items.value = this.items.value.filter((item) => item.id !== product.id)
       } else {
-        await http.post(`/api/v1/wishlist/${encodeURIComponent(product.id)}`)
+        await this.wishlistRepository.add(product.id)
         this.items.value = [product, ...this.items.value.filter((item) => item.id !== product.id)]
       }
       return !present
@@ -124,7 +132,7 @@ export class WishlistService {
 
   async remove(productId: string): Promise<void> {
     if (this.authed) {
-      await http.del(`/api/v1/wishlist/${encodeURIComponent(productId)}`)
+      await this.wishlistRepository.remove(productId)
       this.items.value = this.items.value.filter((item) => item.id !== productId)
       return
     }
@@ -138,7 +146,7 @@ export class WishlistService {
 
   async clear(): Promise<void> {
     if (this.authed) {
-      await http.del('/api/v1/wishlist')
+      await this.wishlistRepository.clear()
       this.items.value = []
       return
     }
@@ -146,5 +154,3 @@ export class WishlistService {
     this.items.value = []
   }
 }
-
-export const wishlistService = new WishlistService()

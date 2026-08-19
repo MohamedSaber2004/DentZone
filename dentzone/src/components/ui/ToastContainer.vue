@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { toastService, type Toast } from '../../application/toast.service'
+import { toastService, type Toast } from '../../infrastructure/feedback/toast.service'
 import AppIcon, { type IconName } from './AppIcon.vue'
 
 const icons: Record<Toast['type'], IconName> = {

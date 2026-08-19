@@ -3,14 +3,13 @@ import './assets/main.css'
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
-import { catalogService } from './application/catalog.service'
-import { chatService } from './application/chat.service'
+import { services } from './di/container'
 import { initI18n, t } from './i18n'
 
 initI18n()
-void catalogService.init()
+void services.catalogService.init()
 
-chatService.configure((userText) => {
+services.chatService.configure((userText) => {
   const text = userText.toLowerCase()
   if (/(hi|hello|hey|مرحبا|السلام)/.test(text)) return t('chat.replyGreeting')
   if (/(order|طلب|شحن|deliver|track|tracking)/.test(text)) return t('chat.replyOrder')

@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { services } from '../../di/container'
 import { computed, ref } from 'vue'
-import { toastService } from '../../application/toast.service'
-import { catalogService } from '../../application/catalog.service'
+const { catalogService } = services
+import { toastService } from '../../infrastructure/feedback/toast.service'
 import { formatPrice, t } from '../../i18n'
 import AppIcon from '../ui/AppIcon.vue'
 import AppButton from '../ui/AppButton.vue'

@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { services } from '../../di/container'
 import { onMounted } from 'vue'
+const { authService } = services
 import { useRouter } from 'vue-router'
-import { authService } from '../../application/auth.service'
-import { toastService } from '../../application/toast.service'
+import { toastService } from '../../infrastructure/feedback/toast.service'
 import { t } from '../../i18n'
 import AuthLayout from '../../components/auth/AuthLayout.vue'
 import ResetPasswordForm from '../../components/auth/ResetPasswordForm.vue'

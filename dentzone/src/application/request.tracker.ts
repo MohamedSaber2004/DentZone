@@ -1,5 +1,5 @@
 import { computed, ref } from 'vue'
-import { toastService } from './toast.service'
+import { toastService } from '../infrastructure/feedback/toast.service'
 import { t } from '../i18n'
 
 class RequestTracker {

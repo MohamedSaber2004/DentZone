@@ -1,11 +1,9 @@
 <script setup lang="ts">
+import { services } from '../di/container'
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { catalogService } from '../application/catalog.service'
-import { cartService } from '../application/cart.service'
-import { authService } from '../application/auth.service'
-import { toastService } from '../application/toast.service'
-import { wishlistService } from '../application/wishlist.service'
+const { catalogService, cartService, wishlistService } = services
+import { useRoute } from 'vue-router'
+import { toastService } from '../infrastructure/feedback/toast.service'
 import { formatPrice, t } from '../i18n'
 import type { Product } from '../domain/models/product'
 import type { Vendor } from '../domain/models/vendor'
@@ -23,7 +21,6 @@ import ProductInfoTabs from '../components/store/ProductInfoTabs.vue'
 import EmptyState from '../components/ui/EmptyState.vue'
 
 const route = useRoute()
-const router = useRouter()
 
 const product = ref<Product | undefined>()
 const relatedProducts = ref<Product[]>([])

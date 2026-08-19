@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { services } from '../di/container'
 import { computed, onMounted, ref, watch } from 'vue'
+const { catalogService } = services
 import { useRoute, useRouter } from 'vue-router'
-import { catalogService } from '../application/catalog.service'
 import type { Product, ProductSort } from '../domain/models/product'
 import { t } from '../i18n'
 import SectionHeader from '../components/ui/SectionHeader.vue'

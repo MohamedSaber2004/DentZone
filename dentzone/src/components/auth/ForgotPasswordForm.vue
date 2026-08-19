@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { services } from '../../di/container'
 import { ref } from 'vue'
-import { authService } from '../../application/auth.service'
+const { authService } = services
 import { t } from '../../i18n'
 import AppInput from '../ui/AppInput.vue'
 import AppButton from '../ui/AppButton.vue'

@@ -1,11 +1,10 @@
 <script setup lang="ts">
+import { services } from '../../di/container'
 import { computed, ref } from 'vue'
+const { cartService, wishlistService } = services
 import { useRouter } from 'vue-router'
 import type { Product } from '../../domain/models/product'
-import { cartService } from '../../application/cart.service'
-import { authService } from '../../application/auth.service'
-import { toastService } from '../../application/toast.service'
-import { wishlistService } from '../../application/wishlist.service'
+import { toastService } from '../../infrastructure/feedback/toast.service'
 import { t } from '../../i18n'
 import ProductImage from '../ui/ProductImage.vue'
 import PriceTag from '../ui/PriceTag.vue'

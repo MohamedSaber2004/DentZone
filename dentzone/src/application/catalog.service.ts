@@ -7,7 +7,6 @@ import type { Review } from '../domain/models/review'
 import type { Advertisements } from '../domain/models/advertisement'
 import type { CatalogSettings } from '../domain/models/catalog-settings'
 import type { CatalogRepository } from '../domain/ports/catalog-repository'
-import { ApiCatalogRepository } from '../data/repositories/api-catalog.repository'
 
 const DEFAULT_SETTINGS: CatalogSettings = {
   currency: 'USD',
@@ -17,7 +16,7 @@ const DEFAULT_SETTINGS: CatalogSettings = {
 }
 
 export class CatalogService {
-  private repository: CatalogRepository
+  private readonly repository: CatalogRepository
 
   readonly categories = ref<Category[]>([])
   readonly vendors = ref<Vendor[]>([])
@@ -28,7 +27,7 @@ export class CatalogService {
 
   private productsCache = new Map<string, Product>()
 
-  constructor(repository: CatalogRepository = new ApiCatalogRepository()) {
+  constructor(repository: CatalogRepository) {
     this.repository = repository
     onLocaleChange(() => {
       this.productsCache.clear()
@@ -117,5 +116,3 @@ export class CatalogService {
     return this.vendors.value.find((vendor) => vendor.id === id)
   }
 }
-
-export const catalogService = new CatalogService()

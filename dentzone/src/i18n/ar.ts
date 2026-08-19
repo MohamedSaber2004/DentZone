@@ -5,6 +5,12 @@ export const ar: Messages = {
     loading: 'جارٍ التحميل…',
     dataLoaded: 'تم تحميل البيانات بنجاح',
     loadFailed: 'فشل تحميل البيانات. حاول مرة أخرى.',
+    success: 'نجاح',
+    error: 'خطأ',
+    notice: 'تنبيه',
+    ok: 'حسناً',
+    operationDone: 'تمت العملية بنجاح',
+    networkError: 'تعذر الوصول إلى الخادم. حاول مرة أخرى.',
   },
   nav: {
     home: 'الرئيسية',

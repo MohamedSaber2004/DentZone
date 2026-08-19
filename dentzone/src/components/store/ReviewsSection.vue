@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { services } from '../../di/container'
 import { computed, onMounted, ref } from 'vue'
+const { catalogService } = services
 import type { Product } from '../../domain/models/product'
 import type { Review } from '../../domain/models/review'
-import { catalogService } from '../../application/catalog.service'
 import { locale, t } from '../../i18n'
 import RatingStars from '../ui/RatingStars.vue'
 import AppBadge from '../ui/AppBadge.vue'

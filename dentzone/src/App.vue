@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import AppHeader from './components/layout/AppHeader.vue'
 import AppFooter from './components/layout/AppFooter.vue'
 import ToastContainer from './components/ui/ToastContainer.vue'
+import ResultModal from './components/ui/ResultModal.vue'
 import LoadingBar from './components/ui/LoadingBar.vue'
 import ChatWidget from './components/store/ChatWidget.vue'
 
@@ -40,6 +41,7 @@ const onSearchSubmit = () => {
     <LoadingBar />
     <AppHeader v-model:query="searchQuery" @submit="onSearchSubmit" />
     <ToastContainer />
+    <ResultModal />
     <main class="app-main">
       <RouterView v-slot="{ Component }">
         <Transition name="page" mode="out-in">

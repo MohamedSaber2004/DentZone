@@ -2,17 +2,13 @@ import { ref } from 'vue'
 import type { MessageKey } from '../i18n'
 import { locale, t } from '../i18n'
 import type { User } from '../domain/models/user'
-import type { LoginResponseDto, UserProfileDto } from '../domain/models/auth'
-import { toastService } from './toast.service'
+import type { LoginResponseDto } from '../domain/models/auth'
+import type { AuthRepository } from '../domain/ports/auth-repository'
+import { toastService } from '../infrastructure/feedback/toast.service'
+import { ApiError } from '../infrastructure/http/api-error'
+import type { TokenStore } from '../infrastructure/http/token-store'
+import type { AuthBridge } from '../infrastructure/http/auth-bridge'
 import router from '../router'
-import {
-  ApiError,
-  clearTokens,
-  http,
-  setSessionExpiredHandler,
-  setTokens,
-  setTokenRefreshHandler,
-} from './http.client'
 
 export type AuthResult = { ok: true } | { ok: false; error: string }
 
@@ -21,7 +17,6 @@ const TINTS = ['#0ea5e9', '#8b5cf6', '#f59e0b', '#10b981', '#ec4899']
 
 interface StoredSession {
   accessToken: string
-  refreshToken: string
   accessTokenExpiresAt: string
   refreshTokenExpiresAt: string
   user: User
@@ -81,17 +76,28 @@ const toErrorMessage = (err: unknown, fallbackKey: MessageKey): string => {
   return t(fallbackKey)
 }
 
-class AuthService {
+export class AuthService {
   readonly user = ref<User | null>(null)
 
+  private readonly authRepository: AuthRepository
+  private readonly tokenStore: TokenStore
+  private readonly authBridge: AuthBridge
+
   private session: StoredSession | null = null
+  private refreshToken: string | null = null
   private pendingEmail = ''
   private pendingOtp = ''
 
-  constructor() {
+  constructor(authRepository: AuthRepository, tokenStore: TokenStore, authBridge: AuthBridge) {
+    this.authRepository = authRepository
+    this.tokenStore = tokenStore
+    this.authBridge = authBridge
+
     this.restore()
-    setTokenRefreshHandler(() => this.refreshSession())
-    setSessionExpiredHandler(() => this.handleSessionExpired())
+    this.authBridge.bind({
+      refresh: () => this.refreshSession(),
+      onSessionExpired: () => this.handleSessionExpired(),
+    })
   }
 
   get isAuthenticated(): boolean {
@@ -113,10 +119,10 @@ class AuthService {
     if (!raw) return
     try {
       const session = JSON.parse(raw) as StoredSession
-      if (session?.accessToken && session?.refreshToken && session?.user) {
+      if (session?.accessToken && session?.user) {
         this.session = session
         this.user.value = session.user
-        setTokens(session)
+        this.tokenStore.setTokens(session)
       }
     } catch {
       localStorage.removeItem(SESSION_KEY)
@@ -127,13 +133,13 @@ class AuthService {
     const user = nameToUser(data.userId, data.fullName, data.email, this.user.value ?? undefined)
     this.session = {
       accessToken: data.accessToken,
-      refreshToken: data.refreshToken,
       accessTokenExpiresAt: data.accessTokenExpiresAt,
       refreshTokenExpiresAt: data.refreshTokenExpiresAt,
       user,
     }
+    this.refreshToken = data.refreshToken
     this.user.value = user
-    setTokens(this.session)
+    this.tokenStore.setTokens(this.session)
     localStorage.setItem(SESSION_KEY, JSON.stringify(this.session))
   }
 
@@ -146,11 +152,7 @@ class AuthService {
 
   async login(email: string, password: string): Promise<AuthResult> {
     try {
-      const data = await http.post<LoginResponseDto>(
-        '/api/v1/auth/login',
-        { email, password },
-        { headers: { 'X-Attempt-Email': email } },
-      )
+      const data = await this.authRepository.login({ email, password })
       this.applyLoginResponse(data)
       return { ok: true }
     } catch (err) {
@@ -161,11 +163,7 @@ class AuthService {
   async refreshSession(): Promise<boolean> {
     if (!this.session) return false
     try {
-      const data = await http.post<LoginResponseDto>(
-        '/api/v1/auth/refresh-token',
-        { refreshToken: this.session.refreshToken },
-        { skipAuthRefresh: true },
-      )
+      const data = await this.authRepository.refreshSession(this.refreshToken ?? undefined)
       this.applyLoginResponse(data)
       return true
     } catch (err) {
@@ -179,7 +177,7 @@ class AuthService {
 
   async requestOtp(email: string): Promise<AuthResult> {
     try {
-      await http.post('/api/v1/auth/forgot-password', { email })
+      await this.authRepository.requestOtp(email)
       this.pendingEmail = email.trim().toLowerCase()
       this.pendingOtp = ''
       return { ok: true }
@@ -191,7 +189,7 @@ class AuthService {
   async verifyOtp(code: string): Promise<AuthResult> {
     if (!this.pendingEmail) return { ok: false, error: t('auth.errEmailNotFound') }
     try {
-      await http.post('/api/v1/auth/verify-otp', { email: this.pendingEmail, otpCode: code })
+      await this.authRepository.verifyOtp(this.pendingEmail, code)
       this.pendingOtp = code
       return { ok: true }
     } catch (err) {
@@ -202,12 +200,7 @@ class AuthService {
   async resetPassword(password: string): Promise<AuthResult> {
     if (!this.pendingEmail || !this.pendingOtp) return { ok: false, error: t('auth.errInvalidOtp') }
     try {
-      await http.post('/api/v1/auth/reset-password', {
-        email: this.pendingEmail,
-        otpCode: this.pendingOtp,
-        newPassword: password,
-        confirmPassword: password,
-      })
+      await this.authRepository.resetPassword(this.pendingEmail, this.pendingOtp, password, password)
       this.pendingOtp = ''
       return { ok: true }
     } catch (err) {
@@ -218,7 +211,7 @@ class AuthService {
   async fetchProfile(): Promise<void> {
     if (!this.session) return
     try {
-      const profile = await http.get<UserProfileDto>('/api/v1/auth/profile')
+      const profile = await this.authRepository.getProfile()
       this.user.value = nameToUser(
         profile.id,
         profile.fullName,
@@ -237,7 +230,7 @@ class AuthService {
     const current = this.user.value
     if (!current || !this.session) return { ok: false, error: 'auth.errSessionExpired' }
     try {
-      await http.put('/api/v1/auth/profile', {
+      await this.authRepository.updateProfile({
         userId: current.id,
         fullName: `${patch.firstName} ${patch.lastName}`.trim(),
         birthDate: patch.birthDate || null,
@@ -260,7 +253,7 @@ class AuthService {
   async changePassword(currentPassword: string, newPassword: string, confirmPassword: string): Promise<AuthResult> {
     if (!this.session) return { ok: false, error: t('auth.errSessionExpired') }
     try {
-      await http.put('/api/v1/auth/change-password', { currentPassword, newPassword, confirmPassword })
+      await this.authRepository.changePassword({ currentPassword, newPassword, confirmPassword })
       this.expireSession()
       return { ok: true }
     } catch (err) {
@@ -270,10 +263,11 @@ class AuthService {
 
   expireSession(): void {
     this.session = null
+    this.refreshToken = null
     this.user.value = null
     this.pendingEmail = ''
     this.pendingOtp = ''
-    clearTokens()
+    this.tokenStore.clear()
     localStorage.removeItem(SESSION_KEY)
   }
 
@@ -285,16 +279,14 @@ class AuthService {
   }
 
   async logout(): Promise<void> {
-    const token = this.session?.refreshToken
+    const token = this.refreshToken
     this.expireSession()
     if (token) {
       try {
-        await http.post('/api/v1/auth/logout', { refreshToken: token }, { skipAuthRefresh: true })
+        await this.authRepository.logout(token)
       } catch {
         /* server revoke is best-effort */
       }
     }
   }
 }
-
-export const authService = new AuthService()
