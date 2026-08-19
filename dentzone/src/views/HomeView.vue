@@ -41,7 +41,8 @@ onMounted(loadCategories)
 </script>
 
 <template>
-  <div class="hero">
+  <div class="home">
+    <div class="hero">
     <div class="hero__glow hero__glow--one" aria-hidden="true" />
     <div class="hero__glow hero__glow--two" aria-hidden="true" />
 
@@ -147,7 +148,8 @@ onMounted(loadCategories)
         />
       </div>
     </div>
-  </section>
+    </section>
+  </div>
 </template>
 
 <style scoped>

@@ -1,11 +1,21 @@
 <script setup lang="ts">
 import type { ProviderProductDto } from '../../domain/models/product'
 import { locale, t } from '../../i18n'
+import { ref } from 'vue'
 import AppIcon from '../ui/AppIcon.vue'
+
+import type { RouteLocationRaw } from 'vue-router'
 
 defineProps<{
   product: ProviderProductDto
+  detailsTo?: RouteLocationRaw
 }>()
+
+const imageFailed = ref(false)
+
+const onImageError = () => {
+  imageFailed.value = true
+}
 
 const displayName = (product: ProviderProductDto) =>
   locale.value === 'ar' ? product.productArabicName || product.productName : product.productName || product.preef
@@ -18,9 +28,24 @@ const formatPrice = (value: number) => value.toLocaleString(locale.value === 'ar
 <template>
   <article class="product-card">
     <div class="product-card__media">
-      <span class="product-card__placeholder">
+      <img
+        v-if="product.images?.length && !imageFailed"
+        :src="product.images[0]"
+        :alt="displayName(product)"
+        loading="lazy"
+        @error="onImageError"
+      />
+      <span v-else class="product-card__placeholder">
         <AppIcon name="package" :size="34" />
       </span>
+      <RouterLink
+        v-if="detailsTo"
+        :to="detailsTo"
+        class="product-card__details"
+        :aria-label="t('products.details.title')"
+      >
+        <AppIcon name="eye" :size="16" />
+      </RouterLink>
       <span v-if="product.isFlashSaleActive" class="product-card__sale">
         {{ t('products.sale') }}
       </span>
@@ -88,6 +113,13 @@ const formatPrice = (value: number) => value.toLocaleString(locale.value === 'ar
     var(--dz-surface-soft);
 }
 
+.product-card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .product-card__placeholder {
   display: flex;
   align-items: center;
@@ -111,6 +143,31 @@ const formatPrice = (value: number) => value.toLocaleString(locale.value === 'ar
   color: var(--dz-white);
   font-size: 0.7rem;
   font-weight: 700;
+}
+
+.product-card__details {
+  position: absolute;
+  top: 0.7rem;
+  inset-inline-end: 0.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.3rem;
+  height: 2.3rem;
+  border-radius: var(--dz-radius-full);
+  background: rgb(255 255 255 / 0.85);
+  color: var(--dz-ink-soft);
+  box-shadow: var(--dz-shadow-sm);
+  transition:
+    background-color 0.2s,
+    color 0.2s,
+    transform 0.15s;
+}
+
+.product-card__details:hover {
+  background: var(--dz-primary);
+  color: var(--dz-on-primary);
+  transform: translateY(-1px);
 }
 
 .product-card__body {

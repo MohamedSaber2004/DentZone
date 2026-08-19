@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CategoryDto } from '../../domain/models/category'
+import { categoryImageUrl, type CategoryDto } from '../../domain/models/category'
 import { locale } from '../../i18n'
 import { ref } from 'vue'
 import AppIcon from '../ui/AppIcon.vue'
@@ -37,7 +37,7 @@ const onImageError = () => {
     <div class="category-card__media">
       <img
         v-if="category.imageName && !imageFailed"
-        :src="category.imageName"
+        :src="categoryImageUrl(category.imageName)"
         :alt="displayName()"
         loading="lazy"
         @error="onImageError"

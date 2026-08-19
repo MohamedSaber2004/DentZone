@@ -1,3 +1,6 @@
+export const categoryImageUrl = (imageName: string): string =>
+  imageName.startsWith('http://') ? imageName.replace('http://', 'https://') : imageName
+
 export interface CategoryDto {
   id: string
   name: string

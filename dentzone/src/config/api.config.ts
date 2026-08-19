@@ -32,4 +32,5 @@ export const PRODUCT_ROUTES = {
     const suffix = query.toString()
     return `${base}/Products/search-product-category${suffix ? `?${suffix}` : ''}`
   },
+  byId: (id: string, lang: number) => `${base}/Products/${id}?lang=${lang}`,
 } as const

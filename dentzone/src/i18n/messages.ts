@@ -150,6 +150,19 @@ export type Messages = {
     maxPerOrder: string
     sale: string
     currency: string
+    details: {
+      title: string
+      back: string
+      notFound: string
+      notFoundDescription: string
+      category: string
+      brand: string
+      availability: string
+      availableNow: string
+      unavailable: string
+      otherVendors: string
+      description: string
+    }
   }
   auth: {
     loginTitle: string

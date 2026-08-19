@@ -1,4 +1,4 @@
-import type { ProviderProductDto } from '../models/product'
+import type { ProductDetailDto, ProviderProductDto } from '../models/product'
 
 export interface SearchProductsParams {
   catId?: string
@@ -8,4 +8,5 @@ export interface SearchProductsParams {
 
 export interface ProductRepository {
   searchProducts(params: SearchProductsParams): Promise<ProviderProductDto[]>
+  getProductById(id: string, lang: number): Promise<ProductDetailDto>
 }
