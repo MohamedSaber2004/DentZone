@@ -60,10 +60,10 @@ const submit = async () => {
       </button>
     </div>
 
-    <p v-if="mode === 'guest'" class="login-form__guest-note">
+    <!--<p v-if="mode === 'guest'" class="login-form__guest-note">
       <AppIcon name="user" :size="14" />
       {{ t('auth.guestSubtitle') }}
-    </p>
+    </p>-->
 
     <div v-if="error" class="login-form__error" role="alert">
       <AppIcon name="alert-circle" :size="17" />
