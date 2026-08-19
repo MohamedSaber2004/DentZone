@@ -3,8 +3,6 @@ import type { Messages } from './messages'
 export const en: Messages = {
   common: {
     loading: 'Loading…',
-    dataLoaded: 'Data loaded successfully',
-    loadFailed: 'Failed to load data. Please try again.',
     success: 'Success',
     error: 'Error',
     notice: 'Notice',

@@ -1,8 +1,6 @@
 export type Messages = {
   common: {
     loading: string
-    dataLoaded: string
-    loadFailed: string
     success: string
     error: string
     notice: string

@@ -226,12 +226,9 @@ export class HttpClient {
   private async tracked<T>(path: string, run: () => Promise<T>): Promise<T> {
     requestTracker.begin()
     try {
-      const result = await run()
-      requestTracker.settle(true)
-      return result
-    } catch (error) {
-      requestTracker.settle(false, error instanceof ApiError && error.silent)
-      throw error
+      return await run()
+    } finally {
+      requestTracker.settle()
     }
   }
 
