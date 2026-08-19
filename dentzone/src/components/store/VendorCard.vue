@@ -6,7 +6,13 @@ import AppIcon from '../ui/AppIcon.vue'
 
 const props = defineProps<{
   vendor: Vendor
+  categorySlug?: string
 }>()
+
+const vendorTo = computed(() => {
+  const base = `/vendor/${props.vendor.slug}`
+  return props.categorySlug ? { path: base, query: { category: props.categorySlug } } : base
+})
 
 const productLabel = computed(() =>
   t('vendors.productCount', { count: props.vendor.productCount }),
@@ -16,7 +22,7 @@ const initial = computed(() => props.vendor.name.charAt(0).toUpperCase())
 </script>
 
 <template>
-  <RouterLink :to="`/vendor/${vendor.slug}`" class="vendor-card">
+  <RouterLink :to="vendorTo" class="vendor-card">
     <div class="vendor-card__top">
       <span class="vendor-card__logo" :style="{ '--tint': vendor.tint }" aria-hidden="true">{{ initial }}</span>
       <span v-if="vendor.verified" class="vendor-card__verified" :title="t('vendors.verified')">

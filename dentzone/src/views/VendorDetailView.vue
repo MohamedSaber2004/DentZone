@@ -132,7 +132,12 @@ const showAllProducts = () => {
       <nav class="breadcrumb" aria-label="Breadcrumb">
         <RouterLink to="/" class="breadcrumb__link">{{ t('nav.home') }}</RouterLink>
         <AppIcon name="chevron-right" :size="14" class="breadcrumb__sep" />
-        <RouterLink to="/vendors" class="breadcrumb__link">{{ t('vendors.allTitle') }}</RouterLink>
+        <RouterLink
+          :to="activeCategory ? { path: '/vendors', query: { category: activeCategory } } : '/vendors'"
+          class="breadcrumb__link"
+        >
+          {{ activeCategory ? catalogService.getCategoryBySlug(activeCategory)?.name ?? activeCategory : t('vendors.allTitle') }}
+        </RouterLink>
         <AppIcon name="chevron-right" :size="14" class="breadcrumb__sep" />
         <span class="breadcrumb__current">{{ vendor.name }}</span>
       </nav>

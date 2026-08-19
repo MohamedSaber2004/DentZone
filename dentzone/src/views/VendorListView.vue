@@ -58,7 +58,12 @@ watch(activeCategory, () => {
     <SkeletonLoader v-if="loading" variant="cards" :count="6" class="vendors__skeleton" role="status" />
 
     <div v-else-if="vendors.length > 0" class="vendors__grid">
-      <VendorCard v-for="vendor in vendors" :key="vendor.id" :vendor="vendor" />
+      <VendorCard
+        v-for="vendor in vendors"
+        :key="vendor.id"
+        :vendor="vendor"
+        :category-slug="activeCategory || undefined"
+      />
     </div>
 
     <EmptyState
