@@ -1,14 +1,23 @@
 export interface LoginResponseDto {
-  accessToken: string
-  refreshToken: string
-  accessTokenExpiresAt: string
-  refreshTokenExpiresAt: string
-  refreshTokenReused: boolean
-  userId: string
+  id: string
   fullName: string
   email: string
-  userType: number
-  roles: string[]
+  phoneNumber: string
+  addresses: AddressDto[]
+  token: string
+  hasDetails: boolean
+  message: string | null
+  role: string
+}
+
+export interface AddressDto {
+  id: string
+  userId: string
+  addressLine: string
+  latitude: number | null
+  longitude: number | null
+  floorNum: number | null
+  apartmentNum: number | null
 }
 
 export interface UserProfileDto {

@@ -117,6 +117,9 @@ export const en: Messages = {
   auth: {
     loginTitle: 'Welcome back',
     loginSubtitle: 'Sign in to your account',
+    ordinalLogin: 'Log in',
+    guestLogin: 'Login as guest',
+    guestSubtitle: 'Continue with guest access',
     email: 'Email address',
     password: 'Password',
     showPassword: 'Show password',

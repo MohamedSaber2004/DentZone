@@ -21,6 +21,7 @@ export interface PasswordChange {
 
 export interface AuthRepository {
   login(credentials: LoginCredentials): Promise<LoginResponseDto>
+  loginGuest(credentials: LoginCredentials): Promise<LoginResponseDto>
   refreshSession(refreshToken?: string): Promise<LoginResponseDto>
   logout(refreshToken?: string): Promise<void>
   requestOtp(email: string): Promise<void>

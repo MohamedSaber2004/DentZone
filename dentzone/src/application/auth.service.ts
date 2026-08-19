@@ -33,6 +33,15 @@ const toDateInput = (iso: string | null | undefined): string => {
   return iso.slice(0, 10)
 }
 
+const decodeJwtExp = (token: string): number => {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1] ?? '')) as { exp?: number }
+    return typeof payload.exp === 'number' ? payload.exp * 1000 : Date.now() + 3_600_000
+  } catch {
+    return Date.now() + 3_600_000
+  }
+}
+
 const nameToUser = (id: string, fullName: string, email: string, existing?: User, birthDate?: string, ordersCount?: number): User => {
   const parts = fullName.trim().split(/\s+/)
   const firstName = parts[0] ?? ''
@@ -130,14 +139,16 @@ export class AuthService {
   }
 
   private applyLoginResponse(data: LoginResponseDto): void {
-    const user = nameToUser(data.userId, data.fullName, data.email, this.user.value ?? undefined)
+    const user = nameToUser(data.id, data.fullName, data.email, this.user.value ?? undefined)
+    user.phone = data.phoneNumber
+    const expiresAt = new Date(decodeJwtExp(data.token)).toISOString()
     this.session = {
-      accessToken: data.accessToken,
-      accessTokenExpiresAt: data.accessTokenExpiresAt,
-      refreshTokenExpiresAt: data.refreshTokenExpiresAt,
+      accessToken: data.token,
+      accessTokenExpiresAt: expiresAt,
+      refreshTokenExpiresAt: expiresAt,
       user,
     }
-    this.refreshToken = data.refreshToken
+    this.refreshToken = data.token
     this.user.value = user
     this.tokenStore.setTokens(this.session)
     localStorage.setItem(SESSION_KEY, JSON.stringify(this.session))
@@ -153,6 +164,16 @@ export class AuthService {
   async login(email: string, password: string): Promise<AuthResult> {
     try {
       const data = await this.authRepository.login({ email, password })
+      this.applyLoginResponse(data)
+      return { ok: true }
+    } catch (err) {
+      return { ok: false, error: toErrorMessage(err, 'auth.errInvalidCredentials') }
+    }
+  }
+
+  async loginGuest(email: string, password: string): Promise<AuthResult> {
+    try {
+      const data = await this.authRepository.loginGuest({ email, password })
       this.applyLoginResponse(data)
       return { ok: true }
     } catch (err) {

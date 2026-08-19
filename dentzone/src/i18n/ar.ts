@@ -116,6 +116,9 @@ export const ar: Messages = {
   auth: {
     loginTitle: 'مرحبًا بعودتك',
     loginSubtitle: 'سجّل الدخول إلى حسابك',
+    ordinalLogin: 'تسجيل الدخول',
+    guestLogin: 'الدخول كضيف',
+    guestSubtitle: 'متابعة بصلاحية الزائر',
     email: 'البريد الإلكتروني',
     password: 'كلمة المرور',
     showPassword: 'إظهار كلمة المرور',

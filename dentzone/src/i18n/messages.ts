@@ -110,6 +110,9 @@ export type Messages = {
   auth: {
     loginTitle: string
     loginSubtitle: string
+    ordinalLogin: string
+    guestLogin: string
+    guestSubtitle: string
     email: string
     password: string
     showPassword: string

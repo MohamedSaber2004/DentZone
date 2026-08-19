@@ -14,6 +14,14 @@ export class ApiAuthRepository implements AuthRepository {
     )
   }
 
+  loginGuest(credentials: LoginCredentials): Promise<LoginResponseDto> {
+    return this.http.post<LoginResponseDto>(
+      AUTH_ROUTES.loginGuest,
+      { email: credentials.email, password: credentials.password },
+      { headers: { 'X-Attempt-Email': credentials.email }, showFeedback: false },
+    )
+  }
+
   refreshSession(refreshToken?: string): Promise<LoginResponseDto> {
     return this.http.post<LoginResponseDto>(
       AUTH_ROUTES.refreshToken,
