@@ -192,7 +192,7 @@ const formatTime = (time: number) =>
   height: 2.4rem;
   flex-shrink: 0;
   border-radius: 50%;
-  background: rgb(255 255 255 / 0.2);
+  background: color-mix(in srgb, var(--dz-on-primary) 15%, transparent);
 }
 
 .chat-widget__agent {
@@ -209,7 +209,7 @@ const formatTime = (time: number) =>
   align-items: center;
   gap: 0.35rem;
   font-size: 0.72rem;
-  color: rgb(255 255 255 / 0.85);
+  color: color-mix(in srgb, var(--dz-on-primary) 78%, transparent);
 }
 
 .chat-widget__dot {
@@ -231,7 +231,7 @@ const formatTime = (time: number) =>
 }
 
 .chat-widget__close:hover {
-  background: rgb(255 255 255 / 0.2);
+  background: color-mix(in srgb, var(--dz-on-primary) 15%, transparent);
 }
 
 .chat-widget__list {
