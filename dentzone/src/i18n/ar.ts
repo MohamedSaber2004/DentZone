@@ -20,6 +20,7 @@ export const ar: Messages = {
     wishlist: 'المفضلة',
     toggleMenu: 'فتح القائمة',
     toggleTheme: 'تبديل الوضع الداكن',
+    toggleLanguage: 'التبديل إلى الإنجليزية',
     login: 'تسجيل الدخول',
     profile: 'الملف الشخصي',
     myOrders: 'طلباتي',

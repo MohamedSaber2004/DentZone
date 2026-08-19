@@ -3,7 +3,7 @@ import { services } from '../../di/container'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 const { cartService, wishlistService, authService } = services
 import { useRoute, useRouter } from 'vue-router'
-import { t } from '../../i18n'
+import { t, locale, setLocale } from '../../i18n'
 import { theme, toggleTheme } from '../../application/theme.service'
 import SearchField from '../ui/SearchField.vue'
 import AppIcon from '../ui/AppIcon.vue'
@@ -41,6 +41,11 @@ const navItems = computed(() => [
 
 const searchPlaceholder = computed(() => t('nav.searchPlaceholder'))
 const themeLabel = computed(() => t('nav.toggleTheme'))
+const nextLocaleLabel = computed(() => t('nav.toggleLanguage'))
+
+const toggleLocale = () => {
+  setLocale(locale.value === 'en' ? 'ar' : 'en')
+}
 
 const isNavActive = (to: string) => {
   const [path, queryString] = to.split('?')
@@ -129,6 +134,9 @@ const ordersLink = () => {
           {{ item.label }}
         </RouterLink>
         <div class="app-header__nav-tools">
+          <button class="app-header__theme" type="button" :aria-label="nextLocaleLabel" @click="toggleLocale">
+            <span class="app-header__lang-code">{{ locale === 'en' ? 'ع' : 'EN' }}</span>
+          </button>
           <button class="app-header__theme" type="button" :aria-label="themeLabel" @click="toggleTheme">
             <AppIcon :name="theme === 'dark' ? 'sun' : 'moon'" :size="17" />
           </button>
@@ -144,6 +152,9 @@ const ordersLink = () => {
           @submit="emit('submit')"
         />
         <div class="app-header__tools">
+          <button class="app-header__theme" type="button" :aria-label="nextLocaleLabel" @click="toggleLocale">
+            <span class="app-header__lang-code">{{ locale === 'en' ? 'ع' : 'EN' }}</span>
+          </button>
           <button class="app-header__theme" type="button" :aria-label="themeLabel" @click="toggleTheme">
             <AppIcon :name="theme === 'dark' ? 'sun' : 'moon'" :size="17" />
           </button>
@@ -375,6 +386,13 @@ const ordersLink = () => {
     background-color 0.2s,
     color 0.2s,
     transform 0.15s;
+}
+
+.app-header__lang-code {
+  font-family: var(--dz-font-display);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .app-header__theme:hover {

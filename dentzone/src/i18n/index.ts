@@ -33,6 +33,13 @@ const applyDocument = (locale: Locale) => {
 
 export const locale = ref<Locale>(readStoredLocale())
 
+export const setLocale = (next: Locale) => {
+  locale.value = next
+  localStorage.setItem(STORAGE_KEY, next)
+  applyDocument(next)
+  localeChangeListeners.forEach((listener) => listener(next))
+}
+
 export const t = (key: MessageKey, params?: Record<string, string | number>): string => {
   let value: unknown = messages[locale.value]
   for (const part of key.split('.')) {

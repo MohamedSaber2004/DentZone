@@ -20,6 +20,7 @@ export const en: Messages = {
     wishlist: 'Wishlist',
     toggleMenu: 'Toggle menu',
     toggleTheme: 'Toggle dark mode',
+    toggleLanguage: 'Switch to Arabic',
     login: 'Log in',
     profile: 'Profile',
     myOrders: 'My orders',

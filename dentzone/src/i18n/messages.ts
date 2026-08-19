@@ -18,6 +18,7 @@ export type Messages = {
     wishlist: string
     toggleMenu: string
     toggleTheme: string
+    toggleLanguage: string
     login: string
     profile: string
     myOrders: string
