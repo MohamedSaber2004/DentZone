@@ -7,4 +7,5 @@ export interface User {
   tint: string
   birthDate?: string
   ordersCount?: number
+  profileImage?: string
 }

@@ -99,4 +99,56 @@ export interface ProviderProductDto {
   productCode: string
   revenuePercentage: number
   images: string[]
+  isFavorite?: boolean
+}
+
+export interface FavoriteProductDto {
+  productId: string
+  productPriceId: string
+  inventoryId: string
+  productName: string
+  arabicName: string
+  description: string
+  arabicDescription: string
+  preef: string
+  arabicPreef: string
+  images: string[]
+  discountRate: number
+  salesPrice: number
+  flashSaleFromDate: string | null
+  flashSaleToDate: string | null
+  priceBeforeFlashSale: number | null
+  priceAfterFlashSale: number | null
+  isFlashSaleActive: boolean
+  effectiveSalesPrice: number | null
+  stockQuantity: number
+  productCode: number
+  isFavorite: boolean
+}
+
+export interface PopularProductDto {
+  productId: string
+  productPriceId: string
+  inventoryId: string
+  inventoryName: string | null
+  productName: string
+  arabicName: string
+  description: string
+  arabicDescription: string
+  preef: string
+  arabicPreef: string
+  images: string[]
+  discountRate: number
+  salesPrice: number
+  flashSaleFromDate: string | null
+  flashSaleToDate: string | null
+  priceBeforeFlashSale: number | null
+  priceAfterFlashSale: number | null
+  isFlashSaleActive: boolean
+  effectiveSalesPrice: number | null
+  stockQuantity: number
+  productCode: number
+  isFavorite: boolean
+  isPupolar?: boolean
+  isPopular?: boolean
 }

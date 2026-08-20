@@ -8,6 +8,7 @@ import { toastService } from '../infrastructure/feedback/toast.service'
 import { ApiError } from '../infrastructure/http/api-error'
 import type { TokenStore } from '../infrastructure/http/token-store'
 import type { AuthBridge } from '../infrastructure/http/auth-bridge'
+import type { FirebaseMessagingService } from '../infrastructure/firebase/firebase-messaging.service'
 import router from '../router'
 
 export type AuthResult = { ok: true } | { ok: false; error: string }
@@ -74,18 +75,33 @@ export class AuthService {
   private readonly authRepository: AuthRepository
   private readonly tokenStore: TokenStore
   private readonly authBridge: AuthBridge
+  private readonly firebaseMessagingService?: FirebaseMessagingService
 
   private session: StoredSession | null = null
+  private redirectingToLogin = false
+  private lastSyncedFcmKey: string | null = null
 
-  constructor(authRepository: AuthRepository, tokenStore: TokenStore, authBridge: AuthBridge) {
+  constructor(
+    authRepository: AuthRepository,
+    tokenStore: TokenStore,
+    authBridge: AuthBridge,
+    firebaseMessagingService?: FirebaseMessagingService,
+  ) {
     this.authRepository = authRepository
     this.tokenStore = tokenStore
     this.authBridge = authBridge
+    this.firebaseMessagingService = firebaseMessagingService
 
     this.restore()
     this.authBridge.bind({
       onSessionExpired: () => this.handleSessionExpired(),
     })
+
+    if (this.firebaseMessagingService) {
+      this.firebaseMessagingService.onToken((token) => {
+        void this.syncFcmToken(token)
+      })
+    }
   }
 
   get isAuthenticated(): boolean {
@@ -101,6 +117,7 @@ export class AuthService {
         this.session = session
         this.user.value = session.user
         this.tokenStore.setTokens(session)
+        void this.syncFcmToken()
       }
     } catch {
       localStorage.removeItem(SESSION_KEY)
@@ -110,6 +127,7 @@ export class AuthService {
   private applyLoginResponse(data: LoginResponseDto): void {
     const user = nameToUser(data.id, data.fullName, data.email)
     user.phone = data.phoneNumber
+    user.profileImage = data.profileImage ?? undefined
     const expiresAt = new Date(decodeJwtExp(data.token)).toISOString()
     this.session = {
       accessToken: data.token,
@@ -122,10 +140,58 @@ export class AuthService {
     localStorage.setItem(SESSION_KEY, JSON.stringify(this.session))
   }
 
+  /**
+   * Registers the FCM token for the authenticated user on the backend.
+   */
+  async syncFcmToken(token?: string): Promise<void> {
+    const userId = this.user.value?.id
+    if (!userId) return
+
+    let fcmToken =
+      token ??
+      this.firebaseMessagingService?.token.value ??
+      (typeof localStorage !== 'undefined' ? localStorage.getItem('dz_fcm_token') : null)
+
+    if (!fcmToken && this.firebaseMessagingService) {
+      try {
+        fcmToken = await this.firebaseMessagingService.retrieveToken()
+      } catch (err) {
+        console.warn('[AuthService] Error retrieving FCM token:', err)
+      }
+    }
+
+    if (!userId || !fcmToken) return
+
+    const syncKey = `${userId}:${fcmToken}`
+    if (this.lastSyncedFcmKey === syncKey) return
+
+    try {
+      await this.authRepository.saveFcmToken({ userId, fcmToken })
+      this.lastSyncedFcmKey = syncKey
+      console.log('[AuthService] FCM device token registered for user:', userId)
+    } catch (err) {
+      console.warn('[AuthService] Failed to save FCM token to backend:', err)
+    }
+  }
+
   async login(usernameOrEmail: string, password: string): Promise<AuthResult> {
     try {
       const data = await this.authRepository.login({ usernameOrEmail, password })
       this.applyLoginResponse(data)
+
+      // 1. Save FCM token for the authenticated user
+      await this.syncFcmToken()
+
+      // 2. Fetch latest user profile after FCM registration
+      try {
+        const profile = await this.authRepository.getUserProfile(data.id)
+        if (profile) {
+          this.refreshUser(profile)
+        }
+      } catch (profileErr) {
+        console.warn('[AuthService] Fetching profile after login failed:', profileErr)
+      }
+
       return { ok: true }
     } catch (err) {
       return { ok: false, error: toErrorMessage(err, 'auth.errInvalidCredentials') }
@@ -198,6 +264,7 @@ export class AuthService {
     if (!current || !this.session) return
     const updated = nameToUser(profile.id, profile.fullName, profile.email)
     updated.phone = profile.phoneNumber ?? ''
+    updated.profileImage = profile.profileImage ?? undefined
     this.session.user = updated
     this.user.value = updated
     localStorage.setItem(SESSION_KEY, JSON.stringify(this.session))
@@ -211,10 +278,17 @@ export class AuthService {
   }
 
   private handleSessionExpired(): void {
-    if (!this.user.value) return
+    const hadSession = this.user.value !== null
     this.expireSession()
-    toastService.info(t('auth.errSessionExpired'))
-    void router.push({ name: 'login', query: { redirect: router.currentRoute.value.fullPath } })
+    if (hadSession) toastService.info(t('auth.errSessionExpired'))
+    const current = router.currentRoute.value
+    if (current.name === 'login' || this.redirectingToLogin) return
+    this.redirectingToLogin = true
+    void router
+      .push({ name: 'login', query: { redirect: current.fullPath } })
+      .finally(() => {
+        this.redirectingToLogin = false
+      })
   }
 
   async logout(): Promise<void> {

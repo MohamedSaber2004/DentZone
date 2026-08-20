@@ -13,8 +13,28 @@ const { categoryRepository } = services
 const categories = ref<CategoryDto[]>([])
 const loading = ref(true)
 const error = ref(false)
+const search = ref('')
 
 const lang = computed(() => (locale.value === 'ar' ? API_LANG.ARABIC : API_LANG.ENGLISH))
+
+function normalizeSearchText(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/ى/g, 'ي')
+    .trim()
+}
+
+const filteredCategories = computed(() => {
+  const q = normalizeSearchText(search.value)
+  if (!q) return categories.value
+  return categories.value.filter((c) => {
+    const name = normalizeSearchText(c.name || '')
+    const arName = normalizeSearchText(c.arabicName || '')
+    return name.includes(q) || arName.includes(q)
+  })
+})
 
 const load = async () => {
   loading.value = true
@@ -38,10 +58,26 @@ onMounted(load)
         <h1 class="page__title">{{ t('categories.title') }}</h1>
         <p class="page__subtitle">{{ t('categories.subtitle') }}</p>
       </div>
-      <span v-if="!loading && !error && categories.length" class="page__count">
-        {{ t('categories.count', { count: categories.length }) }}
+      <span v-if="!loading && !error && filteredCategories.length" class="page__count">
+        {{ t('categories.count', { count: filteredCategories.length }) }}
       </span>
     </div>
+
+    <form v-if="!loading && !error && categories.length > 0" class="page__search" role="search" @submit.prevent>
+      <span class="page__search-icon">
+        <AppIcon name="search" :size="17" />
+      </span>
+      <input
+        v-model="search"
+        class="page__search-input"
+        type="search"
+        :placeholder="t('nav.searchPlaceholder')"
+        :aria-label="t('nav.searchPlaceholder')"
+      />
+      <button v-if="search.trim()" type="button" class="page__search-clear" :aria-label="t('products.clearSearch')" @click="search = ''">
+        <AppIcon name="close" :size="15" />
+      </button>
+    </form>
 
     <div v-if="loading" class="page__grid" aria-label="Loading">
       <div v-for="i in 8" :key="i" class="skeleton-card">
@@ -61,15 +97,18 @@ onMounted(load)
       </AppButton>
     </div>
 
-    <div v-else-if="categories.length === 0" class="page__state">
+    <div v-else-if="categories.length === 0 || filteredCategories.length === 0" class="page__state">
       <span class="page__state-icon"><AppIcon name="box" :size="30" /></span>
       <h2 class="page__state-title">{{ t('categories.emptyTitle') }}</h2>
       <p class="page__state-desc">{{ t('categories.emptyDescription') }}</p>
+      <AppButton v-if="search.trim()" variant="secondary" @click="search = ''">
+        {{ t('products.clearSearch') }}
+      </AppButton>
     </div>
 
     <div v-else class="page__grid">
       <CategoryCard
-        v-for="category in categories"
+        v-for="category in filteredCategories"
         :key="category.id"
         :category="category"
         :to="`/categories/${category.id}`"
@@ -112,6 +151,63 @@ onMounted(load)
   color: var(--dz-primary-strong);
   font-size: 0.8rem;
   font-weight: 700;
+}
+
+.page__search {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1.5rem;
+  padding: 0.45rem 0.85rem;
+  background: var(--dz-surface);
+  border: 1px solid var(--dz-border);
+  border-radius: var(--dz-radius-full);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.page__search:focus-within {
+  border-color: var(--dz-primary);
+  box-shadow: var(--dz-ring);
+}
+
+.page__search-icon {
+  display: flex;
+  align-items: center;
+  color: var(--dz-muted);
+}
+
+.page__search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 0.92rem;
+  color: var(--dz-ink);
+  outline: none;
+}
+
+.page__search-input::placeholder {
+  color: var(--dz-muted);
+}
+
+.page__search-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border: none;
+  border-radius: var(--dz-radius-full);
+  background: var(--dz-surface-soft);
+  color: var(--dz-muted);
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.page__search-clear:hover {
+  background: var(--dz-border);
+  color: var(--dz-ink);
 }
 
 .page__grid {

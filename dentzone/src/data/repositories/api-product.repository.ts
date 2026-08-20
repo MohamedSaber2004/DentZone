@@ -1,20 +1,234 @@
 import type { ProductRepository, SearchProductsParams } from '../../domain/ports/product-repository'
-import type { ProductDetailDto, ProviderProductDto } from '../../domain/models/product'
+import type {
+  FavoriteProductDto,
+  PopularProductDto,
+  ProductDetailDto,
+  ProviderProductDto,
+} from '../../domain/models/product'
 import { PRODUCT_ROUTES } from '../../config/api.config'
 import type { HttpClient } from '../../infrastructure/http/http-client'
+
+export interface SearchProductItemDto {
+  productId: string
+  productPriceId: string
+  productName: string
+  arabicName: string
+  description: string
+  arabicDescription: string
+  preef: string
+  arabicPreef: string
+  images: string[]
+  inventoryId: string
+  inventoryName: string
+  discountRate: number
+  salesPrice: number
+  flashSaleFromDate: string | null
+  flashSaleToDate: string | null
+  priceBeforeFlashSale: number
+  priceAfterFlashSale: number | null
+  isFlashSaleActive: boolean
+  effectiveSalesPrice: number
+  stockQuantity: number
+  productCode: number
+  isFavorite: boolean
+  isPupolar: boolean
+}
+
+function normalizeSearchText(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/ى/g, 'ي')
+    .trim()
+}
+
+function extractProductItems(raw: unknown): SearchProductItemDto[] {
+  if (!raw) return []
+  if (Array.isArray(raw)) return raw as SearchProductItemDto[]
+  if (typeof raw === 'object') {
+    const obj = raw as Record<string, unknown>
+    if (Array.isArray(obj.items)) return obj.items as SearchProductItemDto[]
+    if (Array.isArray(obj.$values)) return obj.$values as SearchProductItemDto[]
+    if (Array.isArray(obj.data)) return obj.data as SearchProductItemDto[]
+    if (Array.isArray(obj.result)) return obj.result as SearchProductItemDto[]
+    if (Array.isArray(obj.products)) return obj.products as SearchProductItemDto[]
+    if (Array.isArray(obj.value)) return obj.value as SearchProductItemDto[]
+  }
+  return []
+}
 
 export class ApiProductRepository implements ProductRepository {
   constructor(private readonly http: HttpClient) {}
 
-  searchProducts(params: SearchProductsParams): Promise<ProviderProductDto[]> {
-    return this.http.get<ProviderProductDto[]>(PRODUCT_ROUTES.searchProductCategory(params), {
-      showFeedback: false,
+  /**
+   * Paginated search using /api/Products/search-product.
+   * page is 0-indexed; pageSize=15. Returns items for the page and
+   * a hasNextPage flag (true when the backend returned a full page).
+   */
+  async searchProductPaginated(params: {
+    search?: string
+    page: number
+    pageSize: number
+  }): Promise<{ items: ProviderProductDto[]; hasNextPage: boolean }> {
+    try {
+      const raw = await this.http.get<unknown>(PRODUCT_ROUTES.searchProduct(params), {
+        showFeedback: false,
+      })
+      const items = extractProductItems(raw)
+      const mapped = items.map((p) => this.toProviderProduct(p))
+      return { items: mapped, hasNextPage: items.length === params.pageSize }
+    } catch {
+      return { items: [], hasNextPage: false }
+    }
+  }
+
+  async searchProducts(params: SearchProductsParams = {}): Promise<ProviderProductDto[]> {
+    const query = params.search?.trim()
+
+    // 1. Try /api/Products/search-product
+    try {
+      const raw = await this.http.get<unknown>(PRODUCT_ROUTES.searchProduct({ search: query }), {
+        showFeedback: false,
+      })
+      const items = extractProductItems(raw)
+      if (items.length > 0) {
+        const mapped = items.map((p) => this.toProviderProduct(p))
+        return query ? this.filterLocally(mapped, query) : mapped
+      }
+    } catch {
+      // Continue to category endpoint
+    }
+
+    // 2. Try /api/Products/search-product-category
+    try {
+      const raw = await this.http.get<unknown>(PRODUCT_ROUTES.searchProductCategory(params), {
+        showFeedback: false,
+      })
+      const items = extractProductItems(raw)
+      if (items.length > 0) {
+        const mapped = items.map((p) => this.toProviderProduct(p))
+        return query ? this.filterLocally(mapped, query) : mapped
+      }
+    } catch {
+      // Continue
+    }
+
+    // 3. If query was supplied and returned 0 results, try fetching all without query and filter locally
+    if (query) {
+      try {
+        const allRaw = await this.http.get<unknown>(
+          PRODUCT_ROUTES.searchProduct({ search: undefined }),
+          { showFeedback: false },
+        )
+        const items = extractProductItems(allRaw)
+        if (items.length > 0) {
+          const mapped = items.map((p) => this.toProviderProduct(p))
+          return this.filterLocally(mapped, query)
+        }
+      } catch {
+        // Fallback to category endpoint without search
+        try {
+          const allRaw = await this.http.get<unknown>(
+            PRODUCT_ROUTES.searchProductCategory({ ...params, search: undefined }),
+            { showFeedback: false },
+          )
+          const items = extractProductItems(allRaw)
+          const mapped = items.map((p) => this.toProviderProduct(p))
+          return this.filterLocally(mapped, query)
+        } catch {
+          return []
+        }
+      }
+    }
+
+    return []
+  }
+
+  private filterLocally(products: ProviderProductDto[], query: string): ProviderProductDto[] {
+    const q = normalizeSearchText(query)
+    if (!q) return products
+    return products.filter((p) => {
+      const fields = [
+        p.productName,
+        p.productArabicName,
+        p.description,
+        p.arabicDescription,
+        p.preef,
+        p.arabicPreef,
+        p.productCode,
+        p.inventoryUserName,
+      ]
+        .filter(Boolean)
+        .map((f) => normalizeSearchText(String(f)))
+
+      return fields.some((f) => f.includes(q))
     })
+  }
+
+  private toProviderProduct(p: SearchProductItemDto | FavoriteProductDto | PopularProductDto): ProviderProductDto {
+    return {
+      id: p.productId,
+      productId: p.productId,
+      productPriceId: p.productPriceId,
+      inventoryUserId: p.inventoryId,
+      productName: p.productName,
+      productArabicName: p.arabicName,
+      preef: p.preef,
+      arabicPreef: p.arabicPreef,
+      description: p.description ?? '',
+      arabicDescription: p.arabicDescription,
+      createdAt: '',
+      updatedAt: '',
+      categoryName: null,
+      purchasePrice: 0,
+      salesPrice: p.salesPrice,
+      flashSaleFromDate: p.flashSaleFromDate,
+      flashSaleToDate: p.flashSaleToDate,
+      priceBeforeFlashSale: p.priceBeforeFlashSale ?? 0,
+      priceAfterFlashSale: p.priceAfterFlashSale,
+      isFlashSaleActive: p.isFlashSaleActive,
+      effectiveSalesPrice: p.effectiveSalesPrice ?? p.salesPrice,
+      creationDate: '',
+      inventoryUserName: 'inventoryName' in p ? p.inventoryName : null,
+      stockQuantity: p.stockQuantity,
+      discountRate: p.discountRate,
+      maxQuantity: 0,
+      productCode: String(p.productCode),
+      revenuePercentage: 0,
+      images: p.images ?? [],
+      isFavorite: p.isFavorite,
+    }
   }
 
   getProductById(id: string, lang: number): Promise<ProductDetailDto> {
     return this.http.get<ProductDetailDto>(PRODUCT_ROUTES.byId(id, lang), {
       showFeedback: false,
     })
+  }
+
+  toggleFavorite(userId: string, productId: string, productPriceId: string): Promise<unknown> {
+    return this.http.post<unknown>(PRODUCT_ROUTES.toggleFavorite(userId, productId, productPriceId))
+  }
+
+  async getMyFavorites(): Promise<ProviderProductDto[]> {
+    const favorites = await this.http.get<FavoriteProductDto[]>(PRODUCT_ROUTES.myFavorites, {
+      showFeedback: false,
+    })
+    return favorites.map((f) => this.toProviderProduct(f))
+  }
+
+  async getPopularProducts(): Promise<ProviderProductDto[]> {
+    try {
+      const items = await this.http.get<PopularProductDto[]>(PRODUCT_ROUTES.popularProducts, {
+        showFeedback: false,
+      })
+      if (!Array.isArray(items)) {
+        return []
+      }
+      return items.map((p) => this.toProviderProduct(p))
+    } catch {
+      return []
+    }
   }
 }

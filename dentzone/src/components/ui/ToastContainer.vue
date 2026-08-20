@@ -23,6 +23,14 @@ const icons: Record<Toast['type'], IconName> = {
           <AppIcon :name="icons[toast.type]" :size="18" />
         </span>
         <span class="toast__message">{{ toast.message }}</span>
+        <button
+          v-if="toast.action"
+          type="button"
+          class="toast__action"
+          @click="toastService.dismiss(toast.id); toast.action.onClick()"
+        >
+          {{ toast.action.label }}
+        </button>
         <button class="toast__close" type="button" aria-label="Dismiss notification" @click="toastService.dismiss(toast.id)">
           <AppIcon name="close" :size="14" />
         </button>
@@ -101,6 +109,24 @@ const icons: Record<Toast['type'], IconName> = {
   flex: 1;
   font-size: 0.88rem;
   font-weight: 500;
+}
+
+.toast__action {
+  flex-shrink: 0;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--dz-radius-full);
+  background: var(--dz-primary);
+  color: var(--dz-on-primary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  transition:
+    background-color 0.2s,
+    transform 0.15s;
+}
+
+.toast__action:hover {
+  background: var(--dz-primary-strong);
+  transform: translateY(-1px);
 }
 
 .toast__close {

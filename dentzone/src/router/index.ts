@@ -40,6 +40,11 @@ const router = createRouter({
       component: () => import('../views/CategoriesView.vue'),
     },
     {
+      path: '/products',
+      name: 'products',
+      component: () => import('../views/AllProductsView.vue'),
+    },
+    {
       path: '/categories/:catId',
       name: 'category-inventories',
       component: () => import('../views/CategoryInventoriesView.vue'),
@@ -59,6 +64,46 @@ const router = createRouter({
       path: '/privacy-policy',
       name: 'privacy-policy',
       component: () => import('../views/PrivacyPolicyView.vue'),
+    },
+    {
+      path: '/terms-and-conditions',
+      name: 'terms-conditions',
+      component: () => import('../views/TermsConditionsView.vue'),
+    },
+    {
+      path: '/refund-policy',
+      name: 'refund-policy',
+      component: () => import('../views/RefundPolicyView.vue'),
+    },
+    {
+      path: '/wishlist',
+      name: 'wishlist',
+      component: () => import('../views/WishlistView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/cart',
+      name: 'cart',
+      component: () => import('../views/CartView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/checkout',
+      name: 'checkout',
+      component: () => import('../views/CheckoutView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/orders',
+      name: 'orders',
+      component: () => import('../views/OrdersView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/notifications',
+      name: 'notifications',
+      component: () => import('../views/NotificationsView.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/profile',

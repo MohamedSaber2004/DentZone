@@ -1,13 +1,26 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { t } from '../../i18n'
+import { WHATSAPP_LINK, CONTACT_PHONE, APP_STORE_LINK, GOOGLE_PLAY_LINK } from '../../config/contact.config'
 import AppIcon from '../ui/AppIcon.vue'
 
-const companyLinks = [
-  { label: t('footer.companyAbout'), to: '/' },
-  { label: t('footer.companyContact'), to: '/' },
-  { label: t('footer.companyShipping'), to: '/' },
-  { label: t('footer.companyPrivacy'), to: '/privacy-policy' },
-]
+interface CompanyLink {
+  label: string
+  type: 'route' | 'external'
+  to?: string
+  href?: string
+}
+
+const companyLinks = computed<CompanyLink[]>(() => [
+  { label: t('footer.companyAbout'), type: 'route', to: '/' },
+  { label: t('footer.companyContact'), type: 'external', href: WHATSAPP_LINK },
+  { label: t('footer.companyShipping'), type: 'route', to: '/refund-policy' },
+  { label: t('footer.companyPrivacy'), type: 'route', to: '/privacy-policy' },
+  { label: t('nav.termsConditions'), type: 'route', to: '/terms-and-conditions' },
+])
+
+const routeLinks = computed(() => companyLinks.value.filter((link): link is CompanyLink & { to: string } => link.type === 'route'))
+const externalLinks = computed(() => companyLinks.value.filter((link): link is CompanyLink & { href: string } => link.type === 'external'))
 
 const socialLinks = [
   { name: 'Facebook', icon: 'facebook' as const, href: 'https://facebook.com/dentzone' },
@@ -23,19 +36,12 @@ const socialLinks = [
     <div class="container app-footer__inner">
       <div class="app-footer__brand">
         <RouterLink to="/" class="app-footer__logo">
-          <span class="app-footer__logo-tile">
-            <AppIcon name="tooth" :size="18" />
-          </span>
+          <img src="/denta-logo.png" alt="DentZone" class="app-footer__logo-img" />
           Dent<span>Zone</span>
         </RouterLink>
         <p class="app-footer__tagline">
           {{ t('footer.tagline') }}
         </p>
-        <div class="app-footer__trust">
-          <span class="app-footer__trust-item">
-            <AppIcon name="shield-check" :size="15" /> {{ t('footer.guarantee') }}
-          </span>
-        </div>
         <div class="app-footer__social">
           <h3 class="app-footer__heading">{{ t('footer.socialHeading') }}</h3>
           <div class="app-footer__social-icons">
@@ -57,9 +63,24 @@ const socialLinks = [
 
       <nav class="app-footer__col" :aria-label="t('footer.companyHeading')">
         <h3 class="app-footer__heading">{{ t('footer.companyHeading') }}</h3>
-        <RouterLink v-for="link in companyLinks" :key="link.label" :to="link.to" class="app-footer__link">
+        <RouterLink
+          v-for="link in routeLinks"
+          :key="link.to"
+          :to="link.to"
+          class="app-footer__link"
+        >
           {{ link.label }}
         </RouterLink>
+        <a
+          v-for="link in externalLinks"
+          :key="link.href"
+          :href="link.href"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="app-footer__link"
+        >
+          {{ link.label }}
+        </a>
       </nav>
 
       <div class="app-footer__col app-footer__col--app">
@@ -67,7 +88,7 @@ const socialLinks = [
         <p class="app-footer__app-sub">{{ t('footer.appSub') }}</p>
         <a
           class="app-footer__store-badge"
-          href="https://apps.apple.com"
+          :href="APP_STORE_LINK"
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -79,7 +100,7 @@ const socialLinks = [
         </a>
         <a
           class="app-footer__store-badge"
-          href="https://play.google.com"
+          :href="GOOGLE_PLAY_LINK"
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -94,8 +115,16 @@ const socialLinks = [
       <div class="app-footer__col">
         <h3 class="app-footer__heading">{{ t('footer.helpHeading') }}</h3>
         <span class="app-footer__link">support@dentzone.store</span>
-        <span class="app-footer__link">+1 (555) 014-2026</span>
-        <span class="app-footer__link">{{ t('footer.helpHours') }}</span>
+        <a
+          class="app-footer__link app-footer__link--whatsapp"
+          :href="WHATSAPP_LINK"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <AppIcon name="whatsapp" :size="15" filled />
+          {{ CONTACT_PHONE }}
+        </a>
+        <!--<span class="app-footer__link">{{ t('footer.helpHours') }}</span>-->
       </div>
     </div>
 
@@ -126,9 +155,9 @@ const socialLinks = [
 .app-footer__logo {
   display: inline-flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.7rem;
   font-family: var(--dz-font-display);
-  font-size: 1.2rem;
+  font-size: 1.35rem;
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--dz-ink);
@@ -138,15 +167,13 @@ const socialLinks = [
   color: var(--dz-gold-strong);
 }
 
-.app-footer__logo-tile {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: var(--dz-radius-sm);
-  background: var(--dz-primary);
-  color: var(--dz-on-primary);
+.app-footer__logo-img {
+  display: block;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: var(--dz-radius-md);
+  object-fit: contain;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.1);
 }
 
 .app-footer__tagline {
@@ -277,6 +304,17 @@ const socialLinks = [
 
 .app-footer__link:hover {
   color: var(--dz-primary-strong);
+}
+
+.app-footer__link--whatsapp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #1da851;
+}
+
+.app-footer__link--whatsapp:hover {
+  color: #128c4a;
 }
 
 .app-footer__bottom {

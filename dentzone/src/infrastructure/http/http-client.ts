@@ -133,12 +133,14 @@ export class HttpClient {
         }
 
         if (response.status === 401 && !silentPath) {
-          if (headers['Authorization'] !== undefined) {
-            this.tokenStore.clear()
-            this.authBridge.onSessionExpired()
-            throw new ApiError(401, 'Session expired', {}, true)
-          }
-          throw new ApiError(401, 'Authentication required', {}, true)
+          this.tokenStore.clear()
+          this.authBridge.onSessionExpired()
+          throw new ApiError(
+            401,
+            headers['Authorization'] !== undefined ? 'Session expired' : 'Authentication required',
+            {},
+            true,
+          )
         }
 
         if (response.status === 429 && attempt < MAX_429_RETRIES) {
@@ -187,9 +189,11 @@ export class HttpClient {
       if (existing) return existing
       const promise = this.tracked(path, () => this.withSlot(run))
       this.dedupeMap.set(dedupeKey, promise)
-      void promise.finally(() => {
-        if (this.dedupeMap.get(dedupeKey) === promise) this.dedupeMap.delete(dedupeKey)
-      })
+      void promise
+        .finally(() => {
+          if (this.dedupeMap.get(dedupeKey) === promise) this.dedupeMap.delete(dedupeKey)
+        })
+        .catch(() => undefined)
       return promise
     }
 

@@ -8,6 +8,7 @@ export interface LoginResponseDto {
   hasDetails: boolean
   message: string | null
   role: string
+  profileImage?: string | null
 }
 
 export interface AddressDto {
@@ -66,4 +67,10 @@ export interface UserProfileDto {
 export interface UserRoleDto {
   id: string
   name: string
+}
+
+export interface SaveFcmTokenDto {
+  userId: string
+  fcmToken: string
+  token?: string
 }

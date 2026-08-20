@@ -11,8 +11,10 @@ export type Messages = {
   nav: {
     home: string
     shop: string
+    allProducts: string
     categories: string
     privacyPolicy: string
+    termsConditions: string
     whitening: string
     brushes: string
     searchPlaceholder: string
@@ -25,6 +27,7 @@ export type Messages = {
     login: string
     profile: string
     myOrders: string
+    notifications: string
     logout: string
   }
   home: {
@@ -55,6 +58,10 @@ export type Messages = {
     categorySubtitle: string
     specialOffers: string
     specialOffersSubtitle: string
+    moreOffersTitle: string
+    moreOffersSubtitle: string
+    flashSalesTitle: string
+    flashSalesSubtitle: string
     viewAllProducts: string
     shopByVendor: string
     vendorSubtitle: string
@@ -76,6 +83,25 @@ export type Messages = {
     bestsellersSubtitle: string
     seeAll: string
     loadingBestsellers: string
+    popularTitle: string
+    popularSubtitle: string
+    loadingPopular: string
+    viewAllPopular: string
+    showLess: string
+    topProvidersTitle: string
+    topProvidersSubtitle: string
+    allProductsTitle: string
+    allProductsSubtitle: string
+    filterByProvider: string
+    allProvidersOption: string
+    searchProductsPlaceholder: string
+    availableFromProviders: string
+    singleProvider: string
+    pageOf: string
+    previousPage: string
+    nextPage: string
+    noPaginatedProducts: string
+    noPaginatedProductsDesc: string
   }
   catalog: {
     all: string
@@ -143,6 +169,7 @@ export type Messages = {
     searchPlaceholder: string
     search: string
     clearSearch: string
+    categoriesFilter: string
     loading: string
     emptyTitle: string
     emptyDescription: string
@@ -202,6 +229,7 @@ export type Messages = {
     errInvalidOtp: string
     errTooManyAttempts: string
     errSessionExpired: string
+    helloAgain: string
     errGeneric: string
     errNetwork: string
     otpHint: string
@@ -356,6 +384,7 @@ export type Messages = {
   }
   cart: {
     title: string
+    count: string
     emptyTitle: string
     emptyDescription: string
     browseProducts: string
@@ -364,9 +393,14 @@ export type Messages = {
     proceedToCheckout: string
     continueShopping: string
     removedToast: string
+    errorToast: string
+    viewCart: string
+    outOfStock: string
+    maxHint: string
   }
   summary: {
     subtotal: string
+    items: string
     discount: string
     shipping: string
     free: string
@@ -377,70 +411,42 @@ export type Messages = {
   }
   checkout: {
     title: string
-    progressAria: string
-    stepCart: string
-    stepCheckout: string
-    stepConfirmation: string
-    nothingToCheckout: string
-    emptyDescription: string
-    signInRequired: string
-    signInDescription: string
-    signIn: string
-    contactDetails: string
     fullName: string
-    namePlaceholder: string
-    emailAddress: string
-    emailPlaceholder: string
-    phoneNumber: string
-    phonePlaceholder: string
-    shippingAddress: string
-    streetAddress: string
-    addressPlaceholder: string
-    city: string
-    cityPlaceholder: string
-    orderNotes: string
-    notesPlaceholder: string
-    payment: string
-    paymentNote: string
-    orderSummary: string
-    placeOrder: string
-    placingOrder: string
-    backToCart: string
-    errName: string
-    errEmail: string
-    errPhone: string
-    errAddress: string
-    errCity: string
-    errFixFields: string
-    orderPlaced: string
-    orderFailed: string
-  }
-  confirmation: {
-    notFoundTitle: string
-    notFoundDescription: string
+    stepAddress: string
+    addressesError: string
+    noAddresses: string
+    addAddress: string
+    stepPayment: string
+    cashOnDelivery: string
+    cashOnDeliveryDesc: string
+    codNote: string
+    stepCoupon: string
+    couponPlaceholder: string
+    apply: string
+    couponApplied: string
+    couponError: string
+    removeCoupon: string
+    stepDeliveryTime: string
+    deliveryDay1: string
+    deliveryDay2: string
+    today: string
+    tomorrow: string
+    slotsError: string
+    noSlots: string
+    slotNow: string
+    stepNote: string
+    notePlaceholder: string
+    deliveryFees: string
+    selectAddressForFees: string
+    placing: string
+    confirm: string
+    missingSelection: string
+    successTitle: string
+    successDesc: string
+    orderNumber: string
+    backHome: string
     continueShopping: string
-    loading: string
-    thankYou: string
-    placedSuccessfully: string
-    confirmationEmail: string
-    orderDetails: string
-    summary: string
-    shippingTo: string
-    placedOn: string
-    orderId: string
-    statusConfirmed: string
-    statusProcessing: string
-    statusShipped: string
-    statusDelivered: string
-  }
-  orders: {
-    title: string
-    subtitle: string
-    loading: string
-    emptyTitle: string
-    emptyDescription: string
-    browseProducts: string
-    itemsCount: string
+    loadError: string
   }
   footer: {
     newsletterTitle: string
@@ -477,4 +483,71 @@ export type Messages = {
     errorTitle: string
     errorDescription: string
   }
+  terms: {
+    title: string
+    back: string
+    errorTitle: string
+    errorDescription: string
+  }
+  refund: {
+    title: string
+    back: string
+    errorTitle: string
+    errorDescription: string
+  }
+  orders: {
+    title: string
+    subtitle: string
+    empty: string
+    emptyDesc: string
+    error: string
+    retry: string
+    filterAll: string
+    filterPending: string
+    filterApproved: string
+    filterRejected: string
+    filterPrepared: string
+    filterShipped: string
+    filterDelivered: string
+    filterCompleted: string
+    filterCancelled: string
+    orderNumber: string
+    doctor: string
+    phone: string
+    items: string
+    total: string
+    totalAfter: string
+    shipping: string
+    discount: string
+    statusPending: string
+    statusApproved: string
+    statusRejected: string
+    statusPrepared: string
+    statusShipped: string
+    statusDelivered: string
+    statusCompleted: string
+    statusReAssign: string
+    statusRefund: string
+    statusCancelled: string
+  }
+  notifications: {
+    title: string
+    subtitle: string
+    empty: string
+    emptyDesc: string
+    error: string
+    retry: string
+    viewDetails: string
+    expiresAt: string
+    enablePush: string
+    pushEnabled: string
+    pushBlocked: string
+    pushNotSupported: string
+    pushPromptTitle: string
+    pushPromptDesc: string
+    copyToken: string
+    tokenCopied: string
+    deviceToken: string
+  }
 }
+

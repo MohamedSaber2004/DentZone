@@ -1,19 +1,21 @@
 <script setup lang="ts">
 import { services } from '../di/container'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { t, locale } from '../i18n'
 import { API_LANG } from '../config/api.config'
 import AppButton from '../components/ui/AppButton.vue'
 import AppIcon from '../components/ui/AppIcon.vue'
 import CategoryCard from '../components/categories/CategoryCard.vue'
+import ProductCard from '../components/products/ProductCard.vue'
+import OfferSlider from '../components/home/OfferSlider.vue'
+import ProviderMarquee from '../components/home/ProviderMarquee.vue'
 import type { CategoryDto } from '../domain/models/category'
-import type { SpecialOfferDto } from '../domain/models/special-offer'
+import type { HomeDto, HomeProviderDto } from '../domain/models/home'
+import type { ProviderProductDto } from '../domain/models/product'
 
 const router = useRouter()
-const authService = services.authService
-const categoryRepository = services.categoryRepository
-const specialOffersRepository = services.specialOffersRepository
+const { authService, categoryRepository, homeRepository, productRepository, cartService } = services
 
 const isAuthenticated = computed(() => authService.isAuthenticated)
 
@@ -23,52 +25,130 @@ const categories = ref<CategoryDto[]>([])
 const categoriesLoading = ref(true)
 const categoriesError = ref(false)
 
-const offers = ref<SpecialOfferDto[]>([])
-const offersLoading = ref(true)
-const offersError = ref(false)
-const offersSliderRef = ref<HTMLElement | null>(null)
-let offersLoaded = false
-let offersTimer: ReturnType<typeof setInterval> | undefined
+const home = ref<HomeDto | null>(null)
+const homeLoading = ref(true)
+const homeError = ref(false)
 
-const OFFERS_STEP_MS = 4000
+const popularProducts = ref<ProviderProductDto[]>([])
+const popularLoading = ref(true)
+const popularError = ref(false)
+const showAllPopular = ref(false)
+const POPULAR_LIMIT = 10
 
-const prefersReducedMotion = () =>
-  typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+const displayedPopularProducts = computed(() => {
+  if (showAllPopular.value) return popularProducts.value
+  return popularProducts.value.slice(0, POPULAR_LIMIT)
+})
 
-const advanceOffers = () => {
-  const slider = offersSliderRef.value
-  if (!slider || offers.value.length < 2) return
-  const card = slider.firstElementChild as HTMLElement | null
-  if (!card) return
-  const cardWidth = card.getBoundingClientRect().width
-  const maxScroll = slider.scrollWidth - slider.clientWidth
-  const distance = Math.abs(slider.scrollLeft)
-  if (distance >= maxScroll - slider.clientWidth / 2) {
-    slider.scrollTo({ left: 0, behavior: 'auto' })
-  } else {
-    slider.scrollBy({
-      left: (locale.value === 'ar' ? -1 : 1) * cardWidth,
-      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
-    })
+const offersOne = computed(() => home.value?.specialOffersone ?? [])
+const offersTwo = computed(() => home.value?.specialOfferstwo ?? [])
+const featuredProducts = computed(() => home.value?.products ?? [])
+const flashSales = computed(() => home.value?.flashSales ?? [])
+
+// --- 1. Top Providers Section (Independent Endpoint /api/Users/get-top-providers) ---
+const topProviders = ref<HomeProviderDto[]>([
+  {
+    id: 'd5cc331b-7ff4-47f4-810d-02418a467ff1',
+    fullName: 'Dental Capital',
+    userName: 'Dentalcapitale',
+    email: 'Dentalcapitale@gmail.com',
+    isAvailableNow: false,
+    profileImage: 'https://dentzoneapi.runasp.net/Uploads/providers/04d797fc-901c-4a98-bbbb-d0d683977a13.jpg',
+  },
+  {
+    id: 'b0ad0aa7-b8c8-48ea-affa-56f10e9f6dc3',
+    fullName: 'BAZZAR  DENT',
+    userName: 'bazzardent',
+    email: 'bazzardent@gmail.com',
+    isAvailableNow: false,
+    profileImage: 'https://dentzoneapi.runasp.net/Uploads/providers/f8ebb260-8750-48c6-b6fc-b6f4dcc5bf2e.jpeg',
+  },
+  {
+    id: '754c84ef-6718-442d-94c4-db69f661e9a8',
+    fullName: 'MCS Dental Sector',
+    userName: 'ahmedmagdyfox',
+    email: 'ahmedmagdyfox@gmail.com',
+    isAvailableNow: false,
+    profileImage: 'https://dentzoneapi.runasp.net/Uploads/providers/df27ba13-e98c-4892-bf8b-0f1ea6aa3f26.jpg',
+  },
+])
+const topProvidersLoading = ref(false)
+const topProvidersError = ref(false)
+
+// --- 2. All Suppliers / Providers (General section) ---
+const allProviders = computed(() => home.value?.providers ?? [])
+
+// --- 3. Products Section (First Page 15 items + View All) ---
+const catalogProducts = ref<ProviderProductDto[]>([])
+const catalogLoading = ref(true)
+const catalogError = ref(false)
+
+// Map to calculate number of providers offering each product
+const providerCountsByProduct = computed(() => {
+  const map = new Map<string, Set<string>>()
+  for (const p of catalogProducts.value) {
+    const key = p.productId || p.productName
+    const invId = p.inventoryUserId || p.inventoryUserName || 'default'
+    if (!map.has(key)) map.set(key, new Set())
+    map.get(key)!.add(invId)
+  }
+  const countMap = new Map<string, number>()
+  for (const [key, set] of map.entries()) {
+    countMap.set(key, set.size)
+  }
+  return countMap
+})
+
+const getProductProviderCount = (product: ProviderProductDto): number => {
+  const key = product.productId || product.productName
+  return providerCountsByProduct.value.get(key) ?? 1
+}
+
+const viewAllProducts = () => {
+  void router.push({ name: 'products' })
+}
+
+const favoriteIds = ref<Set<string>>(new Set())
+const favoriteBusy = ref<Set<string>>(new Set())
+
+const detailsTo = (product: ProviderProductDto) => ({
+  name: 'product-details',
+  params: { inventoryUserId: product.inventoryUserId || 'default', productId: product.productId },
+  query: { supplier: product.inventoryUserName || undefined },
+})
+
+const toggleFavorite = async (product: ProviderProductDto) => {
+  const user = authService.user.value
+  if (!user || favoriteBusy.value.has(product.productPriceId)) return
+  favoriteBusy.value = new Set(favoriteBusy.value).add(product.productPriceId)
+  const wasFavorite = favoriteIds.value.has(product.productPriceId)
+  try {
+    await productRepository.toggleFavorite(user.id, product.productId, product.productPriceId)
+    const next = new Set(favoriteIds.value)
+    if (wasFavorite) {
+      next.delete(product.productPriceId)
+    } else {
+      next.add(product.productPriceId)
+    }
+    favoriteIds.value = next
+  } catch {
+    // keep the current state unchanged
+  } finally {
+    const next = new Set(favoriteBusy.value)
+    next.delete(product.productPriceId)
+    favoriteBusy.value = next
   }
 }
 
-const startOffersTimer = () => {
-  if (offersTimer !== undefined) clearInterval(offersTimer)
-  if (offers.value.length < 2) return
-  offersTimer = setInterval(advanceOffers, OFFERS_STEP_MS)
-}
-
-const stopOffersTimer = () => {
-  if (offersTimer !== undefined) {
-    clearInterval(offersTimer)
-    offersTimer = undefined
-  }
-}
-
-const resolveOfferImage = (path: string): string => {
-  if (path.startsWith('http://')) return path.replace('http://', 'https://')
-  return path
+const addToCart = (product: ProviderProductDto) => {
+  void cartService.add({
+    productId: product.productId,
+    inventoryId: product.inventoryUserId,
+    quantity: 1,
+    name: product.productName,
+    stockQuantity: product.stockQuantity,
+    maxQuantity: product.maxQuantity,
+  })
 }
 
 const go = () => {
@@ -88,30 +168,99 @@ const loadCategories = async () => {
   }
 }
 
-const loadOffers = async () => {
-  offersLoaded = true
-  offersLoading.value = true
-  offersError.value = false
+const loadPopularProducts = async () => {
+  popularLoading.value = true
+  popularError.value = false
   try {
-    const all = await specialOffersRepository.getOffers()
-    offers.value = [...all].sort((a, b) => a.sectionNum - b.sectionNum)
-    startOffersTimer()
+    const list = await productRepository.getPopularProducts()
+    popularProducts.value = list
+    const favs = list.filter((p) => p.isFavorite).map((p) => p.productPriceId)
+    if (favs.length > 0) {
+      const next = new Set(favoriteIds.value)
+      for (const id of favs) next.add(id)
+      favoriteIds.value = next
+    }
   } catch {
-    offersError.value = true
+    popularError.value = true
   } finally {
-    offersLoading.value = false
+    popularLoading.value = false
+  }
+}
+
+const loadHome = async () => {
+  homeLoading.value = true
+  homeError.value = false
+  try {
+    home.value = await homeRepository.getHome(locale.value === 'ar' ? API_LANG.ARABIC : API_LANG.ENGLISH)
+    const homeFavs = home.value.products.filter((p) => p.isFavorite).map((p) => p.productPriceId)
+    const next = new Set(favoriteIds.value)
+    for (const id of homeFavs) next.add(id)
+    favoriteIds.value = next
+
+    if (catalogProducts.value.length === 0 && home.value?.products?.length) {
+      catalogProducts.value = home.value.products
+      catalogLoading.value = false
+    }
+  } catch {
+    homeError.value = true
+  } finally {
+    homeLoading.value = false
+    void loadTopProviders()
+    void loadCatalogProducts()
+  }
+}
+
+const loadTopProviders = async () => {
+  topProvidersLoading.value = true
+  topProvidersError.value = false
+  try {
+    const lang = locale.value === 'ar' ? API_LANG.ARABIC : API_LANG.ENGLISH
+    topProviders.value = await homeRepository.getTopProviders(lang)
+  } catch {
+    topProvidersError.value = true
+  } finally {
+    topProvidersLoading.value = false
+  }
+}
+
+const displayedCatalogProducts = computed(() => {
+  return catalogProducts.value.slice(0, 15)
+})
+
+const loadCatalogProducts = async () => {
+  catalogLoading.value = true
+  catalogError.value = false
+  try {
+    const list = await productRepository.searchProducts({})
+    catalogProducts.value = list
+    const favs = list.filter((p) => p.isFavorite).map((p) => p.productPriceId)
+    if (favs.length > 0) {
+      const next = new Set(favoriteIds.value)
+      for (const id of favs) next.add(id)
+      favoriteIds.value = next
+    }
+  } catch {
+    catalogError.value = true
+  } finally {
+    catalogLoading.value = false
   }
 }
 
 onMounted(() => {
-  loadCategories()
-  if (isAuthenticated.value) void loadOffers()
+  void loadCategories()
+  void loadPopularProducts()
+  void loadHome()
+  void loadTopProviders()
+  void loadCatalogProducts()
 })
 
-onUnmounted(stopOffersTimer)
-
 watch(isAuthenticated, (authed) => {
-  if (authed && !offersLoaded) void loadOffers()
+  if (authed) {
+    void loadHome()
+    void loadPopularProducts()
+    void loadTopProviders()
+    void loadCatalogProducts()
+  }
 })
 </script>
 
@@ -148,20 +297,6 @@ watch(isAuthenticated, (authed) => {
           </AppButton>
         </div>
 
-        <div class="hero__stats">
-          <div class="hero__stat">
-            <strong>2,000+</strong>
-            <span>{{ t('home.statCustomers') }}</span>
-          </div>
-          <div class="hero__stat">
-            <strong>4.9<span class="hero__stat-star">★</span></strong>
-            <span>{{ t('home.statRating') }}</span>
-          </div>
-          <div class="hero__stat">
-            <strong>500+</strong>
-            <span>{{ t('home.statProducts') }}</span>
-          </div>
-        </div>
       </div>
 
       <div class="hero__visual" aria-hidden="true">
@@ -170,9 +305,7 @@ watch(isAuthenticated, (authed) => {
           <circle class="hero__ring-dash" cx="160" cy="160" r="122" />
         </svg>
 
-        <span class="hero__logo">
-          <AppIcon name="tooth" :size="64" />
-        </span>
+        <img src="/denta-logo.png" alt="DentZone" class="hero__logo" />
 
         <span class="hero__orbit hero__orbit--one"><AppIcon name="brush" :size="20" /></span>
         <span class="hero__orbit hero__orbit--two"><AppIcon name="tube" :size="20" /></span>
@@ -182,59 +315,6 @@ watch(isAuthenticated, (authed) => {
       </div>
     </section>
   </div>
-
-  <section v-if="isAuthenticated" class="offers" aria-label="Special offers">
-    <div class="container">
-      <div class="offers__head">
-        <div>
-          <h2 class="offers__title">{{ t('home.specialOffers') }}</h2>
-          <p class="offers__subtitle">{{ t('home.specialOffersSubtitle') }}</p>
-        </div>
-      </div>
-
-      <div v-if="offersLoading" class="offers__skeleton" aria-label="Loading" />
-
-      <div v-else-if="offersError" class="offers__error" role="alert">
-        <AppIcon name="alert-circle" :size="17" />
-        <span>{{ t('categories.errorDescription') }}</span>
-        <button type="button" class="offers__retry" @click="loadOffers">
-          <AppIcon name="refresh" :size="14" />
-          {{ t('categories.retry') }}
-        </button>
-      </div>
-
-      <div v-else-if="offers.length === 0" class="offers__empty">
-        <span class="offers__empty-icon"><AppIcon name="sparkles" :size="24" /></span>
-        <strong>{{ t('categories.emptyTitle') }}</strong>
-        <span>{{ t('categories.emptyDescription') }}</span>
-      </div>
-
-      <div v-else ref="offersSliderRef" class="offers__slider" aria-label="Special offers">
-        <a
-          v-for="offer in offers"
-          :key="offer.id"
-          class="offers__card"
-          :href="offer.link"
-          target="_blank"
-          rel="noopener noreferrer"
-          :aria-label="t('home.specialOffers')"
-        >
-          <img :src="resolveOfferImage(offer.imagePath)" :alt="t('home.specialOffers')" loading="lazy" draggable="false" />
-        </a>
-        <a
-          v-if="offers.length > 1"
-          class="offers__card"
-          :href="offers[0]!.link"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-hidden="true"
-          tabindex="-1"
-        >
-          <img :src="resolveOfferImage(offers[0]!.imagePath)" :alt="''" loading="lazy" draggable="false" />
-        </a>
-      </div>
-    </div>
-  </section>
 
   <section class="categories" aria-label="Categories">
     <div class="container">
@@ -282,6 +362,273 @@ watch(isAuthenticated, (authed) => {
         />
       </div>
     </div>
+    </section>
+
+    <!-- SECTION 1: Top Providers (Independent Section) -->
+    <section class="providers providers--top" aria-label="Top providers">
+      <div class="container">
+        <div class="providers__head">
+          <div>
+            <span class="providers__badge">
+              <AppIcon name="shield-check" :size="14" />
+              {{ t('home.topProvidersTitle') }}
+            </span>
+            <h2 class="providers__title">{{ t('home.topProvidersTitle') }}</h2>
+            <p class="providers__subtitle">{{ t('home.topProvidersSubtitle') }}</p>
+          </div>
+        </div>
+
+        <!-- Loading skeleton -->
+        <div v-if="topProvidersLoading && topProviders.length === 0" class="providers__skeleton-row" aria-label="Loading top providers">
+          <div v-for="i in 5" :key="i" class="providers__skeleton-card">
+            <span class="providers__skeleton-avatar" />
+            <span class="providers__skeleton-lines">
+              <span class="providers__skeleton-line providers__skeleton-line--wide" />
+              <span class="providers__skeleton-line" />
+            </span>
+          </div>
+        </div>
+
+        <!-- Error state -->
+        <div v-else-if="topProvidersError && topProviders.length === 0" class="providers__error" role="alert">
+          <AppIcon name="alert-circle" :size="17" />
+          <span>{{ t('categories.errorDescription') }}</span>
+          <button type="button" class="providers__retry" @click="loadTopProviders">
+            <AppIcon name="refresh" :size="14" />
+            {{ t('categories.retry') }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Top Providers Marquee -->
+      <div v-if="topProviders.length > 0" class="providers__marquees">
+        <ProviderMarquee :providers="topProviders" />
+        <ProviderMarquee :providers="topProviders" reverse-order reverse-animation decorative />
+      </div>
+    </section>
+
+    <OfferSlider
+      :offers="offersOne"
+      :title="t('home.specialOffers')"
+      :subtitle="t('home.specialOffersSubtitle')"
+      ariaLabel="Special offers"
+      show-states
+      :loading="homeLoading"
+      :error="homeError"
+      @retry="loadHome"
+    />
+
+    <section
+      v-if="popularLoading || (!popularError && popularProducts.length)"
+      class="featured featured--popular"
+      aria-label="Popular products"
+    >
+      <div class="container">
+        <div class="featured__head featured__head--flex">
+          <div>
+            <span class="featured__badge">
+              <AppIcon name="flame" :size="14" />
+              {{ t('home.bestsellersTitle') }}
+            </span>
+            <h2 class="featured__title">{{ t('home.popularTitle') }}</h2>
+            <p class="featured__subtitle">{{ t('home.popularSubtitle') }}</p>
+          </div>
+          <button
+            v-if="!popularLoading && popularProducts.length > POPULAR_LIMIT"
+            type="button"
+            class="featured__toggle-btn"
+            :aria-expanded="showAllPopular"
+            @click="showAllPopular = !showAllPopular"
+          >
+            <span>{{ showAllPopular ? t('home.showLess') : t('home.viewAllPopular') }}</span>
+            <AppIcon :name="showAllPopular ? 'chevron-up' : 'arrow-right'" :size="15" />
+          </button>
+        </div>
+
+        <div v-if="popularLoading" class="featured__grid" aria-label="Loading popular products">
+          <div v-for="i in 4" :key="i" class="categories__skeleton">
+            <span class="categories__skeleton-media" />
+            <span class="categories__skeleton-line categories__skeleton-line--wide" />
+            <span class="categories__skeleton-line" />
+          </div>
+        </div>
+
+        <div v-else class="featured__grid">
+          <ProductCard
+            v-for="product in displayedPopularProducts"
+            :key="product.productPriceId"
+            :product="product"
+            :favorite="favoriteIds.has(product.productPriceId)"
+            :favorite-busy="favoriteBusy.has(product.productPriceId)"
+            :details-to="detailsTo(product)"
+            :provider-count="getProductProviderCount(product)"
+            @toggle-favorite="toggleFavorite"
+            @add-to-cart="addToCart"
+          />
+        </div>
+
+        <div v-if="!popularLoading && popularProducts.length > POPULAR_LIMIT" class="featured__footer-action">
+          <button
+            type="button"
+            class="featured__toggle-btn featured__toggle-btn--lg"
+            :aria-expanded="showAllPopular"
+            @click="showAllPopular = !showAllPopular"
+          >
+            <span>
+              {{ showAllPopular ? t('home.showLess') : t('home.viewAllPopular') }}
+              <template v-if="!showAllPopular">({{ popularProducts.length }})</template>
+            </span>
+            <AppIcon :name="showAllPopular ? 'chevron-up' : 'arrow-right'" :size="15" />
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section v-if="!homeLoading && !homeError && featuredProducts.length" class="featured" aria-label="Featured products">
+      <div class="container">
+        <div class="featured__head">
+          <div>
+            <h2 class="featured__title">{{ t('home.featuredTitle') }}</h2>
+            <p class="featured__subtitle">{{ t('home.featuredSubtitle') }}</p>
+          </div>
+        </div>
+
+        <div class="featured__grid">
+          <ProductCard
+            v-for="product in featuredProducts"
+            :key="product.productPriceId"
+            :product="product"
+            :favorite="favoriteIds.has(product.productPriceId)"
+            :favorite-busy="favoriteBusy.has(product.productPriceId)"
+            :details-to="detailsTo(product)"
+            :provider-count="getProductProviderCount(product)"
+            @toggle-favorite="toggleFavorite"
+            @add-to-cart="addToCart"
+          />
+        </div>
+      </div>
+    </section>
+
+    <section v-if="!homeLoading && !homeError && flashSales.length" class="featured featured--flash" aria-label="Flash sales">
+      <div class="container">
+        <div class="featured__head">
+          <div>
+            <h2 class="featured__title">{{ t('home.flashSalesTitle') }}</h2>
+            <p class="featured__subtitle">{{ t('home.flashSalesSubtitle') }}</p>
+          </div>
+        </div>
+
+        <div class="featured__grid">
+          <ProductCard
+            v-for="product in flashSales"
+            :key="product.productPriceId"
+            :product="product"
+            :favorite="favoriteIds.has(product.productPriceId)"
+            :favorite-busy="favoriteBusy.has(product.productPriceId)"
+            :details-to="detailsTo(product)"
+            :provider-count="getProductProviderCount(product)"
+            @toggle-favorite="toggleFavorite"
+            @add-to-cart="addToCart"
+          />
+        </div>
+      </div>
+    </section>
+
+    <OfferSlider
+      v-if="!homeLoading && !homeError && offersTwo.length"
+      :offers="offersTwo"
+      :title="t('home.moreOffersTitle')"
+      :subtitle="t('home.moreOffersSubtitle')"
+      ariaLabel="More offers"
+    />
+
+    <!-- SECTION 2: All Suppliers / Providers (General Section) -->
+    <section v-if="!homeLoading && allProviders.length > 0" class="providers providers--all" aria-label="All suppliers">
+      <div class="container">
+        <div class="providers__head">
+          <div>
+            <h2 class="providers__title">{{ t('home.shopByVendor') }}</h2>
+            <p class="providers__subtitle">{{ t('home.vendorSubtitle') }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="providers__marquees">
+        <ProviderMarquee :providers="allProviders" />
+        <ProviderMarquee :providers="allProviders" reverse-order reverse-animation decorative />
+      </div>
+    </section>
+
+    <!-- SECTION 3: Products Catalog (First Page 15 items + View All) -->
+    <section class="catalog-section" aria-label="Products Catalog">
+      <div class="container">
+        <div class="catalog-section__head">
+          <div>
+            <span class="catalog-section__badge">
+              <AppIcon name="box" :size="14" />
+              {{ t('home.allProductsTitle') }}
+            </span>
+            <h2 class="catalog-section__title">{{ t('home.allProductsTitle') }}</h2>
+            <p class="catalog-section__subtitle">{{ t('home.allProductsSubtitle') }}</p>
+          </div>
+          <button type="button" class="catalog-section__view-all" @click="viewAllProducts">
+            <span>{{ t('home.viewAllProducts') }}</span>
+            <AppIcon name="arrow-right" :size="15" />
+          </button>
+        </div>
+
+        <!-- Loading Skeletons -->
+        <div v-if="catalogLoading" class="catalog-section__grid" aria-label="Loading products">
+          <div v-for="i in 6" :key="i" class="categories__skeleton">
+            <span class="categories__skeleton-media" />
+            <span class="categories__skeleton-line categories__skeleton-line--wide" />
+            <span class="categories__skeleton-line" />
+          </div>
+        </div>
+
+        <!-- Error State -->
+        <div v-else-if="catalogError" class="categories__error" role="alert">
+          <AppIcon name="alert-circle" :size="17" />
+          <span>{{ t('categories.errorDescription') }}</span>
+          <button type="button" class="categories__retry" @click="loadCatalogProducts">
+            <AppIcon name="refresh" :size="14" />
+            {{ t('categories.retry') }}
+          </button>
+        </div>
+
+        <!-- Empty State -->
+        <div v-else-if="catalogProducts.length === 0" class="categories__empty">
+          <span class="categories__empty-icon"><AppIcon name="search" :size="24" /></span>
+          <strong>{{ t('home.noPaginatedProducts') }}</strong>
+          <span>{{ t('home.noPaginatedProductsDesc') }}</span>
+          <AppButton variant="secondary" size="sm" @click="loadCatalogProducts">
+            {{ t('categories.retry') }}
+          </AppButton>
+        </div>
+
+        <!-- First Page 15-Product Grid -->
+        <div v-else class="catalog-section__grid">
+          <ProductCard
+            v-for="product in displayedCatalogProducts"
+            :key="product.productPriceId || product.productId"
+            :product="product"
+            :favorite="favoriteIds.has(product.productPriceId)"
+            :favorite-busy="favoriteBusy.has(product.productPriceId)"
+            :details-to="detailsTo(product)"
+            :provider-count="getProductProviderCount(product)"
+            @toggle-favorite="toggleFavorite"
+            @add-to-cart="addToCart"
+          />
+        </div>
+
+        <!-- View All Footer CTA -->
+        <div v-if="!catalogLoading && !catalogError && catalogProducts.length > 0" class="catalog-section__footer">
+          <button type="button" class="catalog-section__footer-btn" @click="viewAllProducts">
+            <span>{{ t('home.viewAllProducts') }}</span>
+            <AppIcon name="arrow-right" :size="16" />
+          </button>
+        </div>
+      </div>
     </section>
   </div>
 </template>
@@ -394,39 +741,6 @@ watch(isAuthenticated, (authed) => {
   margin-top: 0.4rem;
 }
 
-.hero__stats {
-  display: flex;
-  gap: 2.4rem;
-  margin-top: 1.2rem;
-  padding-top: 1.4rem;
-  border-top: 1px solid rgb(255 255 255 / 0.14);
-  animation: hero-fade-up 0.6s 0.25s ease both;
-}
-
-.hero__stat {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.hero__stat strong {
-  font-family: var(--dz-font-display);
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--dz-white);
-  letter-spacing: -0.01em;
-}
-
-.hero__stat-star {
-  color: var(--dz-gold);
-  margin-inline-start: 0.2rem;
-  font-size: 1rem;
-}
-
-.hero__stat span:not(.hero__stat-star) {
-  font-size: 0.75rem;
-  color: rgb(255 255 255 / 0.6);
-}
 
 .hero__visual {
   position: relative;
@@ -463,17 +777,14 @@ watch(isAuthenticated, (authed) => {
 }
 
 .hero__logo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 7.5rem;
-  height: 7.5rem;
+  display: block;
+  width: 8.75rem;
+  height: 8.75rem;
   border-radius: var(--dz-radius-lg);
-  background: var(--dz-primary);
-  color: var(--dz-on-primary);
+  object-fit: contain;
   box-shadow:
-    0 14px 34px rgb(0 0 0 / 0.35),
-    inset 0 0 0 1px rgb(255 255 255 / 0.08);
+    0 18px 44px rgb(0 0 0 / 0.45),
+    inset 0 0 0 1px rgb(255 255 255 / 0.12);
   animation: hero-breathe 5s ease-in-out infinite;
 }
 
@@ -567,28 +878,19 @@ watch(isAuthenticated, (authed) => {
 }
 
 @media (max-width: 560px) {
-  .hero__stats {
-    gap: 1.6rem;
-  }
-
-  .hero__stat strong {
-    font-size: 1.25rem;
-  }
-
   .hero__visual {
     min-height: 240px;
   }
 
   .hero__logo {
-    width: 6rem;
-    height: 6rem;
+    width: 7.25rem;
+    height: 7.25rem;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .hero__copy,
-  .hero__visual,
-  .hero__stats {
+  .hero__visual {
     animation: none;
   }
 
@@ -598,153 +900,116 @@ watch(isAuthenticated, (authed) => {
   }
 }
 
-.offers {
-  --offer-card-w: min(100%, 640px);
-  padding: 4rem var(--dz-gutter) 0;
-  background: var(--dz-paper);
-}
-
-.offers__head {
-  margin-bottom: 1.75rem;
-}
-
-.offers__title {
+.featured__title,
+.providers__title {
   font-family: var(--dz-font-display);
   font-size: clamp(1.5rem, 3vw, 1.9rem);
   font-weight: 600;
   letter-spacing: -0.02em;
 }
 
-.offers__subtitle {
+.featured__subtitle,
+.providers__subtitle {
   margin-top: 0.4rem;
   font-size: 0.92rem;
   color: var(--dz-muted);
 }
 
-.offers__slider {
-  display: flex;
-  width: var(--offer-card-w);
-  margin-inline: auto;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: none;
-  border-radius: var(--dz-radius-lg);
-  border: 1px solid var(--dz-border);
-  background: var(--dz-surface);
-  box-shadow: var(--dz-shadow-sm);
-  overscroll-behavior-x: contain;
+.featured {
+  padding: 4rem var(--dz-gutter) 0;
+  background: var(--dz-paper);
 }
 
-.offers__slider::-webkit-scrollbar {
-  display: none;
+.featured--popular {
+  padding-top: 3.5rem;
 }
 
-.offers__card {
-  flex: 0 0 100%;
-  scroll-snap-align: start;
+.featured--flash {
+  padding-top: 3rem;
 }
 
-.offers__card img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  aspect-ratio: 21 / 9;
-  user-select: none;
-}
-
-.offers__skeleton {
-  width: var(--offer-card-w);
-  margin-inline: auto;
-  aspect-ratio: 21 / 9;
-  border-radius: var(--dz-radius-lg);
-  background: linear-gradient(
-    100deg,
-    var(--dz-surface-soft) 40%,
-    var(--dz-primary-faint) 50%,
-    var(--dz-surface-soft) 60%
-  );
-  background-size: 200% 100%;
-  animation: offers-shimmer 1.4s ease-in-out infinite;
-}
-
-@keyframes offers-shimmer {
-  to {
-    background-position: -200% 0;
-  }
-}
-
-.offers__error {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 1rem 1.2rem;
-  border-radius: var(--dz-radius);
-  background: var(--dz-danger-soft);
-  border: 1px solid color-mix(in srgb, var(--dz-danger) 25%, var(--dz-border));
-  color: var(--dz-danger);
-  font-size: 0.88rem;
-  font-weight: 600;
-  flex-wrap: wrap;
-}
-
-.offers__empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 3rem 1.5rem;
-  border: 1px dashed var(--dz-border-strong);
-  border-radius: var(--dz-radius-lg);
-  text-align: center;
-}
-
-.offers__empty-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 3.2rem;
-  height: 3.2rem;
-  border-radius: var(--dz-radius-full);
-  background: var(--dz-surface-soft);
-  color: var(--dz-muted);
-  margin-bottom: 0.4rem;
-}
-
-.offers__empty strong {
-  font-family: var(--dz-font-display);
-  font-size: 1.05rem;
-  font-weight: 600;
-  color: var(--dz-ink);
-}
-
-.offers__empty > span:last-child {
-  font-size: 0.88rem;
-  color: var(--dz-muted);
-  max-width: 38ch;
-}
-
-.offers__retry {
+.featured__badge {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.4rem 0.9rem;
-  margin-inline-start: auto;
-  border: 1px solid color-mix(in srgb, var(--dz-danger) 40%, var(--dz-border));
+  padding: 0.25rem 0.7rem;
   border-radius: var(--dz-radius-full);
-  background: var(--dz-surface);
-  color: var(--dz-danger);
-  font-size: 0.8rem;
+  background: var(--dz-primary-soft);
+  color: var(--dz-primary-strong);
+  font-size: 0.76rem;
   font-weight: 700;
-  cursor: pointer;
-  transition:
-    background-color 0.2s,
-    color 0.2s;
+  margin-bottom: 0.5rem;
 }
 
-.offers__retry:hover {
-  background: var(--dz-danger);
-  color: var(--dz-white);
+.featured__head {
+  margin-bottom: 1.75rem;
+}
+
+.featured__head--flex {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.featured__toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.52rem 1.15rem;
+  border-radius: var(--dz-radius-full);
+  border: 1px solid var(--dz-border-strong);
+  background: var(--dz-surface);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--dz-primary-strong);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    border-color 0.2s,
+    color 0.2s,
+    background-color 0.2s,
+    transform 0.15s;
+}
+
+.featured__toggle-btn:hover {
+  border-color: var(--dz-primary);
+  background: var(--dz-primary-faint);
+  transform: translateY(-1px);
+}
+
+.featured__toggle-btn svg {
+  transition: transform 0.2s;
+}
+
+.featured__toggle-btn:hover svg {
+  transform: translateX(3px);
+}
+
+html[dir='rtl'] .featured__toggle-btn svg {
+  transform: scaleX(-1);
+}
+
+html[dir='rtl'] .featured__toggle-btn:hover svg {
+  transform: scaleX(-1) translateX(-3px);
+}
+
+.featured__footer-action {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+.featured__toggle-btn--lg {
+  padding: 0.65rem 1.75rem;
+  font-size: 0.92rem;
+  box-shadow: var(--dz-shadow-sm);
+}
+
+.featured__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 1.1rem;
 }
 
 .categories {
@@ -938,8 +1203,373 @@ html[dir='rtl'] .categories__all:hover svg:last-child {
   }
 }
 
+.providers {
+  padding: 2rem 0 4rem;
+  background: var(--dz-paper);
+  overflow: hidden;
+}
+
+.providers__head {
+  margin-bottom: 1.75rem;
+}
+
+.providers__marquees {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Providers skeleton */
+.providers__skeleton-row {
+  display: flex;
+  gap: 1rem;
+  overflow: hidden;
+  padding-bottom: 0.25rem;
+}
+
+.providers__skeleton-card {
+  display: flex;
+  flex: 0 0 240px;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.9rem 1rem;
+  background: var(--dz-surface);
+  border: 1px solid var(--dz-border);
+  border-radius: var(--dz-radius-lg);
+}
+
+.providers__skeleton-avatar {
+  flex: 0 0 3rem;
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--dz-radius-full);
+  background: var(--dz-surface-soft);
+  animation: categories-pulse 1.4s ease-in-out infinite;
+}
+
+.providers__skeleton-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.providers__skeleton-line {
+  height: 0.75rem;
+  width: 55%;
+  border-radius: var(--dz-radius-sm);
+  background: var(--dz-surface-soft);
+  animation: categories-pulse 1.4s ease-in-out infinite;
+}
+
+.providers__skeleton-line--wide {
+  width: 80%;
+  height: 0.9rem;
+}
+
+/* Providers error */
+.providers__error {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1rem 1.2rem;
+  border-radius: var(--dz-radius);
+  background: var(--dz-danger-soft);
+  border: 1px solid color-mix(in srgb, var(--dz-danger) 25%, var(--dz-border));
+  color: var(--dz-danger);
+  font-size: 0.88rem;
+  font-weight: 600;
+  flex-wrap: wrap;
+}
+
+.providers__retry {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.9rem;
+  margin-inline-start: auto;
+  border: 1px solid color-mix(in srgb, var(--dz-danger) 40%, var(--dz-border));
+  border-radius: var(--dz-radius-full);
+  background: var(--dz-surface);
+  color: var(--dz-danger);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+}
+
+.providers__retry:hover {
+  background: var(--dz-danger);
+  color: var(--dz-white);
+}
+
+/* Providers Badge & Top Section */
+.providers__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--dz-radius-full);
+  background: var(--dz-primary-soft);
+  color: var(--dz-primary-strong);
+  font-size: 0.76rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.providers--top {
+  padding-top: 3.5rem;
+  background: var(--dz-paper);
+}
+
+.providers--all {
+  padding-top: 3.5rem;
+  padding-bottom: 3.5rem;
+  background: var(--dz-paper);
+}
+
+/* =========================================================================
+   Paginated Catalog Section
+   ========================================================================= */
+.catalog-section {
+  padding: 4rem var(--dz-gutter) 5rem;
+  background: var(--dz-paper);
+  border-top: 1px solid var(--dz-border);
+}
+
+.catalog-section__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+
+.catalog-section__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--dz-radius-full);
+  background: var(--dz-primary-soft);
+  color: var(--dz-primary-strong);
+  font-size: 0.76rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.catalog-section__title {
+  font-family: var(--dz-font-display);
+  font-size: clamp(1.5rem, 3vw, 1.9rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--dz-ink);
+}
+
+.catalog-section__subtitle {
+  margin-top: 0.4rem;
+  font-size: 0.92rem;
+  color: var(--dz-muted);
+}
+
+.catalog-section__count {
+  flex-shrink: 0;
+  padding: 0.4rem 1rem;
+  border-radius: var(--dz-radius-full);
+  background: var(--dz-surface);
+  border: 1px solid var(--dz-border);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--dz-primary-strong);
+}
+
+.catalog-section__filters {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+
+.catalog-search {
+  flex: 1 1 280px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: var(--dz-surface);
+  border: 1px solid var(--dz-border);
+  border-radius: var(--dz-radius-full);
+  padding: 0.45rem 1rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.catalog-search:focus-within {
+  border-color: var(--dz-primary);
+  box-shadow: var(--dz-ring);
+}
+
+.catalog-search__icon {
+  display: flex;
+  align-items: center;
+  color: var(--dz-muted);
+  margin-inline-end: 0.5rem;
+  flex-shrink: 0;
+}
+
+.catalog-search__input {
+  width: 100%;
+  border: none;
+  background: none;
+  font-size: 0.9rem;
+  color: var(--dz-ink);
+  outline: none;
+}
+
+.catalog-search__input::placeholder {
+  color: var(--dz-muted);
+}
+
+.catalog-search__clear {
+  border: none;
+  background: none;
+  color: var(--dz-muted);
+  cursor: pointer;
+  padding: 0.2rem;
+  display: flex;
+  align-items: center;
+}
+
+.catalog-select-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: var(--dz-surface);
+  border: 1px solid var(--dz-border);
+  border-radius: var(--dz-radius-full);
+  padding: 0.45rem 1rem;
+  min-width: 200px;
+  transition: border-color 0.2s;
+}
+
+.catalog-select-wrap:focus-within {
+  border-color: var(--dz-primary);
+}
+
+.catalog-select-icon {
+  display: flex;
+  align-items: center;
+  color: var(--dz-primary);
+  margin-inline-end: 0.5rem;
+  flex-shrink: 0;
+}
+
+.catalog-select {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--dz-ink);
+  outline: none;
+  cursor: pointer;
+}
+
+.catalog-clear-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.55rem 1.1rem;
+  border-radius: var(--dz-radius-full);
+  border: 1px solid var(--dz-border);
+  background: var(--dz-surface);
+  color: var(--dz-primary-strong);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.catalog-clear-btn:hover {
+  border-color: var(--dz-primary);
+  background: var(--dz-primary-soft);
+}
+
+.catalog-section__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+
+.catalog-section__view-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--dz-radius-full);
+  border: 1px solid var(--dz-border);
+  background: var(--dz-surface);
+  color: var(--dz-primary-strong);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s,
+    transform 0.15s;
+}
+
+.catalog-section__view-all:hover {
+  background: var(--dz-primary-soft);
+  border-color: var(--dz-primary);
+  transform: translateY(-1px);
+}
+
+.catalog-section__footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--dz-border);
+}
+
+.catalog-section__footer-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.75rem 2rem;
+  border-radius: var(--dz-radius-full);
+  border: 1px solid var(--dz-primary);
+  background: var(--dz-primary);
+  color: var(--dz-on-primary);
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--dz-primary) 30%, transparent);
+  transition:
+    background-color 0.2s,
+    transform 0.15s,
+    box-shadow 0.2s;
+}
+
+.catalog-section__footer-btn:hover {
+  background: var(--dz-primary-strong);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--dz-primary) 40%, transparent);
+}
+
+html[dir='rtl'] .catalog-section__view-all svg,
+html[dir='rtl'] .catalog-section__footer-btn svg {
+  transform: scaleX(-1);
+}
+
 @media (max-width: 560px) {
-  .categories__head {
+  .categories__head,
+  .catalog-section__head {
     flex-direction: column;
     align-items: flex-start;
   }
@@ -948,30 +1578,20 @@ html[dir='rtl'] .categories__all:hover svg:last-child {
     padding: 3rem var(--dz-gutter);
   }
 
-  .offers {
+  .featured {
     padding: 3rem var(--dz-gutter) 0;
   }
-}
 
-@media (min-width: 561px) and (max-width: 820px) {
-  .offers__card {
-    flex: 0 0 88%;
-    scroll-snap-align: center;
+  .providers {
+    padding: 2rem 0 3rem;
   }
 
-  .offers__skeleton {
-    width: calc(var(--offer-card-w) * 0.88);
-  }
-}
-
-@media (max-width: 560px) {
-  .offers__card {
-    flex: 0 0 100%;
-    scroll-snap-align: start;
+  .catalog-section {
+    padding: 3rem var(--dz-gutter) 4rem;
   }
 
-  .offers__skeleton {
-    width: 100%;
+  .providers__skeleton-card {
+    flex-basis: 210px;
   }
 }
 
@@ -979,7 +1599,8 @@ html[dir='rtl'] .categories__all:hover svg:last-child {
   .categories__skeleton-media,
   .categories__skeleton-line,
   .categories__all svg:last-child,
-  .offers__skeleton {
+  .providers__skeleton-avatar,
+  .providers__skeleton-line {
     animation: none;
     transition: none;
   }

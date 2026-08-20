@@ -1,7 +1,88 @@
-﻿"/api/SpecialOffers/get-offers": {
+﻿{
+    "productId": "93f9669a-7595-4e65-93e0-e072acda9c07",
+    "productPriceId": "00000000-0000-0000-0000-000000000000",
+    "productName": "LargeV Smart 3DX 2 in 1 Intelligent 15 x 10 CBCT",
+    "arabicName": "LargeV Smart 3DX 2 in 1 Intelligent 15 x 10 CBCT",
+    "description": "- VTO: CephPro3D superimposes the patient's cephalic images with side photos, and it can be fine-tuned through the anchor point to ensure that the image and photos are superimposed completely, and an intuitive simulation of the orthodontic effect is generated with one click.\r\n- Orthodontic case report: It integrates the basic information of the patients with oral and facial photos at different stages of treatment, and meanwhile, patients' eyes can be covered automatically, which protects their privacy and in case reports can be generated with a click, which is convenient for doctors to manage orthodontic cases.\r\n- Custom measurement analysis method: There are 19 measurement methods built into the software, which can be selected by doctors according to the actual clinical situation, and meanwhile, the software supports the optional addition of measurement items and the formation of new measurement methods in any combination, thus facilitating flexible and effective targeted analysis of clinical cases.\r\n- Visual presentation of report with a clear measurement effect: The report is generated with just one click and it promotes communication between doctors and patients.\r\n- Intelligent tracking of the clinical stage: The overlapping maps at different treatment stages are obtained accurately, and it conforms to the standard of the American Board of Orthodontics (ABO), which meets the diagnostic needs, and the trace contrast shows the treatment\r\neffect intuitively, promoting smooth communication between doctors and patients.\r\nSpecifications:\r\n- Field of view (cm × cm): 15 × 10 cm, 8 x 8 cm, 5 x 8 cm.\r\n- Detector type: Csl+(CMOS/TFT).\r\n- Tube voltage: CT/PAN: 60-100 kV.\r\n- Tube current: CT/PAN: 2-10 mA.\r\n- Exposure time: CT: 9.5 s/12.5 s/18.5 s, PAN: 8.1 s/18 s.\r\n- Focal spot size: CT/PAN: 0.5 (IEC60336).\r\n- Spatial resolution: 2.2 lp/mm.\r\n- Reconstruction time: <60 s.\r\n- Voxel size: 0.05-0.25 mm.\r\n- Weight: 220 Kg (485.02 lb).\r\n\r\n* Excluding delivery fees added by the supplier *",
+    "arabicDescription": "- VTO: CephPro3D superimposes the patient's cephalic images with side photos, and it can be fine-tuned through the anchor point to ensure that the image and photos are superimposed completely, and an intuitive simulation of the orthodontic effect is generated with one click.\r\n- Orthodontic case report: It integrates the basic information of the patients with oral and facial photos at different stages of treatment, and meanwhile, patients' eyes can be covered automatically, which protects their privacy and in case reports can be generated with a click, which is convenient for doctors to manage orthodontic cases.\r\n- Custom measurement analysis method: There are 19 measurement methods built into the software, which can be selected by doctors according to the actual clinical situation, and meanwhile, the software supports the optional addition of measurement items and the formation of new measurement methods in any combination, thus facilitating flexible and effective targeted analysis of clinical cases.\r\n- Visual presentation of report with a clear measurement effect: The report is generated with just one click and it promotes communication between doctors and patients.\r\n- Intelligent tracking of the clinical stage: The overlapping maps at different treatment stages are obtained accurately, and it conforms to the standard of the American Board of Orthodontics (ABO), which meets the diagnostic needs, and the trace contrast shows the treatment\r\neffect intuitively, promoting smooth communication between doctors and patients.\r\nSpecifications:\r\n- Field of view (cm × cm): 15 × 10 cm, 8 x 8 cm, 5 x 8 cm.\r\n- Detector type: Csl+(CMOS/TFT).\r\n- Tube voltage: CT/PAN: 60-100 kV.\r\n- Tube current: CT/PAN: 2-10 mA.\r\n- Exposure time: CT: 9.5 s/12.5 s/18.5 s, PAN: 8.1 s/18 s.\r\n- Focal spot size: CT/PAN: 0.5 (IEC60336).\r\n- Spatial resolution: 2.2 lp/mm.\r\n- Reconstruction time: <60 s.\r\n- Voxel size: 0.05-0.25 mm.\r\n- Weight: 220 Kg (485.02 lb).\r\n\r\n* Excluding delivery fees added by the supplier *",
+    "preef": "LargeV Smart 3DX 2 in 1 Intelligent 15 x 10 CBCT",
+    "arabicPreef": "LargeV Smart 3DX 2 in 1 Intelligent 15 x 10 CBCT",
+    "images": [
+      "https://dentzoneapi.runasp.net/Uploads/products/fa9f2f77-4511-41cf-b9f0-6f8338403ce8.webp"
+    ],
+    "inventoryId": "eb2e62ec-a194-49b5-8cf2-bc5a7fd48ac4",
+    "inventoryName": "Scientific Gate",
+    "discountRate": 0,
+    "salesPrice": 1855000,
+    "flashSaleFromDate": null,
+    "flashSaleToDate": null,
+    "priceBeforeFlashSale": 1855000,
+    "priceAfterFlashSale": null,
+    "isFlashSaleActive": false,
+    "effectiveSalesPrice": 1855000,
+    "stockQuantity": 5,
+    "productCode": 62066759,
+    "isFavorite": false,
+    "isPupolar": false
+  },
+  {
+    "productId": "c5833627-29b8-4a7e-a614-6863d700e47a",
+    "productPriceId": "00000000-0000-0000-0000-000000000000",
+    "productName": "LargeV Smart 3DX 3 in 1 Intelligent 15 x 10 CBCT",
+    "arabicName": "LargeV Smart 3DX 3 in 1 Intelligent 15 x 10 CBCT",
+    "description": "Features:\r\n- Multiple images: Support CT / PAN /CEPH.\r\n- Simulated implanting: The bone and bone mass in the implant area will be evaluated by dental 3D images using Smart3D-X, and the neural tube will be highlighted automatically, which presents the relationship between the implant and the neural tube, and this is a better way to approach a successful implant surgery.\r\n- Al+ metal artifact correction: With the new T-MAR correction module for metal artifact removal, the system corrects metal artifacts intelligently, and it avoids over-modification and saves the original clinical data.\r\n- Cloud storage solution (Optional): It supports cloud case storage, multi-terminal data sharing, and synchronization.\r\n- Regional statistics: Used to assess bone mineral density in selected areas.\r\n- 3D Fine reconstruction: Local fine reconstruction is conducted in the designated area.\r\n- TMJ diagnosis: SmartVPro software has a visual pattern for comparing the left and right joints, allowing doctors to evaluate the diagnosis and treatment effect on temporomandibular joint diseases.\r\n- Airway measurements: The airway is segmented automatically, which calculates the volume and the narrowest area of the airway.\r\nSpecifications:\r\n- Field of view (cm × cm): 15 × 10 cm, 8 x 8 cm, 5 x 8 cm.\r\n- Detector type: Csl+(CMOS/TFT).\r\n- Tube voltage: CT/PAN/CEPH: 60-100 kV.\r\n- Tube current: CT/PAN/CEPH: 2-10 mA.\r\n- Exposure time: CT: 9.5 s/12.5 s/18.5 s, PAN: 8.1 s/18 s, CEPH: 7.5 s /10.1 s/11.8 s.\r\n- Focal spot size: CT/PAN/CEPH: 0.5 (IEC60336).\r\n- Spatial resolution: 2.2 lp/mm.\r\n- Reconstruction time: <60 s.\r\n- Voxel size: 0.05-0.25 mm.\r\n- Weight: 220 Kg (485.02 lb).\r\n\r\n* Excluding delivery fees added by the supplier *",
+    "arabicDescription": "Features:\r\n- Multiple images: Support CT / PAN /CEPH.\r\n- Simulated implanting: The bone and bone mass in the implant area will be evaluated by dental 3D images using Smart3D-X, and the neural tube will be highlighted automatically, which presents the relationship between the implant and the neural tube, and this is a better way to approach a successful implant surgery.\r\n- Al+ metal artifact correction: With the new T-MAR correction module for metal artifact removal, the system corrects metal artifacts intelligently, and it avoids over-modification and saves the original clinical data.\r\n- Cloud storage solution (Optional): It supports cloud case storage, multi-terminal data sharing, and synchronization.\r\n- Regional statistics: Used to assess bone mineral density in selected areas.\r\n- 3D Fine reconstruction: Local fine reconstruction is conducted in the designated area.\r\n- TMJ diagnosis: SmartVPro software has a visual pattern for comparing the left and right joints, allowing doctors to evaluate the diagnosis and treatment effect on temporomandibular joint diseases.\r\n- Airway measurements: The airway is segmented automatically, which calculates the volume and the narrowest area of the airway.\r\nSpecifications:\r\n- Field of view (cm × cm): 15 × 10 cm, 8 x 8 cm, 5 x 8 cm.\r\n- Detector type: Csl+(CMOS/TFT).\r\n- Tube voltage: CT/PAN/CEPH: 60-100 kV.\r\n- Tube current: CT/PAN/CEPH: 2-10 mA.\r\n- Exposure time: CT: 9.5 s/12.5 s/18.5 s, PAN: 8.1 s/18 s, CEPH: 7.5 s /10.1 s/11.8 s.\r\n- Focal spot size: CT/PAN/CEPH: 0.5 (IEC60336).\r\n- Spatial resolution: 2.2 lp/mm.\r\n- Reconstruction time: <60 s.\r\n- Voxel size: 0.05-0.25 mm.\r\n- Weight: 220 Kg (485.02 lb).\r\n\r\n* Excluding delivery fees added by the supplier *",
+    "preef": "LargeV Smart 3DX 3 in 1 Intelligent 15 x 10 CBCT",
+    "arabicPreef": "LargeV Smart 3DX 3 in 1 Intelligent 15 x 10 CBCT",
+    "images": [
+      "https://dentzoneapi.runasp.net/Uploads/products/68871975-bf61-4831-a6f2-e55440f801cd.webp"
+    ],
+    "inventoryId": "eb2e62ec-a194-49b5-8cf2-bc5a7fd48ac4",
+    "inventoryName": "Scientific Gate",
+    "discountRate": 0,
+    "salesPrice": 2014000,
+    "flashSaleFromDate": null,
+    "flashSaleToDate": null,
+    "priceBeforeFlashSale": 2014000,
+    "priceAfterFlashSale": null,
+    "isFlashSaleActive": false,
+    "effectiveSalesPrice": 2014000,
+    "stockQuantity": 5,
+    "productCode": 73528928,
+    "isFavorite": false,
+    "isPupolar": false
+  }
+] "/api/Products/search-product": {
       "get": {
         "tags": [
-          "SpecialOffers"
+          "Products"
+        ],
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -10,10 +91,3 @@
         }
       }
     }
-
-i want to integrate that endpoints in my project and that is response  {
-    "id": 20,
-    "imagePath": "http://dentzoneapi.runasp.net/Uploads/specialOffers/131925ce-a318-47fc-9d69-db3fb7c40276.png",
-    "sectionNum": 1,
-    "link": "https://www.facebook.com/profile.php?id=61573252657293"
-  }

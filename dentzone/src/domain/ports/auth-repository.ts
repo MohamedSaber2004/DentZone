@@ -19,10 +19,16 @@ export interface VerifyOtpResult {
   isVerified: boolean
 }
 
+export interface SaveFcmTokenPayload {
+  userId: string
+  fcmToken: string
+}
+
 export interface AuthRepository {
   login(credentials: LoginCredentials): Promise<LoginResponseDto>
   getUserProfile(userId: string): Promise<UserProfileDto>
   updateUserProfile(userId: string, payload: UpdateUserProfilePayload): Promise<UserProfileDto>
+  saveFcmToken(payload: SaveFcmTokenPayload): Promise<void>
   forgotPassword(email: string): Promise<void>
   verifyOtp(email: string, code: string): Promise<VerifyOtpResult>
   resetPassword(email: string, newPassword: string): Promise<void>

@@ -16,9 +16,7 @@ withDefaults(
     <div class="container auth-layout__inner">
       <div class="auth-layout__card">
         <RouterLink to="/" class="auth-layout__brand">
-          <span class="auth-layout__logo">
-            <AppIcon name="tooth" :size="24" />
-          </span>
+          <img src="/denta-logo.png" alt="DentZone" class="auth-layout__logo-img" />
           <span class="auth-layout__wordmark">Dent<span>Zone</span></span>
         </RouterLink>
 
@@ -112,25 +110,27 @@ html[dir='rtl'] .auth-layout__glow {
 .auth-layout__brand {
   display: inline-flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.8rem;
   align-self: center;
+  transition: transform 0.2s ease;
 }
 
-.auth-layout__logo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  border-radius: var(--dz-radius);
-  background: var(--dz-primary);
-  color: var(--dz-on-primary);
-  box-shadow: var(--dz-shadow-primary);
+.auth-layout__brand:hover {
+  transform: scale(1.03);
+}
+
+.auth-layout__logo-img {
+  display: block;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: var(--dz-radius-md);
+  object-fit: contain;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.14);
 }
 
 .auth-layout__wordmark {
   font-family: var(--dz-font-display);
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--dz-ink);

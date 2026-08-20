@@ -2,61 +2,215 @@
 import { services } from '../di/container'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { t } from '../i18n'
+import { locale, t } from '../i18n'
+import { API_LANG } from '../config/api.config'
 import ProductCard from '../components/products/ProductCard.vue'
 import AppButton from '../components/ui/AppButton.vue'
 import AppIcon from '../components/ui/AppIcon.vue'
+import type { CategoryDto } from '../domain/models/category'
 import type { ProviderProductDto } from '../domain/models/product'
 
 const route = useRoute()
 const router = useRouter()
-const { productRepository } = services
+const { productRepository, categoryRepository, authService, cartService } = services
 
 const inventoryId = () => (typeof route.params.inventoryUserId === 'string' ? route.params.inventoryUserId : '')
 const supplierName = () => (typeof route.query.supplier === 'string' ? route.query.supplier : '')
 
+const allProducts = ref<ProviderProductDto[]>([])
 const products = ref<ProviderProductDto[]>([])
 const loading = ref(true)
 const error = ref(false)
 const search = ref('')
+const favoriteIds = ref<Set<string>>(new Set())
+const favoriteBusyIds = ref<Set<string>>(new Set())
+
+const categories = ref<CategoryDto[]>([])
+const selectedCategory = ref('')
 
 const hasQuery = computed(() => search.value.trim().length > 0)
 
+function normalizeText(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/ى/g, 'ي')
+    .trim()
+}
+
+function filterLocally(list: ProviderProductDto[], query: string): ProviderProductDto[] {
+  const q = normalizeText(query)
+  if (!q) return list
+  return list.filter((p) => {
+    const fields = [
+      p.productName,
+      p.productArabicName,
+      p.description,
+      p.arabicDescription,
+      p.preef,
+      p.arabicPreef,
+      p.productCode,
+      p.inventoryUserName,
+    ]
+      .filter(Boolean)
+      .map((f) => normalizeText(String(f)))
+
+    return fields.some((f) => f.includes(q))
+  })
+}
+
+const loadFavorites = async () => {
+  if (!authService.isAuthenticated) return
+  try {
+    const list = await productRepository.getMyFavorites()
+    favoriteIds.value = new Set(list.map((p) => p.productPriceId))
+  } catch {
+    // Favorites are a secondary enhancement; a failed load keeps cards un-favorited.
+  }
+}
+
+const toggleFavorite = async (product: ProviderProductDto) => {
+  const user = authService.user.value
+  if (!user) {
+    void router.push({ name: 'login', query: { redirect: route.fullPath } })
+    return
+  }
+  if (favoriteBusyIds.value.has(product.productPriceId)) return
+  const wasFavorite = favoriteIds.value.has(product.productPriceId)
+  favoriteBusyIds.value = new Set(favoriteBusyIds.value).add(product.productPriceId)
+  const next = new Set(favoriteIds.value)
+  if (wasFavorite) {
+    next.delete(product.productPriceId)
+  } else {
+    next.add(product.productPriceId)
+  }
+  favoriteIds.value = next
+  try {
+    await productRepository.toggleFavorite(user.id, product.productId, product.productPriceId)
+  } catch {
+    const restored = new Set(favoriteIds.value)
+    if (wasFavorite) {
+      restored.add(product.productPriceId)
+    } else {
+      restored.delete(product.productPriceId)
+    }
+    favoriteIds.value = restored
+  } finally {
+    const busy = new Set(favoriteBusyIds.value)
+    busy.delete(product.productPriceId)
+    favoriteBusyIds.value = busy
+  }
+}
+
+const addToCart = (product: ProviderProductDto) => {
+  void cartService.add({
+    productId: product.productId,
+    inventoryId: product.inventoryUserId,
+    quantity: 1,
+    name: product.productName,
+    stockQuantity: product.stockQuantity,
+    maxQuantity: product.maxQuantity,
+  })
+}
+
 const backToInventories = () => {
+  if (window.history.length > 1) {
+    router.back()
+    return
+  }
   const catId = typeof route.query.cat === 'string' ? route.query.cat : ''
   const name = typeof route.query.name === 'string' ? route.query.name : ''
-  void router.push({ name: 'category-inventories', params: { catId }, query: name ? { name } : {} })
+  if (catId) {
+    void router.push({ name: 'category-inventories', params: { catId }, query: name ? { name } : {} })
+  } else {
+    void router.push({ name: 'categories' })
+  }
 }
 
 const load = async () => {
   loading.value = true
   error.value = false
+  const query = search.value.trim()
   try {
-    const catId = typeof route.query.cat === 'string' ? route.query.cat : undefined
-    products.value = await productRepository.searchProducts({
+    const result = await productRepository.searchProducts({
       inventoryId: inventoryId(),
-      catId,
-      search: search.value.trim() || undefined,
+      catId: selectedCategory.value || undefined,
+      search: query || undefined,
     })
+    products.value = result
+    if (!query) {
+      allProducts.value = result
+    } else if (result.length === 0 && allProducts.value.length > 0) {
+      // Fallback local search on cached get-all
+      products.value = filterLocally(allProducts.value, query)
+    }
   } catch {
-    error.value = true
+    if (query && allProducts.value.length > 0) {
+      // Fallback to local search on cached get-all if network search fails
+      products.value = filterLocally(allProducts.value, query)
+    } else {
+      error.value = true
+    }
   } finally {
     loading.value = false
   }
 }
 
 const submitSearch = () => {
+  const query = search.value.trim()
+  if (allProducts.value.length > 0) {
+    products.value = filterLocally(allProducts.value, query)
+  }
   void load()
 }
 
 const clearSearch = () => {
   search.value = ''
+  if (allProducts.value.length > 0) {
+    products.value = allProducts.value
+  } else {
+    void load()
+  }
+}
+
+const categoryName = (category: CategoryDto) => {
+  if (locale.value === 'ar') return category.arabicName || category.name
+  return category.name
+}
+
+const loadCategories = async () => {
+  try {
+    categories.value = await categoryRepository.getCategories(locale.value === 'ar' ? API_LANG.ARABIC : API_LANG.ENGLISH)
+  } catch {
+    categories.value = []
+  }
+}
+
+const selectCategory = (id: string) => {
+  if (selectedCategory.value === id) return
+  selectedCategory.value = id
+  const query = { ...route.query }
+  if (id) {
+    query.cat = id
+    query.inventoryId = inventoryId()
+  } else {
+    delete query.cat
+    delete query.inventoryId
+  }
+  void router.replace({ query })
   void load()
 }
 
-onMounted(load)
+onMounted(() => {
+  selectedCategory.value = typeof route.query.cat === 'string' ? route.query.cat : ''
+  void loadCategories()
+  void load()
+  void loadFavorites()
+})
 watch(() => route.params.inventoryUserId, () => {
   search.value = ''
+  selectedCategory.value = ''
   void load()
 })
 </script>
@@ -97,6 +251,29 @@ watch(() => route.params.inventoryUserId, () => {
       </AppButton>
     </form>
 
+    <div v-if="categories.length" class="page__cats" role="group" :aria-label="t('products.categoriesFilter')">
+      <button
+        type="button"
+        class="cat-chip"
+        :class="{ 'cat-chip--active': selectedCategory === '' }"
+        :aria-pressed="selectedCategory === ''"
+        @click="selectCategory('')"
+      >
+        {{ t('catalog.all') }}
+      </button>
+      <button
+        v-for="category in categories"
+        :key="category.id"
+        type="button"
+        class="cat-chip"
+        :class="{ 'cat-chip--active': selectedCategory === category.id }"
+        :aria-pressed="selectedCategory === category.id"
+        @click="selectCategory(category.id)"
+      >
+        {{ categoryName(category) }}
+      </button>
+    </div>
+
     <div v-if="loading" class="page__grid" aria-label="Loading">
       <div v-for="i in 6" :key="i" class="skeleton-card">
         <span class="skeleton skeleton-card__media" />
@@ -134,11 +311,15 @@ watch(() => route.params.inventoryUserId, () => {
         v-for="product in products"
         :key="product.productId"
         :product="product"
+        :favorite="favoriteIds.has(product.productPriceId)"
+        :favorite-busy="favoriteBusyIds.has(product.productPriceId)"
         :details-to="{
           name: 'product-details',
           params: { inventoryUserId: inventoryId(), productId: product.productId },
           query: { supplier: supplierName(), cat: route.query.cat, name: route.query.name },
         }"
+        @toggle-favorite="toggleFavorite"
+        @add-to-cart="addToCart"
       />
     </div>
   </div>
@@ -271,6 +452,46 @@ html[dir='rtl'] .page__back svg {
 
 .page__search-clear:hover {
   background: var(--dz-primary-faint);
+  color: var(--dz-primary-strong);
+}
+
+.page__cats {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.35rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.page__cats::-webkit-scrollbar {
+  display: none;
+}
+
+.cat-chip {
+  flex-shrink: 0;
+  padding: 0.45rem 1rem;
+  border: 1px solid var(--dz-border);
+  border-radius: var(--dz-radius-full);
+  background: var(--dz-surface);
+  color: var(--dz-ink-soft);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background-color 0.2s,
+    color 0.2s;
+}
+
+.cat-chip:hover {
+  border-color: var(--dz-primary);
+  color: var(--dz-primary-strong);
+}
+
+.cat-chip--active {
+  border-color: var(--dz-primary);
+  background: var(--dz-primary-soft);
   color: var(--dz-primary-strong);
 }
 

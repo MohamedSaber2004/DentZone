@@ -1,0 +1,326 @@
+import type { HomeRepository } from '../../domain/ports/home-repository'
+import type {
+  HomeBannerDto,
+  HomeBrandDto,
+  HomeDto,
+  HomeProviderDto,
+} from '../../domain/models/home'
+import type { CategoryDto } from '../../domain/models/category'
+import type { ProviderProductDto } from '../../domain/models/product'
+import type { SpecialOfferDto } from '../../domain/models/special-offer'
+import { CATEGORY_ROUTES, HOME_ROUTES, USER_ROUTES } from '../../config/api.config'
+import type { HttpClient } from '../../infrastructure/http/http-client'
+import type { InventoryDto } from '../../domain/models/category'
+
+interface RawHomeCategoryDto {
+  id: string
+  name: string
+  arabicName: string
+  imageFile: string
+}
+
+interface RawHomeProductDto {
+  productId: string
+  productPriceId: string
+  productName: string
+  arabicProductName: string
+  image: string
+  description: string
+  arabicDescription: string
+  preef: string
+  arabicPreef: string
+  stockQuantity: number
+  salesPrice: number
+  discountRate: number
+  inventoryUserId: string
+  isFavorite: boolean
+}
+
+interface RawHomePayload {
+  banners?: HomeBannerDto[] | null
+  categories?: RawHomeCategoryDto[] | null
+  products?: RawHomeProductDto[] | null
+  providers?: HomeProviderDto[] | null
+  brands?: HomeBrandDto[] | null
+  specialOffersone?: SpecialOfferDto[] | null
+  specialOfferstwo?: SpecialOfferDto[] | null
+  flashSales?: RawHomeProductDto[] | null
+  fullName?: string | null
+}
+
+interface RawProviderItem {
+  id?: string
+  Id?: string
+  userId?: string
+  UserId?: string
+  inventoryId?: string
+  InventoryId?: string
+  inventoryUserId?: string
+  InventoryUserId?: string
+
+  fullName?: string
+  FullName?: string
+  name?: string
+  Name?: string
+  userName?: string
+  UserName?: string
+
+  email?: string
+  Email?: string
+
+  isAvailableNow?: boolean
+  IsAvailableNow?: boolean
+  isAvailable?: boolean
+  IsAvailable?: boolean
+
+  profileImage?: string | null
+  ProfileImage?: string | null
+  image?: string | null
+  Image?: string | null
+  imagePath?: string | null
+  ImagePath?: string | null
+  imageFile?: string | null
+  ImageFile?: string | null
+  avatar?: string | null
+  Avatar?: string | null
+}
+
+const DEFAULT_TOP_PROVIDERS: HomeProviderDto[] = [
+  {
+    id: 'd5cc331b-7ff4-47f4-810d-02418a467ff1',
+    fullName: 'Dental Capital',
+    userName: 'Dentalcapitale',
+    email: 'Dentalcapitale@gmail.com',
+    isAvailableNow: false,
+    profileImage: 'https://dentzoneapi.runasp.net/Uploads/providers/04d797fc-901c-4a98-bbbb-d0d683977a13.jpg',
+  },
+  {
+    id: 'b0ad0aa7-b8c8-48ea-affa-56f10e9f6dc3',
+    fullName: 'BAZZAR  DENT',
+    userName: 'bazzardent',
+    email: 'bazzardent@gmail.com',
+    isAvailableNow: false,
+    profileImage: 'https://dentzoneapi.runasp.net/Uploads/providers/f8ebb260-8750-48c6-b6fc-b6f4dcc5bf2e.jpeg',
+  },
+  {
+    id: '754c84ef-6718-442d-94c4-db69f661e9a8',
+    fullName: 'MCS Dental Sector',
+    userName: 'ahmedmagdyfox',
+    email: 'ahmedmagdyfox@gmail.com',
+    isAvailableNow: false,
+    profileImage: 'https://dentzoneapi.runasp.net/Uploads/providers/df27ba13-e98c-4892-bf8b-0f1ea6aa3f26.jpg',
+  },
+]
+
+function extractArray(payload: unknown): RawProviderItem[] {
+  if (!payload) return []
+  if (Array.isArray(payload)) return payload as RawProviderItem[]
+  if (typeof payload === 'object') {
+    const p = payload as Record<string, unknown>
+    if (Array.isArray(p.data)) return p.data as RawProviderItem[]
+    if (Array.isArray(p.result)) return p.result as RawProviderItem[]
+    if (Array.isArray(p.items)) return p.items as RawProviderItem[]
+    if (Array.isArray(p.$values)) return p.$values as RawProviderItem[]
+    if (Array.isArray(p.providers)) return p.providers as RawProviderItem[]
+    if (Array.isArray(p.users)) return p.users as RawProviderItem[]
+    if (Array.isArray(p.value)) return p.value as RawProviderItem[]
+  }
+  return []
+}
+
+function normalizeProvider(item: RawProviderItem): HomeProviderDto {
+  const id = String(
+    item.id ||
+      item.Id ||
+      item.userId ||
+      item.UserId ||
+      item.inventoryId ||
+      item.InventoryId ||
+      item.inventoryUserId ||
+      item.InventoryUserId ||
+      '',
+  ).trim()
+
+  const fullName = String(
+    item.fullName ||
+      item.FullName ||
+      item.name ||
+      item.Name ||
+      item.userName ||
+      item.UserName ||
+      'Supplier',
+  ).trim()
+
+  const userName = String(
+    item.userName ||
+      item.UserName ||
+      item.fullName ||
+      item.FullName ||
+      item.name ||
+      item.Name ||
+      '',
+  ).trim()
+
+  const email = String(item.email || item.Email || '').trim()
+
+  const isAvailableNow = Boolean(
+    item.isAvailableNow ??
+      item.IsAvailableNow ??
+      item.isAvailable ??
+      item.IsAvailable ??
+      false,
+  )
+
+  const profileImage = String(
+    item.profileImage ||
+      item.ProfileImage ||
+      item.image ||
+      item.Image ||
+      item.imagePath ||
+      item.ImagePath ||
+      item.imageFile ||
+      item.ImageFile ||
+      item.avatar ||
+      item.Avatar ||
+      '',
+  ).trim()
+
+  return {
+    id,
+    fullName,
+    userName,
+    email,
+    isAvailableNow,
+    profileImage,
+  }
+}
+
+export class ApiHomeRepository implements HomeRepository {
+  constructor(private readonly http: HttpClient) {}
+
+  async getTopProviders(lang?: number): Promise<HomeProviderDto[]> {
+    try {
+      const raw = await this.http.get<unknown>(USER_ROUTES.getTopProviders, { showFeedback: false })
+      const arr = extractArray(raw)
+      if (arr.length > 0) {
+        const mapped = arr.map(normalizeProvider).filter((p) => p.id && p.fullName)
+        if (mapped.length > 0) return mapped
+      }
+      const fallback = await this.fetchProvidersFallback(lang ?? 1)
+      return fallback.length > 0 ? fallback : DEFAULT_TOP_PROVIDERS
+    } catch {
+      const fallback = await this.fetchProvidersFallback(lang ?? 1)
+      return fallback.length > 0 ? fallback : DEFAULT_TOP_PROVIDERS
+    }
+  }
+
+  async getHome(lang: number): Promise<HomeDto> {
+    try {
+      const payload = await this.http.get<RawHomePayload>(HOME_ROUTES.getHome(lang), { showFeedback: false })
+
+      return {
+        banners: payload?.banners ?? [],
+        categories: (payload?.categories ?? []).map((category) => this.toCategory(category)),
+        products: (payload?.products ?? []).map((product) => this.toProviderProduct(product)),
+        providers: payload?.providers ?? [],
+        brands: payload?.brands ?? [],
+        specialOffersone: payload?.specialOffersone ?? [],
+        specialOfferstwo: payload?.specialOfferstwo ?? [],
+        flashSales: (payload?.flashSales ?? []).map((product) => this.toProviderProduct(product)),
+        fullName: payload?.fullName ?? null,
+      }
+    } catch {
+      return {
+        banners: [],
+        categories: [],
+        products: [],
+        providers: [],
+        brands: [],
+        specialOffersone: [],
+        specialOfferstwo: [],
+        flashSales: [],
+        fullName: null,
+      }
+    }
+  }
+
+  private async fetchProvidersFallback(lang: number): Promise<HomeProviderDto[]> {
+    try {
+      const categories = await this.http.get<{ id: string }[]>(CATEGORY_ROUTES.all(lang), { showFeedback: false })
+      const providerMap = new Map<string, HomeProviderDto>()
+      const sampleCategories = (categories ?? []).slice(0, 5)
+      const results = await Promise.allSettled(
+        sampleCategories.map((c) =>
+          this.http.get<InventoryDto[]>(CATEGORY_ROUTES.inventoriesByCategory(c.id), { showFeedback: false }),
+        ),
+      )
+      for (const res of results) {
+        if (res.status === 'fulfilled' && Array.isArray(res.value)) {
+          for (const inv of res.value) {
+            if (inv.inventoryId && !providerMap.has(inv.inventoryId)) {
+              providerMap.set(inv.inventoryId, {
+                id: inv.inventoryId,
+                fullName: inv.fullName,
+                userName: inv.fullName,
+                email: inv.email,
+                isAvailableNow: !!inv.isAvailableNow,
+                profileImage: '',
+              })
+            }
+          }
+        }
+      }
+      return Array.from(providerMap.values())
+    } catch {
+      return []
+    }
+  }
+
+  private toCategory(category: RawHomeCategoryDto): CategoryDto {
+    return {
+      id: category.id,
+      name: category.name,
+      pref: category.name,
+      description: '',
+      companyPercentage: null,
+      orderNum: 0,
+      arabicName: category.arabicName,
+      imageName: category.imageFile,
+    }
+  }
+
+  private toProviderProduct(product: RawHomeProductDto): ProviderProductDto {
+    return {
+      id: product.productId,
+      productId: product.productId,
+      productPriceId: product.productPriceId,
+      inventoryUserId: product.inventoryUserId,
+      productName: product.productName,
+      productArabicName: product.arabicProductName,
+      preef: product.preef,
+      arabicPreef: product.arabicPreef,
+      description: product.description ?? '',
+      arabicDescription: product.arabicDescription ?? null,
+      createdAt: '',
+      updatedAt: '',
+      categoryName: null,
+      purchasePrice: 0,
+      salesPrice: product.salesPrice,
+      flashSaleFromDate: null,
+      flashSaleToDate: null,
+      priceBeforeFlashSale: 0,
+      priceAfterFlashSale: null,
+      isFlashSaleActive: false,
+      effectiveSalesPrice: product.salesPrice,
+      creationDate: '',
+      inventoryUserName: null,
+      stockQuantity: product.stockQuantity,
+      discountRate: product.discountRate,
+      maxQuantity: 0,
+      productCode: '',
+      revenuePercentage: 0,
+      images: product.image ? [product.image] : [],
+      isFavorite: product.isFavorite,
+    }
+  }
+}

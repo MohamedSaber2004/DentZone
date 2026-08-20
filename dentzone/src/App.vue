@@ -5,6 +5,8 @@ import ToastContainer from './components/ui/ToastContainer.vue'
 import ResultModal from './components/ui/ResultModal.vue'
 import LoadingBar from './components/ui/LoadingBar.vue'
 import LoadingOverlay from './components/ui/LoadingOverlay.vue'
+import AppIcon from './components/ui/AppIcon.vue'
+import { WHATSAPP_LINK } from './config/contact.config'
 </script>
 
 <template>
@@ -22,6 +24,16 @@ import LoadingOverlay from './components/ui/LoadingOverlay.vue'
       </RouterView>
     </main>
     <AppFooter />
+    <a
+      class="app-whatsapp"
+      :href="WHATSAPP_LINK"
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="WhatsApp"
+      title="WhatsApp"
+    >
+      <AppIcon name="whatsapp" :size="26" filled />
+    </a>
   </div>
 </template>
 
@@ -34,6 +46,30 @@ import LoadingOverlay from './components/ui/LoadingOverlay.vue'
 
 .app-main {
   flex: 1;
+}
+
+.app-whatsapp {
+  position: fixed;
+  bottom: 1.25rem;
+  inset-inline-end: 1.25rem;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.3rem;
+  height: 3.3rem;
+  border-radius: var(--dz-radius-full);
+  background: #25d366;
+  color: #fff;
+  box-shadow: 0 8px 24px rgb(37 211 102 / 45%);
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+
+.app-whatsapp:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 12px 28px rgb(37 211 102 / 55%);
 }
 
 .page-enter-active,

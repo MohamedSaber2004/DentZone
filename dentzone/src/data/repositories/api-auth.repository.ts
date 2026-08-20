@@ -1,4 +1,10 @@
-import type { AuthRepository, LoginCredentials, UpdateUserProfilePayload, VerifyOtpResult } from '../../domain/ports/auth-repository'
+import type {
+  AuthRepository,
+  LoginCredentials,
+  SaveFcmTokenPayload,
+  UpdateUserProfilePayload,
+  VerifyOtpResult,
+} from '../../domain/ports/auth-repository'
 import type { LoginResponseDto, UserProfileDto } from '../../domain/models/auth'
 import { AUTH_ROUTES, PASSWORD_ROUTES, USER_ROUTES } from '../../config/api.config'
 import type { HttpClient } from '../../infrastructure/http/http-client'
@@ -16,6 +22,18 @@ export class ApiAuthRepository implements AuthRepository {
       AUTH_ROUTES.login,
       { usernameOrEmail: credentials.usernameOrEmail, password: credentials.password },
       { headers: { 'X-Attempt-Email': credentials.usernameOrEmail }, showFeedback: false },
+    )
+  }
+
+  saveFcmToken(payload: SaveFcmTokenPayload): Promise<void> {
+    return this.http.post<void>(
+      USER_ROUTES.saveFcmToken,
+      {
+        userId: payload.userId,
+        fcmToken: payload.fcmToken,
+        token: payload.fcmToken,
+      },
+      { showFeedback: false },
     )
   }
 

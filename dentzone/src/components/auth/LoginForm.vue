@@ -4,6 +4,7 @@ import { ref } from 'vue'
 const { authService } = services
 import { useRoute, useRouter } from 'vue-router'
 import { t } from '../../i18n'
+import { toastService } from '../../infrastructure/feedback/toast.service'
 import AppInput from '../ui/AppInput.vue'
 import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
@@ -51,6 +52,8 @@ const submit = async () => {
     error.value = result.error
     return
   }
+  const user = authService.user.value
+  if (user?.firstName) toastService.success(t('auth.helloAgain', { name: user.firstName }))
   const redirect = typeof route.query.redirect === 'string' && route.query.redirect.startsWith('/') ? route.query.redirect : '/'
   void router.push(redirect)
 }

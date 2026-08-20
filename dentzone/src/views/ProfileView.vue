@@ -7,7 +7,7 @@ import AppButton from '../components/ui/AppButton.vue'
 import AppInput from '../components/ui/AppInput.vue'
 import AppIcon from '../components/ui/AppIcon.vue'
 import { toastService } from '../infrastructure/feedback/toast.service'
-import { API_BASE_URL } from '../config/api.config'
+import { resolveMediaUrl } from '../utils/media'
 import type { AddressDto, AreaDto } from '../domain/models/auth'
 
 const { authService, addressRepository } = services
@@ -62,11 +62,7 @@ let deleteArmTimer: ReturnType<typeof setTimeout> | undefined
     return `${u.firstName.charAt(0)}${u.lastName.charAt(0)}`.toUpperCase()
   }
 
-  const resolveImageUrl = (path: string | null): string => {
-    if (!path) return ''
-    if (/^https?:\/\//i.test(path)) return path
-    return `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`
-  }
+  const resolveImageUrl = (path: string | null): string => resolveMediaUrl(path)
 
   const avatarSrc = computed(() => previewUrl.value || serverImageUrl.value)
 
@@ -352,19 +348,6 @@ const onDeleteAccount = async () => {
               <span class="profile__readonly-label">{{ t('profile.username') }}</span>
               <span class="profile__readonly-value" dir="ltr">{{ userName }}</span>
             </div>
-          </div>
-
-          <div class="profile__section">
-            <p class="profile__section-title">{{ t('profile.preferences') }}</p>
-            <label class="profile__toggle">
-              <span class="profile__toggle-text">
-                <span class="profile__toggle-title">{{ t('profile.activeAccount') }}</span>
-              </span>
-              <input v-model="isActive" type="checkbox" class="profile__toggle-input" />
-              <span class="profile__toggle-track" aria-hidden="true">
-                <span class="profile__toggle-thumb" />
-              </span>
-            </label>
           </div>
 
           <div class="profile__section">

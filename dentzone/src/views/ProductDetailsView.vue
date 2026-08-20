@@ -11,7 +11,7 @@ import type { ProductDetailDto, ProductPriceDto } from '../domain/models/product
 
 const route = useRoute()
 const router = useRouter()
-const { productRepository, policyRepository } = services
+const { productRepository, policyRepository, authService, cartService } = services
 
 const productId = () => (typeof route.params.productId === 'string' ? route.params.productId : '')
 const inventoryUserId = () =>
@@ -26,6 +26,10 @@ const activeImage = ref(0)
 const imageFailed = ref(false)
 
 const backToProducts = () => {
+  if (window.history.length > 1) {
+    router.back()
+    return
+  }
   const cat = typeof route.query.cat === 'string' ? route.query.cat : undefined
   const name = typeof route.query.name === 'string' ? route.query.name : undefined
   const supplier = typeof route.query.supplier === 'string' ? route.query.supplier : undefined
@@ -42,6 +46,8 @@ const load = async () => {
   detail.value = null
   activeImage.value = 0
   imageFailed.value = false
+  favorite.value = false
+  quantity.value = 1
   try {
     detail.value = await productRepository.getProductById(productId(), lang.value)
   } catch (e) {
@@ -52,6 +58,19 @@ const load = async () => {
     error.value = true
   } finally {
     loading.value = false
+  }
+  void seedFavorite()
+}
+
+const seedFavorite = async () => {
+  if (!authService.user.value) return
+  const price = currentPrice.value
+  if (!price) return
+  try {
+    const list = await productRepository.getMyFavorites()
+    favorite.value = list.some((p) => p.productId === price.productId && p.productPriceId === price.id)
+  } catch {
+    // Favorites are a secondary enhancement; a failed load keeps the heart un-favorited.
   }
 }
 
@@ -101,6 +120,56 @@ const refundLoading = ref(false)
 const refundFailed = ref(false)
 const refundLoadedLocale = ref('')
 const refundFrameRef = ref<HTMLIFrameElement | null>(null)
+const favorite = ref(false)
+const favoriteBusy = ref(false)
+const quantity = ref(1)
+
+const cartLimit = computed(() => {
+  const price = currentPrice.value
+  if (!price) return 1
+  const stock = price.stockQuantity > 0 ? price.stockQuantity : Number.POSITIVE_INFINITY
+  const max = price.maxQuantity > 0 ? price.maxQuantity : Number.POSITIVE_INFINITY
+  const limit = Math.min(stock, max)
+  return Number.isFinite(limit) ? limit : 1
+})
+
+const decrementQty = () => {
+  if (quantity.value > 1) quantity.value -= 1
+}
+
+const incrementQty = () => {
+  if (quantity.value < cartLimit.value) quantity.value += 1
+}
+
+const addToCart = () => {
+  const d = detail.value
+  const price = currentPrice.value
+  if (!d || !price || price.stockQuantity <= 0) return
+  void cartService.add({
+    productId: price.productId,
+    inventoryId: price.inventoryUserId,
+    quantity: quantity.value,
+    name: d.productName,
+    stockQuantity: price.stockQuantity,
+    maxQuantity: price.maxQuantity,
+  })
+}
+
+const toggleFavorite = async () => {
+  const user = authService.user.value
+  const price = currentPrice.value
+  if (!user || !price || favoriteBusy.value) return
+  favoriteBusy.value = true
+  const previous = favorite.value
+  favorite.value = !previous
+  try {
+    await productRepository.toggleFavorite(user.id, price.productId, price.id)
+  } catch {
+    favorite.value = previous
+  } finally {
+    favoriteBusy.value = false
+  }
+}
 
 const fetchRefundPolicy = (lang: number): Promise<string> => policyRepository.getRefundPolicy(lang)
 
@@ -212,6 +281,17 @@ watch(() => route.params.productId, () => {
             <strong class="detail__price">{{ formatPrice(currentPrice?.effectiveSalesPrice) }}</strong>
             <span class="detail__currency">{{ t('products.currency') }}</span>
             <span v-if="currentPrice?.isFlashSaleActive" class="detail__sale">{{ t('products.sale') }}</span>
+            <button
+              type="button"
+              class="detail__favorite"
+              :class="{ 'detail__favorite--active': favorite }"
+              :aria-pressed="favorite"
+              :aria-label="t('nav.wishlist')"
+              :disabled="favoriteBusy || !currentPrice"
+              @click="toggleFavorite"
+            >
+              <AppIcon name="heart" :size="19" />
+            </button>
           </div>
 
           <div class="detail__meta">
@@ -225,6 +305,39 @@ watch(() => route.params.productId, () => {
             <span v-if="currentPrice && currentPrice.maxQuantity > 0" class="detail__max">
               {{ t('products.maxPerOrder', { count: currentPrice.maxQuantity }) }}
             </span>
+          </div>
+
+          <div class="detail__buy">
+            <div class="detail__stepper" role="group" :aria-label="t('product.addToCart')">
+              <button
+                type="button"
+                class="detail__stepper-btn"
+                :disabled="quantity <= 1 || (currentPrice && currentPrice.stockQuantity <= 0) || !currentPrice"
+                :aria-label="t('cart.title')"
+                @click="decrementQty"
+              >
+                <AppIcon name="minus" :size="14" />
+              </button>
+              <span class="detail__stepper-value">{{ quantity }}</span>
+              <button
+                type="button"
+                class="detail__stepper-btn"
+                :disabled="quantity >= cartLimit || (currentPrice && currentPrice.stockQuantity <= 0) || !currentPrice"
+                :aria-label="t('cart.title')"
+                @click="incrementQty"
+              >
+                <AppIcon name="plus" :size="14" />
+              </button>
+            </div>
+            <AppButton
+              variant="primary"
+              class="detail__add"
+              :disabled="!currentPrice || currentPrice.stockQuantity <= 0"
+              @click="addToCart"
+            >
+              <AppIcon name="cart" :size="16" />
+              {{ t('product.addToCart') }}
+            </AppButton>
           </div>
 
           <dl class="detail__facts">
@@ -543,6 +656,43 @@ html[dir='rtl'] .page__back svg {
   font-weight: 700;
 }
 
+.detail__favorite {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  margin-inline-start: auto;
+  border-radius: var(--dz-radius-full);
+  border: 1px solid var(--dz-border-strong);
+  background: var(--dz-surface);
+  color: var(--dz-muted);
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    color 0.2s,
+    border-color 0.2s,
+    transform 0.15s;
+}
+
+.detail__favorite:hover {
+  border-color: var(--dz-danger);
+  color: var(--dz-danger);
+  transform: translateY(-1px);
+}
+
+.detail__favorite--active {
+  background: var(--dz-danger-soft);
+  border-color: var(--dz-danger);
+  color: var(--dz-danger);
+}
+
+.detail__favorite:disabled {
+  opacity: 0.6;
+  cursor: wait;
+  transform: none;
+}
+
 .detail__meta {
   display: flex;
   align-items: center;
@@ -567,6 +717,61 @@ html[dir='rtl'] .page__back svg {
 .detail__max {
   font-size: 0.8rem;
   color: var(--dz-muted);
+}
+
+.detail__buy {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.detail__stepper {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--dz-border);
+  border-radius: var(--dz-radius-full);
+  padding: 0.25rem;
+  background: var(--dz-surface);
+}
+
+.detail__stepper-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border: none;
+  border-radius: var(--dz-radius-full);
+  background: var(--dz-surface-soft);
+  color: var(--dz-ink-soft);
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+}
+
+.detail__stepper-btn:hover:not(:disabled) {
+  background: var(--dz-primary-soft);
+  color: var(--dz-primary-strong);
+}
+
+.detail__stepper-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.detail__stepper-value {
+  min-width: 1.8rem;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.detail__add {
+  min-width: 11rem;
 }
 
 .detail__facts {
