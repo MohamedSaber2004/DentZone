@@ -3,19 +3,21 @@ import { services } from '../di/container'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { locale, t } from '../i18n'
+import { API_LANG } from '../config/api.config'
+import { ApiError } from '../infrastructure/http/api-error'
 import AppButton from '../components/ui/AppButton.vue'
 import AppIcon from '../components/ui/AppIcon.vue'
 import type { ProductDetailDto, ProductPriceDto } from '../domain/models/product'
 
 const route = useRoute()
 const router = useRouter()
-const { productRepository } = services
+const { productRepository, policyRepository } = services
 
 const productId = () => (typeof route.params.productId === 'string' ? route.params.productId : '')
 const inventoryUserId = () =>
   typeof route.params.inventoryUserId === 'string' ? route.params.inventoryUserId : ''
 
-const lang = computed(() => (locale.value === 'ar' ? 1 : 0))
+const lang = computed(() => (locale.value === 'ar' ? API_LANG.ARABIC : API_LANG.ENGLISH))
 
 const detail = ref<ProductDetailDto | null>(null)
 const loading = ref(true)
@@ -42,7 +44,11 @@ const load = async () => {
   imageFailed.value = false
   try {
     detail.value = await productRepository.getProductById(productId(), lang.value)
-  } catch {
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 401) {
+      void router.push({ name: 'login', query: { redirect: route.fullPath } })
+      return
+    }
     error.value = true
   } finally {
     loading.value = false
@@ -78,14 +84,6 @@ const currentPrice = computed<ProductPriceDto | null>(() => {
   )
 })
 
-const otherVendors = computed(() => {
-  const d = detail.value
-  if (!d) return []
-  return d.inventories.filter(
-    (v) => v.inventoryUserId !== inventoryUserId() && (v.effectiveSalesPrice > 0 || v.stockQuantity > 0),
-  )
-})
-
 const formatPrice = (value: number | null | undefined) =>
   value == null ? '' : value.toLocaleString(locale.value === 'ar' ? 'ar-EG' : 'en-US', { maximumFractionDigits: 2 })
 
@@ -96,6 +94,48 @@ const onImageError = () => {
 const onThumbnailError = (index: number) => {
   if (index === activeImage.value) imageFailed.value = true
 }
+
+const activeTab = ref<'description' | 'refund'>('description')
+const refundHtml = ref('')
+const refundLoading = ref(false)
+const refundFailed = ref(false)
+const refundLoadedLocale = ref('')
+const refundFrameRef = ref<HTMLIFrameElement | null>(null)
+
+const fetchRefundPolicy = (lang: number): Promise<string> => policyRepository.getRefundPolicy(lang)
+
+const openRefundTab = async () => {
+  activeTab.value = 'refund'
+  if (refundLoadedLocale.value === locale.value && !refundFailed.value) return
+  refundLoading.value = true
+  refundFailed.value = false
+  try {
+    try {
+      refundHtml.value = await fetchRefundPolicy(locale.value === 'ar' ? API_LANG.ARABIC : API_LANG.ENGLISH)
+    } catch {
+      refundHtml.value = await fetchRefundPolicy(API_LANG.ARABIC)
+    }
+    refundLoadedLocale.value = locale.value
+  } catch {
+    refundFailed.value = true
+  } finally {
+    refundLoading.value = false
+  }
+}
+
+const resizeRefundFrame = () => {
+  const frame = refundFrameRef.value
+  const doc = frame?.contentDocument
+  if (frame && doc) {
+    const height = Math.max(doc.body?.scrollHeight ?? 0, doc.documentElement?.scrollHeight ?? 0)
+    frame.style.height = `${Math.max(height, 320)}px`
+  }
+}
+
+watch(locale, () => {
+  refundLoadedLocale.value = ''
+  if (activeTab.value === 'refund') void openRefundTab()
+})
 
 onMounted(load)
 watch(() => route.params.productId, () => {
@@ -208,23 +248,64 @@ watch(() => route.params.productId, () => {
               </dd>
             </div>
           </dl>
-
-          <div v-if="otherVendors.length" class="detail__vendors">
-            <p class="detail__vendors-title">{{ t('products.details.otherVendors') }}</p>
-            <ul class="detail__vendors-list">
-              <li v-for="vendor in otherVendors" :key="vendor.inventoryUserId" class="detail__vendors-item">
-                <span class="detail__vendors-name">{{ vendor.inventoryName }}</span>
-                <span class="detail__vendors-price">{{ formatPrice(vendor.effectiveSalesPrice) }} {{ t('products.currency') }}</span>
-              </li>
-            </ul>
-          </div>
         </div>
       </div>
 
-      <section v-if="displayDescription" class="detail__description">
-        <h2 class="detail__description-title">{{ t('products.details.description') }}</h2>
-        <p class="detail__description-text">{{ displayDescription }}</p>
-      </section>
+      <div v-if="displayDescription" class="detail__tabs">
+        <div class="detail__tabs-bar" role="tablist">
+          <button
+            v-if="displayDescription"
+            type="button"
+            role="tab"
+            class="detail__tab"
+            :class="{ 'detail__tab--active': activeTab === 'description' }"
+            :aria-selected="activeTab === 'description'"
+            @click="activeTab = 'description'"
+          >
+            {{ t('products.details.description') }}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            class="detail__tab"
+            :class="{ 'detail__tab--active': activeTab === 'refund' }"
+            :aria-selected="activeTab === 'refund'"
+            @click="openRefundTab"
+          >
+            {{ t('products.details.refundPolicy') }}
+          </button>
+        </div>
+
+        <div v-if="activeTab === 'description' && displayDescription" class="detail__tab-panel">
+          <p class="detail__description-text">{{ displayDescription }}</p>
+        </div>
+
+        <div v-else-if="activeTab === 'refund'" class="detail__tab-panel">
+          <div v-if="refundLoading" class="detail__refund-skeleton" aria-label="Loading">
+            <span class="detail__skeleton-line" />
+            <span class="detail__skeleton-line" />
+            <span class="detail__skeleton-line detail__skeleton-line--short" />
+            <span class="detail__skeleton-line" />
+          </div>
+          <div v-else-if="refundFailed" class="detail__refund-error">
+            <span class="detail__refund-error-icon"><AppIcon name="alert-circle" :size="20" /></span>
+            <p>{{ t('policy.errorTitle') }}</p>
+            <AppButton variant="primary" @click="openRefundTab">
+              <AppIcon name="refresh" :size="14" />
+              {{ t('categories.retry') }}
+            </AppButton>
+          </div>
+          <iframe
+            v-else-if="refundHtml"
+            ref="refundFrameRef"
+            class="detail__refund-frame"
+            sandbox="allow-same-origin"
+            :srcdoc="refundHtml"
+            :title="t('products.details.refundPolicy')"
+            @load="resizeRefundFrame"
+          />
+        </div>
+      </div>
     </template>
   </div>
 </template>
@@ -529,55 +610,40 @@ html[dir='rtl'] .page__back svg {
   color: var(--dz-danger);
 }
 
-.detail__vendors {
-  margin-top: 0.6rem;
-}
-
-.detail__vendors-title {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--dz-muted);
-  margin-bottom: 0.5rem;
-}
-
-.detail__vendors-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-}
-
-.detail__vendors-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.8rem;
-  padding: 0.55rem 0.9rem;
-  background: var(--dz-surface);
-  border: 1px solid var(--dz-border);
-  border-radius: var(--dz-radius);
-}
-
-.detail__vendors-name {
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-
-.detail__vendors-price {
-  font-family: var(--dz-font-display);
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--dz-primary-strong);
-}
-
-.detail__description {
+.detail__tabs {
   margin-top: 2.5rem;
 }
 
-.detail__description-title {
-  font-family: var(--dz-font-display);
-  font-size: 1.15rem;
+.detail__tabs-bar {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--dz-border);
+  margin-bottom: 1.25rem;
+}
+
+.detail__tab {
+  padding: 0.65rem 1.1rem;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  font-size: 0.9rem;
   font-weight: 600;
-  margin-bottom: 0.75rem;
+  color: var(--dz-muted);
+  transition:
+    color 0.2s,
+    border-color 0.2s;
+}
+
+.detail__tab:hover {
+  color: var(--dz-primary-strong);
+}
+
+.detail__tab--active {
+  color: var(--dz-primary-strong);
+  border-bottom-color: var(--dz-primary);
+}
+
+.detail__tab-panel {
+  min-width: 0;
 }
 
 .detail__description-text {
@@ -585,7 +651,59 @@ html[dir='rtl'] .page__back svg {
   line-height: 1.75;
   color: var(--dz-ink-soft);
   white-space: pre-line;
-  max-width: 75ch;
+  width: 100%;
+}
+
+.detail__refund-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 0.5rem 0 1rem;
+}
+
+.detail__skeleton-line {
+  height: 0.9rem;
+  border-radius: var(--dz-radius);
+  background: var(--dz-surface-soft);
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.detail__skeleton-line--short {
+  width: 65%;
+}
+
+.detail__refund-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2rem 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--dz-muted);
+}
+
+.detail__refund-error-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.8rem;
+  height: 2.8rem;
+  border-radius: var(--dz-radius-full);
+  background: var(--dz-danger-soft);
+  color: var(--dz-danger);
+  margin-bottom: 0.25rem;
+}
+
+.detail__refund-frame {
+  display: block;
+  width: 100%;
+  height: 320px;
+  border: 0;
+  border-radius: var(--dz-radius);
+  background: #fff;
+  color-scheme: light;
+  overflow: hidden;
 }
 
 @keyframes skeleton-pulse {

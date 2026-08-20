@@ -15,6 +15,7 @@ export type IconName =
   | 'menu'
   | 'close'
   | 'chevron-down'
+  | 'chevron-left'
   | 'chevron-right'
   | 'arrow-left'
   | 'arrow-right'
@@ -56,6 +57,7 @@ export type IconName =
   | 'package'
   | 'camera'
   | 'home'
+  | 'pencil'
 
 const props = withDefaults(
   defineProps<{
@@ -80,6 +82,7 @@ const iconPaths: Record<IconName, string> = {
   menu: '<line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/>',
   close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
   'chevron-down': '<path d="m6 9 6 6 6-6"/>',
+  'chevron-left': '<path d="m15 18-6-6 6-6"/>',
   'chevron-right': '<path d="m9 18 6-6-6-6"/>',
   'arrow-left': '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
   'arrow-right': '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
@@ -132,6 +135,7 @@ const iconPaths: Record<IconName, string> = {
   camera:
     '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3Z"/><circle cx="12" cy="13" r="3"/>',
   home: '<path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2h-4v-7h-6v7H5a2 2 0 0 1-2-2Z"/>',
+  pencil: '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
 }
 
 const innerHtml = computed(() => iconPaths[props.name])

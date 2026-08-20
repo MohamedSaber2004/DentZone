@@ -5,6 +5,9 @@ import { ModalService } from '../infrastructure/feedback/modal.service'
 import { ApiAuthRepository } from '../data/repositories/api-auth.repository'
 import { ApiCategoryRepository } from '../data/repositories/api-category.repository'
 import { ApiProductRepository } from '../data/repositories/api-product.repository'
+import { ApiPolicyRepository } from '../data/repositories/api-policy.repository'
+import { ApiAddressRepository } from '../data/repositories/api-address.repository'
+import { ApiSpecialOffersRepository } from '../data/repositories/api-special-offers.repository'
 import { AuthService } from '../application/auth.service'
 
 type AnyConstructor = new (...args: never[]) => unknown
@@ -47,6 +50,12 @@ container.register(HttpClient, () =>
 container.register(ApiAuthRepository, () => new ApiAuthRepository(container.resolve<HttpClient>(HttpClient)))
 container.register(ApiCategoryRepository, () => new ApiCategoryRepository(container.resolve<HttpClient>(HttpClient)))
 container.register(ApiProductRepository, () => new ApiProductRepository(container.resolve<HttpClient>(HttpClient)))
+container.register(ApiPolicyRepository, () => new ApiPolicyRepository(container.resolve<HttpClient>(HttpClient)))
+container.register(ApiAddressRepository, () => new ApiAddressRepository(container.resolve<HttpClient>(HttpClient)))
+container.register(
+  ApiSpecialOffersRepository,
+  () => new ApiSpecialOffersRepository(container.resolve<HttpClient>(HttpClient)),
+)
 
 // --- application services ---
 container.register(AuthService, () =>
@@ -64,6 +73,9 @@ export const services = {
   authService: container.resolve<AuthService>(AuthService),
   categoryRepository: container.resolve<ApiCategoryRepository>(ApiCategoryRepository),
   productRepository: container.resolve<ApiProductRepository>(ApiProductRepository),
+  policyRepository: container.resolve<ApiPolicyRepository>(ApiPolicyRepository),
+  addressRepository: container.resolve<ApiAddressRepository>(ApiAddressRepository),
+  specialOffersRepository: container.resolve<ApiSpecialOffersRepository>(ApiSpecialOffersRepository),
 }
 
 export const modalService = services.modalService

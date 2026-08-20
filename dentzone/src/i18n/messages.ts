@@ -12,12 +12,14 @@ export type Messages = {
     home: string
     shop: string
     categories: string
+    privacyPolicy: string
     whitening: string
     brushes: string
     searchPlaceholder: string
     cart: string
     wishlist: string
     toggleMenu: string
+    closeMenu: string
     toggleTheme: string
     toggleLanguage: string
     login: string
@@ -51,6 +53,8 @@ export type Messages = {
     easyReturnsDesc: string
     shopByCategory: string
     categorySubtitle: string
+    specialOffers: string
+    specialOffersSubtitle: string
     viewAllProducts: string
     shopByVendor: string
     vendorSubtitle: string
@@ -160,8 +164,8 @@ export type Messages = {
       availability: string
       availableNow: string
       unavailable: string
-      otherVendors: string
       description: string
+      refundPolicy: string
     }
   }
   auth: {
@@ -230,6 +234,18 @@ export type Messages = {
     changePhoto: string
     username: string
     addresses: string
+    addressLine: string
+    addAddress: string
+    updateAddress: string
+    editAddress: string
+    deleteAddress: string
+    confirmDelete: string
+    cancel: string
+    addressesEmpty: string
+    errAddressLine: string
+    area: string
+    selectArea: string
+    areaUneditable: string
     floor: string
     apartment: string
     preferences: string
@@ -243,6 +259,12 @@ export type Messages = {
     changePasswordNote: string
     currentPassword: string
     passwordUpdatedToast: string
+    newPassword: string
+    confirmNewPassword: string
+    deleteAccount: string
+    deleteAccountDesc: string
+    deleteAccountConfirm: string
+    accountDeletedToast: string
     recordId: string
     activeAccount: string
     account: string
@@ -448,5 +470,11 @@ export type Messages = {
     madeFor: string
     invalidEmail: string
     subscribed: string
+  }
+  policy: {
+    title: string
+    back: string
+    errorTitle: string
+    errorDescription: string
   }
 }

@@ -78,6 +78,10 @@ export class HttpClient {
     return this.request<T>(path, 'GET', undefined, options)
   }
 
+  getText<T extends string>(path: string, options?: RequestOptions): Promise<T> {
+    return this.request<T>(path, 'GET', undefined, options, true)
+  }
+
   post<T>(path: string, body?: unknown, options?: RequestOptions): Promise<T> {
     return this.request<T>(path, 'POST', body, options)
   }
@@ -95,6 +99,7 @@ export class HttpClient {
     method: HttpMethod,
     body: unknown,
     options: RequestOptions = {},
+    asText = false,
   ): Promise<T> {
     const { headers: extraHeaders, showFeedback } = options
     const mutation = isMutation(method)
@@ -128,9 +133,12 @@ export class HttpClient {
         }
 
         if (response.status === 401 && !silentPath) {
-          this.tokenStore.clear()
-          this.authBridge.onSessionExpired()
-          throw new ApiError(401, 'Session expired', {}, true)
+          if (headers['Authorization'] !== undefined) {
+            this.tokenStore.clear()
+            this.authBridge.onSessionExpired()
+            throw new ApiError(401, 'Session expired', {}, true)
+          }
+          throw new ApiError(401, 'Authentication required', {}, true)
         }
 
         if (response.status === 429 && attempt < MAX_429_RETRIES) {
@@ -141,9 +149,11 @@ export class HttpClient {
           continue
         }
 
-        const body = (await response.json().catch(() => null)) as Record<string, unknown> | null
+        const body = asText
+          ? ((await response.text()) as unknown)
+          : ((await response.json().catch(() => null)) as Record<string, unknown> | null)
 
-        const isEnvelope = body !== null && typeof body === 'object' && 'success' in body
+        const isEnvelope = !asText && body !== null && typeof body === 'object' && 'success' in body
         const envelope: ApiEnvelope<T> = isEnvelope
           ? (body as unknown as ApiEnvelope<T>)
           : { success: response.ok, errors: null, data: body as T, message: null, statusCode: response.status }

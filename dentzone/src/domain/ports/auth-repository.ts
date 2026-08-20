@@ -27,4 +27,6 @@ export interface AuthRepository {
   verifyOtp(email: string, code: string): Promise<VerifyOtpResult>
   resetPassword(email: string, newPassword: string): Promise<void>
   resendOtp(email: string): Promise<void>
+  changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void>
+  deleteAccount(userId: string): Promise<void>
 }

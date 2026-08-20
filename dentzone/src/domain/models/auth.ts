@@ -18,6 +18,32 @@ export interface AddressDto {
   longitude: number | null
   floorNum: number | null
   apartmentNum: number | null
+  areaId: number | null
+  area?: {
+    id: number
+    name: string
+  } | null
+}
+
+export interface AreaDto {
+  id: number
+  name: string
+  shippingCosts: number
+  cityId: number
+}
+
+export interface CreateAddressDto {
+  userId: string
+  addressLine: string
+  latitude?: number | null
+  longitude?: number | null
+  floorNum?: number | null
+  apartmentNum?: number | null
+  areaId?: number | null
+}
+
+export interface UpdateAddressDto {
+  addressLine: string
 }
 
 export interface UserProfileDto {

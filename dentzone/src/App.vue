@@ -4,11 +4,13 @@ import AppFooter from './components/layout/AppFooter.vue'
 import ToastContainer from './components/ui/ToastContainer.vue'
 import ResultModal from './components/ui/ResultModal.vue'
 import LoadingBar from './components/ui/LoadingBar.vue'
+import LoadingOverlay from './components/ui/LoadingOverlay.vue'
 </script>
 
 <template>
   <div class="app-shell">
     <LoadingBar />
+    <LoadingOverlay />
     <AppHeader />
     <ToastContainer />
     <ResultModal />

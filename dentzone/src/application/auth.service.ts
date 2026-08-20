@@ -220,4 +220,27 @@ export class AuthService {
   async logout(): Promise<void> {
     this.expireSession()
   }
+
+  async changePassword(currentPassword: string, newPassword: string): Promise<AuthResult> {
+    const current = this.user.value
+    if (!current) return { ok: false, error: t('auth.errSessionExpired') }
+    try {
+      await this.authRepository.changePassword(current.id, currentPassword, newPassword)
+      return { ok: true }
+    } catch (err) {
+      return { ok: false, error: toErrorMessage(err, 'profile.errCurrentPassword') }
+    }
+  }
+
+  async deleteAccount(): Promise<AuthResult> {
+    const current = this.user.value
+    if (!current) return { ok: false, error: t('auth.errSessionExpired') }
+    try {
+      await this.authRepository.deleteAccount(current.id)
+      this.expireSession()
+      return { ok: true }
+    } catch (err) {
+      return { ok: false, error: toErrorMessage(err, 'auth.errGeneric') }
+    }
+  }
 }

@@ -132,11 +132,11 @@ watch(() => route.params.inventoryUserId, () => {
     <div v-else class="page__grid">
       <ProductCard
         v-for="product in products"
-        :key="product.id"
+        :key="product.productId"
         :product="product"
         :details-to="{
           name: 'product-details',
-          params: { inventoryUserId: inventoryId(), productId: product.id },
+          params: { inventoryUserId: inventoryId(), productId: product.productId },
           query: { supplier: supplierName(), cat: route.query.cat, name: route.query.name },
         }"
       />

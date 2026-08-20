@@ -2,6 +2,7 @@
 import { services } from '../di/container'
 import { computed, onMounted, ref } from 'vue'
 import { t, locale } from '../i18n'
+import { API_LANG } from '../config/api.config'
 import CategoryCard from '../components/categories/CategoryCard.vue'
 import AppButton from '../components/ui/AppButton.vue'
 import AppIcon from '../components/ui/AppIcon.vue'
@@ -13,7 +14,7 @@ const categories = ref<CategoryDto[]>([])
 const loading = ref(true)
 const error = ref(false)
 
-const lang = computed(() => (locale.value === 'ar' ? 1 : 0))
+const lang = computed(() => (locale.value === 'ar' ? API_LANG.ARABIC : API_LANG.ENGLISH))
 
 const load = async () => {
   loading.value = true

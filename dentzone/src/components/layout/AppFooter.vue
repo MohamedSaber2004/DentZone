@@ -6,7 +6,7 @@ const companyLinks = [
   { label: t('footer.companyAbout'), to: '/' },
   { label: t('footer.companyContact'), to: '/' },
   { label: t('footer.companyShipping'), to: '/' },
-  { label: t('footer.companyPrivacy'), to: '/' },
+  { label: t('footer.companyPrivacy'), to: '/privacy-policy' },
 ]
 
 const socialLinks = [

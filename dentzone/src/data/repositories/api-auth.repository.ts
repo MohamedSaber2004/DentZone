@@ -57,4 +57,16 @@ export class ApiAuthRepository implements AuthRepository {
   resendOtp(email: string): Promise<void> {
     return this.http.post<void>(`${PASSWORD_ROUTES.resendOtp}${query({ email })}`, undefined, { showFeedback: false })
   }
+
+  changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+    return this.http.post<void>(
+      USER_ROUTES.changePassword,
+      { userId, currentPassword, newPassword },
+      { showFeedback: false },
+    )
+  }
+
+  deleteAccount(userId: string): Promise<void> {
+    return this.http.del<void>(USER_ROUTES.delete(userId), { showFeedback: false })
+  }
 }

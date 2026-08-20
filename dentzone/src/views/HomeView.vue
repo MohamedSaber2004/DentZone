@@ -1,16 +1,19 @@
 <script setup lang="ts">
 import { services } from '../di/container'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { t, locale } from '../i18n'
+import { API_LANG } from '../config/api.config'
 import AppButton from '../components/ui/AppButton.vue'
 import AppIcon from '../components/ui/AppIcon.vue'
 import CategoryCard from '../components/categories/CategoryCard.vue'
 import type { CategoryDto } from '../domain/models/category'
+import type { SpecialOfferDto } from '../domain/models/special-offer'
 
 const router = useRouter()
 const authService = services.authService
 const categoryRepository = services.categoryRepository
+const specialOffersRepository = services.specialOffersRepository
 
 const isAuthenticated = computed(() => authService.isAuthenticated)
 
@@ -20,6 +23,54 @@ const categories = ref<CategoryDto[]>([])
 const categoriesLoading = ref(true)
 const categoriesError = ref(false)
 
+const offers = ref<SpecialOfferDto[]>([])
+const offersLoading = ref(true)
+const offersError = ref(false)
+const offersSliderRef = ref<HTMLElement | null>(null)
+let offersLoaded = false
+let offersTimer: ReturnType<typeof setInterval> | undefined
+
+const OFFERS_STEP_MS = 4000
+
+const prefersReducedMotion = () =>
+  typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+const advanceOffers = () => {
+  const slider = offersSliderRef.value
+  if (!slider || offers.value.length < 2) return
+  const card = slider.firstElementChild as HTMLElement | null
+  if (!card) return
+  const cardWidth = card.getBoundingClientRect().width
+  const maxScroll = slider.scrollWidth - slider.clientWidth
+  const distance = Math.abs(slider.scrollLeft)
+  if (distance >= maxScroll - slider.clientWidth / 2) {
+    slider.scrollTo({ left: 0, behavior: 'auto' })
+  } else {
+    slider.scrollBy({
+      left: (locale.value === 'ar' ? -1 : 1) * cardWidth,
+      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+    })
+  }
+}
+
+const startOffersTimer = () => {
+  if (offersTimer !== undefined) clearInterval(offersTimer)
+  if (offers.value.length < 2) return
+  offersTimer = setInterval(advanceOffers, OFFERS_STEP_MS)
+}
+
+const stopOffersTimer = () => {
+  if (offersTimer !== undefined) {
+    clearInterval(offersTimer)
+    offersTimer = undefined
+  }
+}
+
+const resolveOfferImage = (path: string): string => {
+  if (path.startsWith('http://')) return path.replace('http://', 'https://')
+  return path
+}
+
 const go = () => {
   void router.push(isAuthenticated.value ? { name: 'profile' } : { name: 'login' })
 }
@@ -28,7 +79,7 @@ const loadCategories = async () => {
   categoriesLoading.value = true
   categoriesError.value = false
   try {
-    const all = await categoryRepository.getCategories(locale.value === 'ar' ? 1 : 0)
+    const all = await categoryRepository.getCategories(locale.value === 'ar' ? API_LANG.ARABIC : API_LANG.ENGLISH)
     categories.value = all.slice(0, CATEGORIES_LIMIT)
   } catch {
     categoriesError.value = true
@@ -37,7 +88,31 @@ const loadCategories = async () => {
   }
 }
 
-onMounted(loadCategories)
+const loadOffers = async () => {
+  offersLoaded = true
+  offersLoading.value = true
+  offersError.value = false
+  try {
+    const all = await specialOffersRepository.getOffers()
+    offers.value = [...all].sort((a, b) => a.sectionNum - b.sectionNum)
+    startOffersTimer()
+  } catch {
+    offersError.value = true
+  } finally {
+    offersLoading.value = false
+  }
+}
+
+onMounted(() => {
+  loadCategories()
+  if (isAuthenticated.value) void loadOffers()
+})
+
+onUnmounted(stopOffersTimer)
+
+watch(isAuthenticated, (authed) => {
+  if (authed && !offersLoaded) void loadOffers()
+})
 </script>
 
 <template>
@@ -108,7 +183,60 @@ onMounted(loadCategories)
     </section>
   </div>
 
-  <section v-if="categoriesLoading || categories.length > 0" class="categories" aria-label="Categories">
+  <section v-if="isAuthenticated" class="offers" aria-label="Special offers">
+    <div class="container">
+      <div class="offers__head">
+        <div>
+          <h2 class="offers__title">{{ t('home.specialOffers') }}</h2>
+          <p class="offers__subtitle">{{ t('home.specialOffersSubtitle') }}</p>
+        </div>
+      </div>
+
+      <div v-if="offersLoading" class="offers__skeleton" aria-label="Loading" />
+
+      <div v-else-if="offersError" class="offers__error" role="alert">
+        <AppIcon name="alert-circle" :size="17" />
+        <span>{{ t('categories.errorDescription') }}</span>
+        <button type="button" class="offers__retry" @click="loadOffers">
+          <AppIcon name="refresh" :size="14" />
+          {{ t('categories.retry') }}
+        </button>
+      </div>
+
+      <div v-else-if="offers.length === 0" class="offers__empty">
+        <span class="offers__empty-icon"><AppIcon name="sparkles" :size="24" /></span>
+        <strong>{{ t('categories.emptyTitle') }}</strong>
+        <span>{{ t('categories.emptyDescription') }}</span>
+      </div>
+
+      <div v-else ref="offersSliderRef" class="offers__slider" aria-label="Special offers">
+        <a
+          v-for="offer in offers"
+          :key="offer.id"
+          class="offers__card"
+          :href="offer.link"
+          target="_blank"
+          rel="noopener noreferrer"
+          :aria-label="t('home.specialOffers')"
+        >
+          <img :src="resolveOfferImage(offer.imagePath)" :alt="t('home.specialOffers')" loading="lazy" draggable="false" />
+        </a>
+        <a
+          v-if="offers.length > 1"
+          class="offers__card"
+          :href="offers[0]!.link"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-hidden="true"
+          tabindex="-1"
+        >
+          <img :src="resolveOfferImage(offers[0]!.imagePath)" :alt="''" loading="lazy" draggable="false" />
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="categories" aria-label="Categories">
     <div class="container">
       <div class="categories__head">
         <div>
@@ -137,6 +265,12 @@ onMounted(loadCategories)
           <AppIcon name="refresh" :size="14" />
           {{ t('categories.retry') }}
         </button>
+      </div>
+
+      <div v-else-if="categories.length === 0" class="categories__empty">
+        <span class="categories__empty-icon"><AppIcon name="box" :size="24" /></span>
+        <strong>{{ t('categories.emptyTitle') }}</strong>
+        <span>{{ t('categories.emptyDescription') }}</span>
       </div>
 
       <div v-else class="categories__grid">
@@ -464,6 +598,155 @@ onMounted(loadCategories)
   }
 }
 
+.offers {
+  --offer-card-w: min(100%, 640px);
+  padding: 4rem var(--dz-gutter) 0;
+  background: var(--dz-paper);
+}
+
+.offers__head {
+  margin-bottom: 1.75rem;
+}
+
+.offers__title {
+  font-family: var(--dz-font-display);
+  font-size: clamp(1.5rem, 3vw, 1.9rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.offers__subtitle {
+  margin-top: 0.4rem;
+  font-size: 0.92rem;
+  color: var(--dz-muted);
+}
+
+.offers__slider {
+  display: flex;
+  width: var(--offer-card-w);
+  margin-inline: auto;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  border-radius: var(--dz-radius-lg);
+  border: 1px solid var(--dz-border);
+  background: var(--dz-surface);
+  box-shadow: var(--dz-shadow-sm);
+  overscroll-behavior-x: contain;
+}
+
+.offers__slider::-webkit-scrollbar {
+  display: none;
+}
+
+.offers__card {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+}
+
+.offers__card img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  aspect-ratio: 21 / 9;
+  user-select: none;
+}
+
+.offers__skeleton {
+  width: var(--offer-card-w);
+  margin-inline: auto;
+  aspect-ratio: 21 / 9;
+  border-radius: var(--dz-radius-lg);
+  background: linear-gradient(
+    100deg,
+    var(--dz-surface-soft) 40%,
+    var(--dz-primary-faint) 50%,
+    var(--dz-surface-soft) 60%
+  );
+  background-size: 200% 100%;
+  animation: offers-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes offers-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.offers__error {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1rem 1.2rem;
+  border-radius: var(--dz-radius);
+  background: var(--dz-danger-soft);
+  border: 1px solid color-mix(in srgb, var(--dz-danger) 25%, var(--dz-border));
+  color: var(--dz-danger);
+  font-size: 0.88rem;
+  font-weight: 600;
+  flex-wrap: wrap;
+}
+
+.offers__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 3rem 1.5rem;
+  border: 1px dashed var(--dz-border-strong);
+  border-radius: var(--dz-radius-lg);
+  text-align: center;
+}
+
+.offers__empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.2rem;
+  height: 3.2rem;
+  border-radius: var(--dz-radius-full);
+  background: var(--dz-surface-soft);
+  color: var(--dz-muted);
+  margin-bottom: 0.4rem;
+}
+
+.offers__empty strong {
+  font-family: var(--dz-font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--dz-ink);
+}
+
+.offers__empty > span:last-child {
+  font-size: 0.88rem;
+  color: var(--dz-muted);
+  max-width: 38ch;
+}
+
+.offers__retry {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.9rem;
+  margin-inline-start: auto;
+  border: 1px solid color-mix(in srgb, var(--dz-danger) 40%, var(--dz-border));
+  border-radius: var(--dz-radius-full);
+  background: var(--dz-surface);
+  color: var(--dz-danger);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+}
+
+.offers__retry:hover {
+  background: var(--dz-danger);
+  color: var(--dz-white);
+}
+
 .categories {
   padding: 4rem var(--dz-gutter);
   background: var(--dz-paper);
@@ -585,6 +868,42 @@ html[dir='rtl'] .categories__all:hover svg:last-child {
   flex-wrap: wrap;
 }
 
+.categories__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 3rem 1.5rem;
+  border: 1px dashed var(--dz-border-strong);
+  border-radius: var(--dz-radius-lg);
+  text-align: center;
+}
+
+.categories__empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.2rem;
+  height: 3.2rem;
+  border-radius: var(--dz-radius-full);
+  background: var(--dz-surface-soft);
+  color: var(--dz-muted);
+  margin-bottom: 0.4rem;
+}
+
+.categories__empty strong {
+  font-family: var(--dz-font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--dz-ink);
+}
+
+.categories__empty > span:last-child {
+  font-size: 0.88rem;
+  color: var(--dz-muted);
+  max-width: 38ch;
+}
+
 .categories__retry {
   display: inline-flex;
   align-items: center;
@@ -628,12 +947,39 @@ html[dir='rtl'] .categories__all:hover svg:last-child {
   .categories {
     padding: 3rem var(--dz-gutter);
   }
+
+  .offers {
+    padding: 3rem var(--dz-gutter) 0;
+  }
+}
+
+@media (min-width: 561px) and (max-width: 820px) {
+  .offers__card {
+    flex: 0 0 88%;
+    scroll-snap-align: center;
+  }
+
+  .offers__skeleton {
+    width: calc(var(--offer-card-w) * 0.88);
+  }
+}
+
+@media (max-width: 560px) {
+  .offers__card {
+    flex: 0 0 100%;
+    scroll-snap-align: start;
+  }
+
+  .offers__skeleton {
+    width: 100%;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .categories__skeleton-media,
   .categories__skeleton-line,
-  .categories__all svg:last-child {
+  .categories__all svg:last-child,
+  .offers__skeleton {
     animation: none;
     transition: none;
   }
