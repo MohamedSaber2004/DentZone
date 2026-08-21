@@ -77,12 +77,16 @@ const closeMobileMenu = () => {
 
 const onClickOutside = (event: MouseEvent) => {
   const target = event.target as Node
-  if (userMenuRef.value && !userMenuRef.value.contains(target)) closeUserMenu()
+  if (!target || !document.contains(target)) return
+
+  if (userMenuOpen.value && userMenuRef.value && !userMenuRef.value.contains(target)) {
+    closeUserMenu()
+  }
   if (
+    mobileMenuOpen.value &&
     mobileMenuRef.value &&
-    mobileMenuButtonRef.value &&
     !mobileMenuRef.value.contains(target) &&
-    !mobileMenuButtonRef.value.contains(target)
+    (!mobileMenuButtonRef.value || !mobileMenuButtonRef.value.contains(target))
   ) {
     closeMobileMenu()
   }
@@ -94,6 +98,14 @@ const onEscape = (event: KeyboardEvent) => {
     closeMobileMenu()
   }
 }
+
+watch(
+  () => router.currentRoute.value.fullPath,
+  () => {
+    closeMobileMenu()
+    closeUserMenu()
+  },
+)
 
 onMounted(() => {
   document.addEventListener('click', onClickOutside)
@@ -209,17 +221,6 @@ const logout = () => {
           <span v-if="cartCount > 0" :key="cartCount" class="app-header__cart-badge">{{ cartCount }}</span>
         </RouterLink>
 
-        <button
-          ref="mobileMenuButtonRef"
-          class="app-header__menu"
-          type="button"
-          :aria-label="mobileMenuOpen ? t('nav.closeMenu') : t('nav.toggleMenu')"
-          :aria-expanded="mobileMenuOpen"
-          @click="toggleMobileMenu"
-        >
-          <AppIcon :name="mobileMenuOpen ? 'close' : 'menu'" :size="18" />
-        </button>
-
         <RouterLink v-if="!isAuthenticated" to="/auth/login" class="app-header__login">
           <AppIcon name="user" :size="16" />
           <span class="app-header__login-text">{{ t('nav.login') }}</span>
@@ -233,7 +234,7 @@ const logout = () => {
             :style="{ '--tint': user?.tint ?? '' }"
             :aria-label="t('profile.title')"
             :aria-expanded="userMenuOpen"
-            @click="toggleUserMenu"
+            @click.stop="toggleUserMenu"
           >
             <img
               v-if="userImage && !avatarImageFailed"
@@ -244,7 +245,7 @@ const logout = () => {
             />
             <AppIcon v-else name="user" :size="18" />
           </button>
-          <div v-if="userMenuOpen" class="app-header__dropdown">
+          <div v-if="userMenuOpen" class="app-header__dropdown" @click.stop>
             <div class="app-header__dropdown-head">
               <span class="app-header__dropdown-avatar" :style="{ '--tint': user?.tint ?? '' }">
                 <img
@@ -297,6 +298,17 @@ const logout = () => {
             </button>
           </div>
         </div>
+
+        <button
+          ref="mobileMenuButtonRef"
+          class="app-header__menu"
+          type="button"
+          :aria-label="mobileMenuOpen ? t('nav.closeMenu') : t('nav.toggleMenu')"
+          :aria-expanded="mobileMenuOpen"
+          @click.stop="toggleMobileMenu"
+        >
+          <AppIcon :name="mobileMenuOpen ? 'close' : 'menu'" :size="18" />
+        </button>
       </div>
     </div>
 
@@ -367,6 +379,36 @@ const logout = () => {
           <AppIcon name="bell" :size="17" />
           {{ t('nav.notifications') }}
         </RouterLink>
+        <RouterLink
+          v-if="isAuthenticated"
+          to="/cart"
+          class="app-header__panel-link"
+          active-class="app-header__nav-link--active"
+          @click="closeMobileMenu"
+        >
+          <AppIcon name="cart" :size="17" />
+          {{ t('cart.title') }}
+        </RouterLink>
+        <RouterLink
+          v-if="isAuthenticated"
+          to="/profile"
+          class="app-header__panel-link"
+          active-class="app-header__nav-link--active"
+          @click="closeMobileMenu"
+        >
+          <AppIcon name="user" :size="17" />
+          {{ t('profile.title') }}
+        </RouterLink>
+        <RouterLink
+          v-if="!isAuthenticated"
+          to="/auth/login"
+          class="app-header__panel-link"
+          active-class="app-header__nav-link--active"
+          @click="closeMobileMenu"
+        >
+          <AppIcon name="user" :size="17" />
+          {{ t('nav.login') }}
+        </RouterLink>
 
         <div class="app-header__panel-divider" />
 
@@ -378,6 +420,14 @@ const logout = () => {
           <AppIcon :name="theme === 'dark' ? 'sun' : 'moon'" :size="17" />
           <span>{{ theme === 'dark' ? t('nav.lightMode') : t('nav.darkMode') }}</span>
         </button>
+
+        <template v-if="isAuthenticated">
+          <div class="app-header__panel-divider" />
+          <button type="button" class="app-header__panel-link app-header__panel-link--danger" @click="logout">
+            <AppIcon name="logout" :size="17" />
+            {{ t('nav.logout') }}
+          </button>
+        </template>
       </div>
     </nav>
   </header>
@@ -389,6 +439,9 @@ const logout = () => {
   position: sticky;
   top: 0;
   z-index: 50;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   height: var(--dz-header-height);
   background: var(--dz-header-bg);
   backdrop-filter: blur(12px);
@@ -400,15 +453,20 @@ const logout = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1.25rem;
+  gap: 0.75rem;
   height: 100%;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
 }
 
 .app-header__brand {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  flex-shrink: 0;
+  gap: 0.65rem;
+  flex-shrink: 1;
+  min-width: 0;
   transition: opacity 0.15s ease;
 }
 
@@ -423,6 +481,7 @@ const logout = () => {
   border-radius: var(--dz-radius-md);
   object-fit: contain;
   box-shadow: 0 4px 14px rgb(0 0 0 / 0.12);
+  flex-shrink: 0;
   transition: transform 0.2s ease;
 }
 
@@ -436,6 +495,8 @@ const logout = () => {
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--dz-ink);
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .app-header__wordmark span {
@@ -445,13 +506,16 @@ const logout = () => {
 .app-header__actions {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.45rem;
+  flex-shrink: 0;
+  min-width: 0;
 }
 
 .app-header__nav {
   display: flex;
   align-items: center;
   gap: 0.25rem;
+  flex-shrink: 0;
 }
 
 .app-header__nav-link {
@@ -488,7 +552,7 @@ const logout = () => {
   background: var(--dz-surface-soft);
   border: 1px solid var(--dz-border);
   border-radius: var(--dz-radius-full);
-  min-width: 150px;
+  min-width: 140px;
   max-width: 220px;
   flex: 1 1 auto;
   transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
@@ -564,8 +628,10 @@ html[dir='rtl'] .app-header__mobile-search-btn svg {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2.7rem;
-  height: 2.7rem;
+  width: 2.65rem;
+  height: 2.65rem;
+  flex-shrink: 0;
+  box-sizing: border-box;
   border-radius: var(--dz-radius);
   color: var(--dz-ink-soft);
   background: var(--dz-surface-soft);
@@ -593,8 +659,10 @@ html[dir='rtl'] .app-header__mobile-search-btn svg {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2.7rem;
-  height: 2.7rem;
+  width: 2.65rem;
+  height: 2.65rem;
+  flex-shrink: 0;
+  box-sizing: border-box;
   border-radius: var(--dz-radius);
   color: var(--dz-ink-soft);
   background: var(--dz-surface-soft);
@@ -644,8 +712,10 @@ html[dir='rtl'] .app-header__mobile-search-btn svg {
 .app-header__login {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.45rem;
-  padding: 0.45rem 1rem;
+  height: 2.65rem;
+  padding: 0 1rem;
   border-radius: var(--dz-radius-full);
   border: 1px solid var(--dz-primary);
   background: var(--dz-surface);
@@ -653,6 +723,8 @@ html[dir='rtl'] .app-header__mobile-search-btn svg {
   font-weight: 700;
   color: var(--dz-primary-strong);
   white-space: nowrap;
+  flex-shrink: 0;
+  box-sizing: border-box;
   transition:
     border-color 0.2s,
     color 0.2s,
@@ -666,14 +738,17 @@ html[dir='rtl'] .app-header__mobile-search-btn svg {
 
 .app-header__user {
   position: relative;
+  flex-shrink: 0;
 }
 
 .app-header__avatar {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2.7rem;
-  height: 2.7rem;
+  width: 2.65rem;
+  height: 2.65rem;
+  flex-shrink: 0;
+  box-sizing: border-box;
   border-radius: var(--dz-radius-full);
   background: color-mix(in srgb, var(--tint) 16%, var(--dz-surface-soft));
   border: 1px solid color-mix(in srgb, var(--tint) 26%, var(--dz-border));
@@ -705,6 +780,8 @@ html[dir='rtl'] .app-header__mobile-search-btn svg {
   top: calc(100% + 0.6rem);
   inset-inline-end: 0;
   width: 250px;
+  max-width: calc(100vw - 1.5rem);
+  box-sizing: border-box;
   padding: 0.6rem;
   background: var(--dz-surface);
   border: 1px solid var(--dz-border);
@@ -812,8 +889,10 @@ html[dir='rtl'] .app-header__mobile-search-btn svg {
   display: none;
   align-items: center;
   justify-content: center;
-  width: 2.7rem;
-  height: 2.7rem;
+  width: 2.65rem;
+  height: 2.65rem;
+  flex-shrink: 0;
+  box-sizing: border-box;
   border-radius: var(--dz-radius);
   color: var(--dz-ink-soft);
   background: var(--dz-surface-soft);
@@ -833,6 +912,11 @@ html[dir='rtl'] .app-header__mobile-search-btn svg {
   position: absolute;
   top: 100%;
   inset-inline: 0;
+  width: 100%;
+  max-height: calc(100dvh - var(--dz-header-height));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
   background: var(--dz-header-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -844,19 +928,24 @@ html[dir='rtl'] .app-header__mobile-search-btn svg {
 .app-header__panel-inner {
   display: flex;
   flex-direction: column;
-  padding-block: 0.6rem 0.9rem;
+  padding-block: 0.75rem 1rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .app-header__panel-link {
   display: flex;
   align-items: center;
   gap: 0.65rem;
-  padding: 0.8rem 0.9rem;
-  margin-inline: -0.5rem;
-  border-radius: var(--dz-radius-lg);
+  padding: 0.75rem 0.85rem;
+  margin-inline: 0;
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: var(--dz-radius);
   font-size: 0.95rem;
   font-weight: 600;
   color: var(--dz-ink-soft);
+  text-align: start;
   transition:
     background-color 0.2s,
     color 0.2s;
@@ -873,6 +962,15 @@ html[dir='rtl'] .app-header__mobile-search-btn svg {
   font-weight: 700;
 }
 
+.app-header__panel-link--danger {
+  color: var(--dz-danger);
+}
+
+.app-header__panel-link--danger:hover {
+  background: var(--dz-danger-soft);
+  color: var(--dz-danger);
+}
+
 @keyframes header-panel-in {
   from {
     opacity: 0;
@@ -885,33 +983,10 @@ html[dir='rtl'] .app-header__mobile-search-btn svg {
   }
 }
 
-/* ── Tablets: hide desktop search, keep nav ─────────────────────── */
-@media (max-width: 960px) {
+/* ── Tablets (≤ 900px): collapse search & nav to mobile panel ─────── */
+@media (max-width: 900px) {
   .app-header__search {
     display: none;
-  }
-}
-
-/* ── Mid-range tablets (760–960): shrink nav link padding ─────────── */
-@media (max-width: 860px) and (min-width: 761px) {
-  .app-header__nav-link {
-    padding: 0.45rem 0.6rem;
-    font-size: 0.8rem;
-  }
-
-  .app-header__inner {
-    gap: 0.9rem;
-  }
-}
-
-/* ── Mobile: collapse nav, show hamburger ─────────────────────────── */
-@media (max-width: 760px) {
-  .app-header__inner {
-    gap: 0.75rem;
-  }
-
-  .app-header__actions {
-    gap: 0.35rem;
   }
 
   .app-header__nav {
@@ -921,67 +996,131 @@ html[dir='rtl'] .app-header__mobile-search-btn svg {
   .app-header__menu {
     display: flex;
   }
+}
+
+/* ── Mobile (≤ 768px): clean topbar, hide redundant switches ──────── */
+@media (max-width: 768px) {
+  .app-header__inner {
+    gap: 0.5rem;
+  }
+
+  .app-header__actions {
+    gap: 0.35rem;
+  }
+
+  /* Lang and theme toggles are in the mobile panel drawer */
+  .app-header__actions .app-header__theme {
+    display: none;
+  }
 
   .app-header__login-text {
     display: none;
   }
 
   .app-header__login {
-    width: 2.45rem;
+    width: 2.35rem;
+    height: 2.35rem;
     padding: 0;
+    border-radius: var(--dz-radius);
     justify-content: center;
+  }
+
+  .app-header__cart,
+  .app-header__menu,
+  .app-header__avatar {
+    width: 2.35rem;
+    height: 2.35rem;
+  }
+
+  .app-header__brand {
+    gap: 0.5rem;
+  }
+
+  .app-header__logo-img {
+    width: 2.35rem;
+    height: 2.35rem;
+  }
+
+  .app-header__wordmark {
+    font-size: 1.25rem;
   }
 
   .app-header__dropdown {
     width: min(260px, calc(100vw - 1.5rem));
   }
-
-  /* Mobile panel links: full-width, taller tap targets */
-  .app-header__panel-link {
-    padding: 0.85rem 1rem;
-    font-size: 0.98rem;
-  }
 }
 
-/* ── Small phones ─────────────────────────────────────────────────── */
+/* ── Small phones (≤ 480px) ───────────────────────────────────────── */
 @media (max-width: 480px) {
+  .app-header__inner {
+    gap: 0.45rem;
+  }
+
   .app-header__actions {
     gap: 0.25rem;
   }
 
-  .app-header__theme,
   .app-header__cart,
   .app-header__menu,
-  .app-header__avatar {
-    width: 2.5rem;
-    height: 2.5rem;
+  .app-header__avatar,
+  .app-header__login {
+    width: 2.15rem;
+    height: 2.15rem;
   }
-}
 
-/* ── Extra-small phones ───────────────────────────────────────────── */
-@media (max-width: 400px) {
   .app-header__brand {
     gap: 0.4rem;
   }
 
+  .app-header__logo-img {
+    width: 2.1rem;
+    height: 2.1rem;
+  }
+
   .app-header__wordmark {
-    font-size: 1rem;
+    font-size: 1.12rem;
+  }
+
+  .app-header__cart-badge {
+    font-size: 0.62rem;
+    min-width: 1.05rem;
+    height: 1.05rem;
+    top: -0.25rem;
+    inset-inline-end: -0.25rem;
+  }
+}
+
+/* ── Extra-small phones / Redmi (≤ 360px) ─────────────────────────── */
+@media (max-width: 360px) {
+  .app-header__inner {
+    gap: 0.35rem;
+  }
+
+  .app-header__actions {
+    gap: 0.2rem;
+  }
+
+  .app-header__brand {
+    gap: 0.3rem;
   }
 
   .app-header__logo-img {
-    width: 2rem;
-    height: 2rem;
+    width: 1.85rem;
+    height: 1.85rem;
   }
 
-  .app-header__theme,
+  .app-header__wordmark {
+    font-size: 0.98rem;
+  }
+
   .app-header__cart,
   .app-header__menu,
-  .app-header__avatar {
-    width: 2.2rem;
-    height: 2.2rem;
+  .app-header__avatar,
+  .app-header__login {
+    width: 1.95rem;
+    height: 1.95rem;
   }
 
-  /* Dropdown should not overflow on tiny screens */
   .app-header__dropdown {
     width: calc(100vw - 1rem);
     inset-inline-end: -0.25rem;
