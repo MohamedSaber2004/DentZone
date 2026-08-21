@@ -85,7 +85,68 @@ export class ApiProductRepository implements ProductRepository {
 
   async searchProducts(params: SearchProductsParams = {}): Promise<ProviderProductDto[]> {
     const query = params.search?.trim()
+    const isVendorOrCategoryScoped = Boolean(params.inventoryId || params.catId)
 
+    if (isVendorOrCategoryScoped) {
+      // 1. Try search-product-category with vendor/cat filters
+      try {
+        const raw = await this.http.get<unknown>(PRODUCT_ROUTES.searchProductCategory(params), {
+          showFeedback: false,
+        })
+        const items = extractProductItems(raw)
+        if (items.length > 0) {
+          let mapped = items.map((p) => this.toProviderProduct(p))
+          if (params.inventoryId) {
+            mapped = mapped.filter((p) => !p.inventoryUserId || p.inventoryUserId === params.inventoryId)
+          }
+          return query ? this.filterLocally(mapped, query) : mapped
+        }
+      } catch {
+        // Fallback below
+      }
+
+      // 2. Try search-product-category without search query to get all vendor/cat products, then filter locally
+      if (query) {
+        try {
+          const allRaw = await this.http.get<unknown>(
+            PRODUCT_ROUTES.searchProductCategory({ ...params, search: undefined }),
+            { showFeedback: false },
+          )
+          const items = extractProductItems(allRaw)
+          if (items.length > 0) {
+            let mapped = items.map((p) => this.toProviderProduct(p))
+            if (params.inventoryId) {
+              mapped = mapped.filter((p) => !p.inventoryUserId || p.inventoryUserId === params.inventoryId)
+            }
+            return this.filterLocally(mapped, query)
+          }
+        } catch {
+          // Fallback below
+        }
+      }
+
+      // 3. Fallback: fetch general products and filter by vendor inventoryId
+      if (params.inventoryId) {
+        try {
+          const allRaw = await this.http.get<unknown>(
+            PRODUCT_ROUTES.searchProduct({ search: undefined }),
+            { showFeedback: false },
+          )
+          const items = extractProductItems(allRaw)
+          if (items.length > 0) {
+            let mapped = items.map((p) => this.toProviderProduct(p))
+            mapped = mapped.filter((p) => p.inventoryUserId === params.inventoryId)
+            return query ? this.filterLocally(mapped, query) : mapped
+          }
+        } catch {
+          return []
+        }
+      }
+
+      return []
+    }
+
+    // Global search across all products/vendors:
     // 1. Try /api/Products/search-product
     try {
       const raw = await this.http.get<unknown>(PRODUCT_ROUTES.searchProduct({ search: query }), {
@@ -157,6 +218,7 @@ export class ApiProductRepository implements ProductRepository {
         p.preef,
         p.arabicPreef,
         p.productCode,
+        p.categoryName,
         p.inventoryUserName,
       ]
         .filter(Boolean)
@@ -167,11 +229,16 @@ export class ApiProductRepository implements ProductRepository {
   }
 
   private toProviderProduct(p: SearchProductItemDto | FavoriteProductDto | PopularProductDto): ProviderProductDto {
+    const raw = p as unknown as Record<string, unknown>
+    const invId = (typeof raw.inventoryId === 'string' ? raw.inventoryId : '') || (typeof raw.inventoryUserId === 'string' ? raw.inventoryUserId : '')
+    const invName = (typeof raw.inventoryName === 'string' ? raw.inventoryName : null) || (typeof raw.inventoryUserName === 'string' ? raw.inventoryUserName : null)
+    const catName = typeof raw.categoryName === 'string' ? raw.categoryName : null
+
     return {
       id: p.productId,
       productId: p.productId,
       productPriceId: p.productPriceId,
-      inventoryUserId: p.inventoryId,
+      inventoryUserId: invId,
       productName: p.productName,
       productArabicName: p.arabicName,
       preef: p.preef,
@@ -180,7 +247,7 @@ export class ApiProductRepository implements ProductRepository {
       arabicDescription: p.arabicDescription,
       createdAt: '',
       updatedAt: '',
-      categoryName: null,
+      categoryName: catName,
       purchasePrice: 0,
       salesPrice: p.salesPrice,
       flashSaleFromDate: p.flashSaleFromDate,
@@ -190,7 +257,7 @@ export class ApiProductRepository implements ProductRepository {
       isFlashSaleActive: p.isFlashSaleActive,
       effectiveSalesPrice: p.effectiveSalesPrice ?? p.salesPrice,
       creationDate: '',
-      inventoryUserName: 'inventoryName' in p ? p.inventoryName : null,
+      inventoryUserName: invName,
       stockQuantity: p.stockQuantity,
       discountRate: p.discountRate,
       maxQuantity: 0,

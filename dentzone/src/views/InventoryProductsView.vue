@@ -7,6 +7,7 @@ import { API_LANG } from '../config/api.config'
 import ProductCard from '../components/products/ProductCard.vue'
 import AppButton from '../components/ui/AppButton.vue'
 import AppIcon from '../components/ui/AppIcon.vue'
+import AppPagination from '../components/ui/AppPagination.vue'
 import type { CategoryDto } from '../domain/models/category'
 import type { ProviderProductDto } from '../domain/models/product'
 
@@ -14,19 +15,21 @@ const route = useRoute()
 const router = useRouter()
 const { productRepository, categoryRepository, authService, cartService } = services
 
+const PAGE_SIZE = 15
+
 const inventoryId = () => (typeof route.params.inventoryUserId === 'string' ? route.params.inventoryUserId : '')
 const supplierName = () => (typeof route.query.supplier === 'string' ? route.query.supplier : '')
 
 const allProducts = ref<ProviderProductDto[]>([])
-const products = ref<ProviderProductDto[]>([])
 const loading = ref(true)
 const error = ref(false)
-const search = ref('')
+const search = ref(typeof route.query.search === 'string' ? route.query.search : '')
+const currentPage = ref(1)
 const favoriteIds = ref<Set<string>>(new Set())
 const favoriteBusyIds = ref<Set<string>>(new Set())
 
 const categories = ref<CategoryDto[]>([])
-const selectedCategory = ref('')
+const selectedCategory = ref(typeof route.query.cat === 'string' ? route.query.cat : '')
 
 const hasQuery = computed(() => search.value.trim().length > 0)
 
@@ -39,10 +42,10 @@ function normalizeText(text: string): string {
     .trim()
 }
 
-function filterLocally(list: ProviderProductDto[], query: string): ProviderProductDto[] {
-  const q = normalizeText(query)
-  if (!q) return list
-  return list.filter((p) => {
+const filteredProducts = computed(() => {
+  const q = normalizeText(search.value)
+  if (!q) return allProducts.value
+  return allProducts.value.filter((p) => {
     const fields = [
       p.productName,
       p.productArabicName,
@@ -51,6 +54,7 @@ function filterLocally(list: ProviderProductDto[], query: string): ProviderProdu
       p.preef,
       p.arabicPreef,
       p.productCode,
+      p.categoryName,
       p.inventoryUserName,
     ]
       .filter(Boolean)
@@ -58,7 +62,12 @@ function filterLocally(list: ProviderProductDto[], query: string): ProviderProdu
 
     return fields.some((f) => f.includes(q))
   })
-}
+})
+
+const paginatedProducts = computed(() => {
+  const start = (currentPage.value - 1) * PAGE_SIZE
+  return filteredProducts.value.slice(start, start + PAGE_SIZE)
+})
 
 const loadFavorites = async () => {
   if (!authService.isAuthenticated) return
@@ -131,47 +140,37 @@ const backToInventories = () => {
 const load = async () => {
   loading.value = true
   error.value = false
-  const query = search.value.trim()
   try {
     const result = await productRepository.searchProducts({
       inventoryId: inventoryId(),
       catId: selectedCategory.value || undefined,
-      search: query || undefined,
     })
-    products.value = result
-    if (!query) {
-      allProducts.value = result
-    } else if (result.length === 0 && allProducts.value.length > 0) {
-      // Fallback local search on cached get-all
-      products.value = filterLocally(allProducts.value, query)
-    }
+    allProducts.value = result
   } catch {
-    if (query && allProducts.value.length > 0) {
-      // Fallback to local search on cached get-all if network search fails
-      products.value = filterLocally(allProducts.value, query)
-    } else {
-      error.value = true
-    }
+    allProducts.value = []
+    error.value = true
   } finally {
     loading.value = false
   }
 }
 
+const onSearchInput = () => {
+  currentPage.value = 1
+}
+
 const submitSearch = () => {
-  const query = search.value.trim()
-  if (allProducts.value.length > 0) {
-    products.value = filterLocally(allProducts.value, query)
+  if (document.activeElement instanceof HTMLElement) {
+    document.activeElement.blur()
   }
-  void load()
 }
 
 const clearSearch = () => {
   search.value = ''
-  if (allProducts.value.length > 0) {
-    products.value = allProducts.value
-  } else {
-    void load()
-  }
+  currentPage.value = 1
+}
+
+const onPageChange = () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 const categoryName = (category: CategoryDto) => {
@@ -190,6 +189,7 @@ const loadCategories = async () => {
 const selectCategory = (id: string) => {
   if (selectedCategory.value === id) return
   selectedCategory.value = id
+  currentPage.value = 1
   const query = { ...route.query }
   if (id) {
     query.cat = id
@@ -208,11 +208,16 @@ onMounted(() => {
   void load()
   void loadFavorites()
 })
-watch(() => route.params.inventoryUserId, () => {
-  search.value = ''
-  selectedCategory.value = ''
-  void load()
-})
+
+watch(
+  () => route.params.inventoryUserId,
+  () => {
+    search.value = ''
+    selectedCategory.value = ''
+    currentPage.value = 1
+    void load()
+  },
+)
 </script>
 
 <template>
@@ -227,8 +232,8 @@ watch(() => route.params.inventoryUserId, () => {
         <h1 class="page__title">{{ supplierName() || t('products.title') }}</h1>
         <p class="page__subtitle">{{ t('products.subtitle') }}</p>
       </div>
-      <span v-if="!loading && !error && products.length" class="page__count">
-        {{ t('products.count', { count: products.length }) }}
+      <span v-if="!loading && !error && filteredProducts.length" class="page__count">
+        {{ t('products.count', { count: filteredProducts.length }) }}
       </span>
     </div>
 
@@ -242,8 +247,15 @@ watch(() => route.params.inventoryUserId, () => {
         type="search"
         :placeholder="t('products.searchPlaceholder')"
         :aria-label="t('products.searchPlaceholder')"
+        @input="onSearchInput"
       />
-      <button v-if="hasQuery" type="button" class="page__search-clear" :aria-label="t('products.clearSearch')" @click="clearSearch">
+      <button
+        v-if="hasQuery"
+        type="button"
+        class="page__search-clear"
+        :aria-label="t('products.clearSearch')"
+        @click="clearSearch"
+      >
         <AppIcon name="close" :size="15" />
       </button>
       <AppButton type="submit" size="md">
@@ -293,7 +305,7 @@ watch(() => route.params.inventoryUserId, () => {
       </AppButton>
     </div>
 
-    <div v-else-if="products.length === 0" class="page__state">
+    <div v-else-if="filteredProducts.length === 0" class="page__state">
       <span class="page__state-icon"><AppIcon name="search" :size="30" /></span>
       <h2 class="page__state-title">
         {{ hasQuery ? t('products.noResultsTitle', { query: search.trim() }) : t('products.emptyTitle') }}
@@ -308,8 +320,8 @@ watch(() => route.params.inventoryUserId, () => {
 
     <div v-else class="page__grid">
       <ProductCard
-        v-for="product in products"
-        :key="product.productId"
+        v-for="product in paginatedProducts"
+        :key="product.productPriceId || product.productId"
         :product="product"
         :favorite="favoriteIds.has(product.productPriceId)"
         :favorite-busy="favoriteBusyIds.has(product.productPriceId)"
@@ -322,6 +334,15 @@ watch(() => route.params.inventoryUserId, () => {
         @add-to-cart="addToCart"
       />
     </div>
+
+    <!-- Frontend Pagination (Page size: 15) -->
+    <AppPagination
+      v-if="!loading && !error && filteredProducts.length > PAGE_SIZE"
+      v-model="currentPage"
+      :total-items="filteredProducts.length"
+      :page-size="PAGE_SIZE"
+      @change="onPageChange"
+    />
   </div>
 </template>
 
