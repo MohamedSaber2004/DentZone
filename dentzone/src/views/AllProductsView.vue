@@ -606,6 +606,51 @@ watch(currentPage, () => {
   }
 }
 
+@media (max-width: 768px) {
+  .page__grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .page {
+    padding-block: 1.75rem 3.5rem;
+  }
+
+  .page__head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.65rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .page__filters {
+    gap: 0.65rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .page__search {
+    flex: 1 1 100%;
+  }
+
+  .page__select-wrap {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .page__grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .page__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .skeleton {
     animation: none;

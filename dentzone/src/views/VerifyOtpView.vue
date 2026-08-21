@@ -312,11 +312,33 @@ html[dir='rtl'] .otp-form__back svg {
   }
 }
 
-@media (max-width: 400px) {
+@media (max-width: 420px) {
+  .otp-form__boxes {
+    gap: 0.35rem;
+  }
+
   .otp-form__box {
-    width: 2.5rem;
-    height: 3rem;
-    font-size: 1.15rem;
+    width: 2.35rem;
+    height: 2.85rem;
+    font-size: 1.1rem;
+  }
+
+  .otp-form__footer {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .otp-form__boxes {
+    gap: 0.25rem;
+  }
+
+  .otp-form__box {
+    width: 2.1rem;
+    height: 2.6rem;
+    font-size: 1rem;
   }
 }
 

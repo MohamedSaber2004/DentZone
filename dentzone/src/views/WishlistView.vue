@@ -225,9 +225,34 @@ onMounted(load)
   }
 }
 
-@media (max-width: 560px) {
+@media (max-width: 768px) {
   .wishlist__grid {
-    gap: 0.9rem;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .page {
+    padding-block: 1.5rem 3.5rem;
+  }
+
+  .page__head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.65rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .wishlist__grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .wishlist__grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

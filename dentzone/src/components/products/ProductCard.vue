@@ -384,4 +384,58 @@ const formatPrice = (value: number) => value.toLocaleString(locale.value === 'ar
   font-size: 0.75rem;
   color: var(--dz-muted);
 }
+
+@media (max-width: 560px) {
+  .product-card__media {
+    height: 7.8rem;
+  }
+
+  .product-card__body {
+    padding: 0.75rem 0.8rem 0.9rem;
+    gap: 0.35rem;
+  }
+
+  .product-card__name {
+    font-size: 0.88rem;
+    min-height: 2.3em;
+  }
+
+  .product-card__price {
+    font-size: 1.08rem;
+  }
+
+  .product-card__details,
+  .product-card__favorite,
+  .product-card__cart {
+    width: 1.85rem;
+    height: 1.85rem;
+  }
+
+  .product-card__media-actions {
+    top: 0.45rem;
+    inset-inline-end: 0.45rem;
+    gap: 0.25rem;
+  }
+
+  .product-card__sale {
+    top: 0.45rem;
+    inset-inline-start: 0.45rem;
+    padding: 0.18rem 0.5rem;
+    font-size: 0.65rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .product-card__media {
+    height: 7rem;
+  }
+
+  .product-card__body {
+    padding: 0.65rem 0.65rem 0.8rem;
+  }
+
+  .product-card__price {
+    font-size: 1rem;
+  }
+}
 </style>

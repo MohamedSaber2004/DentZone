@@ -339,18 +339,37 @@ const socialLinks = [
 @media (max-width: 1000px) {
   .app-footer__inner {
     grid-template-columns: 1.5fr 1fr 1fr;
+    gap: 1.5rem;
   }
 }
 
 @media (max-width: 800px) {
   .app-footer__inner {
     grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
   }
 }
 
 @media (max-width: 480px) {
+  .app-footer {
+    margin-top: 2rem;
+  }
+
   .app-footer__inner {
     grid-template-columns: 1fr;
+    gap: 1.75rem;
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
+
+  .app-footer__tagline {
+    max-width: 100%;
+  }
+
+  .app-footer__bottom .container {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.4rem;
   }
 }
 </style>

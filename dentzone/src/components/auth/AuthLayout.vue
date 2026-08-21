@@ -172,4 +172,28 @@ html[dir='rtl'] .auth-layout__glow {
   color: var(--dz-primary);
   flex-shrink: 0;
 }
+
+@media (max-width: 480px) {
+  .auth-layout {
+    padding: 1.5rem var(--dz-gutter) 2.5rem;
+  }
+
+  .auth-layout__card {
+    padding: 1.5rem 1.15rem 1.25rem;
+    gap: 1.25rem;
+  }
+
+  .auth-layout__title {
+    font-size: 1.35rem;
+  }
+
+  .auth-layout__logo-img {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .auth-layout__wordmark {
+    font-size: 1.35rem;
+  }
+}
 </style>

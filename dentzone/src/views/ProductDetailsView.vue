@@ -922,6 +922,69 @@ html[dir='rtl'] .page__back svg {
   }
 }
 
+@media (max-width: 768px) {
+  .page {
+    padding-block: 1.5rem 3.5rem;
+  }
+
+  .detail,
+  .page__loading {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .detail__price {
+    font-size: 1.6rem;
+  }
+
+  .detail__tabs-bar {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .detail__tabs-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .detail__tab {
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .detail__buy {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .detail__stepper {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .detail__add {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .detail__facts {
+    grid-template-columns: 1fr;
+  }
+
+  .detail__thumbs {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .detail__thumbs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .detail__thumb {
+    flex-shrink: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .skeleton {
     animation: none;

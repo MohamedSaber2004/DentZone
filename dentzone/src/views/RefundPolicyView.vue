@@ -227,4 +227,14 @@ onUnmounted(() => {
     opacity: 0.45;
   }
 }
+
+@media (max-width: 600px) {
+  .page {
+    padding-block: 1.5rem 3.5rem;
+  }
+
+  .page__title {
+    margin-bottom: 1.25rem;
+  }
+}
 </style>

@@ -833,19 +833,33 @@ html[dir='rtl'] .app-header__mobile-search-btn svg {
   }
 }
 
+/* ── Tablets: hide desktop search, keep nav ─────────────────────── */
 @media (max-width: 960px) {
   .app-header__search {
     display: none;
   }
 }
 
+/* ── Mid-range tablets (760–960): shrink nav link padding ─────────── */
+@media (max-width: 860px) and (min-width: 761px) {
+  .app-header__nav-link {
+    padding: 0.45rem 0.6rem;
+    font-size: 0.8rem;
+  }
+
+  .app-header__inner {
+    gap: 0.9rem;
+  }
+}
+
+/* ── Mobile: collapse nav, show hamburger ─────────────────────────── */
 @media (max-width: 760px) {
   .app-header__inner {
-    gap: 0.85rem;
+    gap: 0.75rem;
   }
 
   .app-header__actions {
-    gap: 0.4rem;
+    gap: 0.35rem;
   }
 
   .app-header__nav {
@@ -867,38 +881,58 @@ html[dir='rtl'] .app-header__mobile-search-btn svg {
   }
 
   .app-header__dropdown {
-    width: min(250px, calc(100vw - 2rem));
+    width: min(260px, calc(100vw - 1.5rem));
+  }
+
+  /* Mobile panel links: full-width, taller tap targets */
+  .app-header__panel-link {
+    padding: 0.85rem 1rem;
+    font-size: 0.98rem;
   }
 }
 
-@media (max-width: 400px) {
-  .app-header__brand {
-    gap: 0.5rem;
-  }
-
-  .app-header__wordmark {
-    font-size: 1.05rem;
-  }
-
-  .app-header__logo-img {
-    width: 2.1rem;
-    height: 2.1rem;
+/* ── Small phones ─────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .app-header__actions {
+    gap: 0.25rem;
   }
 
   .app-header__theme,
-  .app-header__menu {
-    width: 2.4rem;
-    height: 2.4rem;
-  }
-
-  .app-header__cart {
-    width: 2.4rem;
-    height: 2.4rem;
-  }
-
+  .app-header__cart,
+  .app-header__menu,
   .app-header__avatar {
-    width: 2.4rem;
-    height: 2.4rem;
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+}
+
+/* ── Extra-small phones ───────────────────────────────────────────── */
+@media (max-width: 400px) {
+  .app-header__brand {
+    gap: 0.4rem;
+  }
+
+  .app-header__wordmark {
+    font-size: 1rem;
+  }
+
+  .app-header__logo-img {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .app-header__theme,
+  .app-header__cart,
+  .app-header__menu,
+  .app-header__avatar {
+    width: 2.2rem;
+    height: 2.2rem;
+  }
+
+  /* Dropdown should not overflow on tiny screens */
+  .app-header__dropdown {
+    width: calc(100vw - 1rem);
+    inset-inline-end: -0.25rem;
   }
 }
 </style>

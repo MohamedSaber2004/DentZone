@@ -194,4 +194,26 @@ const linkTo = () => {
 html[dir='rtl'] .inventory-card__arrow svg {
   transform: scaleX(-1);
 }
+
+@media (max-width: 560px) {
+  .inventory-card {
+    padding: 0.85rem 0.95rem;
+    gap: 0.75rem;
+  }
+
+  .inventory-card__avatar {
+    width: 2.6rem;
+    height: 2.6rem;
+    font-size: 0.85rem;
+  }
+
+  .inventory-card__name {
+    font-size: 0.92rem;
+  }
+
+  .inventory-card__arrow {
+    width: 1.85rem;
+    height: 1.85rem;
+  }
+}
 </style>

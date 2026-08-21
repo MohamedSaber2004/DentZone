@@ -460,6 +460,28 @@ html[dir='rtl'] .page__back svg {
   }
 }
 
+@media (max-width: 600px) {
+  .page {
+    padding-block: 1.5rem 3.5rem;
+  }
+
+  .page__head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.65rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .page__filters {
+    gap: 0.4rem;
+  }
+
+  .filter-chip {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.78rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .skeleton {
     animation: none;

@@ -72,6 +72,24 @@ import { WHATSAPP_LINK } from './config/contact.config'
   box-shadow: 0 12px 28px rgb(37 211 102 / 55%);
 }
 
+@media (max-width: 640px) {
+  .app-whatsapp {
+    bottom: 1rem;
+    inset-inline-end: 1rem;
+    width: 2.9rem;
+    height: 2.9rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .app-whatsapp {
+    bottom: 0.75rem;
+    inset-inline-end: 0.75rem;
+    width: 2.65rem;
+    height: 2.65rem;
+  }
+}
+
 .page-enter-active,
 .page-leave-active {
   transition:

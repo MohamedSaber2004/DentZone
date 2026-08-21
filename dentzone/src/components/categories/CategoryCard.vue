@@ -147,4 +147,30 @@ const onImageError = () => {
 html[dir='rtl'] .category-card__arrow svg {
   transform: scaleX(-1);
 }
+
+@media (max-width: 560px) {
+  .category-card__media {
+    height: 7.5rem;
+  }
+
+  .category-card__body {
+    padding: 0.75rem 0.85rem 0.95rem;
+    gap: 0.2rem;
+  }
+
+  .category-card__name {
+    font-size: 0.92rem;
+  }
+
+  .category-card__desc {
+    font-size: 0.75rem;
+  }
+
+  .category-card__arrow {
+    top: 0.65rem;
+    inset-inline-end: 0.65rem;
+    width: 1.85rem;
+    height: 1.85rem;
+  }
+}
 </style>

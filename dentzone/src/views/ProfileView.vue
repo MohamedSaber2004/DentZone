@@ -1059,4 +1059,30 @@ const onDeleteAccount = async () => {
     width: 100%;
   }
 }
+
+@media (max-width: 400px) {
+  .profile__avatar-wrap {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .profile__avatar-actions {
+    align-items: center;
+  }
+
+  .profile__address {
+    padding: 0.6rem 0.75rem;
+    gap: 0.5rem;
+  }
+
+  .profile__address-actions {
+    gap: 0.25rem;
+  }
+
+  .profile__address-btn {
+    width: 1.85rem;
+    height: 1.85rem;
+  }
+}
 </style>

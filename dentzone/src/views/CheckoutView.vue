@@ -1143,8 +1143,13 @@ onMounted(load)
 }
 
 @media (max-width: 900px) {
+  .page {
+    padding-block: 1.5rem 3.5rem;
+  }
+
   .checkout__layout {
     grid-template-columns: 1fr;
+    gap: 1.25rem;
   }
 
   .checkout__summary {
@@ -1153,12 +1158,36 @@ onMounted(load)
 }
 
 @media (max-width: 560px) {
+  .page__head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.65rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .checkout__step {
+    padding: 0.95rem;
+  }
+
   .checkout__days {
     grid-template-columns: 1fr;
   }
 
+  .checkout__slots {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+
   .checkout__address-form-row {
     grid-template-columns: 1fr;
+  }
+
+  .checkout__coupon {
+    flex-direction: column;
+  }
+
+  .checkout__coupon :deep(.app-button) {
+    width: 100%;
+    justify-content: center;
   }
 
   .checkout__success-actions {

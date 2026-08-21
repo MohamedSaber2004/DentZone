@@ -657,17 +657,54 @@ html[dir='rtl'] .notif-card__link svg {
 
 @media (max-width: 560px) {
   .notifications-page {
-    padding: 2rem var(--dz-gutter) 3.5rem;
+    padding: 1.75rem var(--dz-gutter) 3.5rem;
+  }
+
+  .notifications-page__head {
+    margin-bottom: 1.25rem;
+  }
+
+  .push-card {
+    padding: 1rem;
+    gap: 0.85rem;
+  }
+
+  .push-card__content {
+    min-width: 0;
+  }
+
+  .push-card__action {
+    width: 100%;
+  }
+
+  .push-card__action :deep(.app-button) {
+    width: 100%;
+    justify-content: center;
   }
 
   .notif-card {
-    padding: 1.1rem;
-    gap: 0.85rem;
+    padding: 0.95rem 1rem;
+    gap: 0.75rem;
+  }
+
+  .notif-card__icon-wrap {
+    width: 2.2rem;
+    height: 2.2rem;
   }
 
   .notif-card__header {
     flex-direction: column;
     gap: 0.25rem;
+  }
+
+  .notif-card__footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .notif-card__link {
+    margin-inline-start: 0;
   }
 }
 </style>

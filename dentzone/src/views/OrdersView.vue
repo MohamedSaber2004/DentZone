@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { services } from '../di/container'
 import { t } from '../i18n'
@@ -494,12 +494,44 @@ onMounted(load)
 
 @media (max-width: 560px) {
   .orders-page {
-    padding: 2rem var(--dz-gutter) 3rem;
+    padding: 1.75rem var(--dz-gutter) 3rem;
+  }
+
+  .orders-page__header {
+    margin-bottom: 1.25rem;
+  }
+
+  .orders-page__filters {
+    gap: 0.35rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .orders-page__filter {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.76rem;
   }
 
   .order-card__head {
     flex-direction: column;
-    gap: 0.5rem;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding: 0.85rem 1rem;
+  }
+
+  .order-card__suborder {
+    padding: 0.75rem 1rem;
+  }
+
+  .order-card__summary {
+    padding: 0.75rem 1rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .order-card__item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
   }
 }
 

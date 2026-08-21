@@ -68,6 +68,27 @@
   --dz-gutter: 1.5rem;
 }
 
+@media (max-width: 960px) {
+  :root {
+    --dz-gutter: 1.25rem;
+    --dz-header-height: 70px;
+  }
+}
+
+@media (max-width: 640px) {
+  :root {
+    --dz-gutter: 1rem;
+    --dz-header-height: 64px;
+  }
+}
+
+@media (max-width: 380px) {
+  :root {
+    --dz-gutter: 0.75rem;
+    --dz-header-height: 60px;
+  }
+}
+
 :root[data-theme='dark'] {
   --dz-ink: #d4e5f2;
   --dz-ink-strong: #ffffff;

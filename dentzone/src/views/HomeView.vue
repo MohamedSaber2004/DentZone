@@ -873,18 +873,51 @@ watch(isAuthenticated, (authed) => {
   }
 
   .hero {
-    padding: 4rem var(--dz-gutter) 4rem;
+    padding: 3.5rem var(--dz-gutter) 3.5rem;
   }
 }
 
 @media (max-width: 560px) {
+  .hero {
+    padding: 2.5rem var(--dz-gutter) 2.75rem;
+  }
+
+  .hero__copy {
+    gap: 0.95rem;
+  }
+
+  .hero__subtitle {
+    font-size: 0.92rem;
+  }
+
   .hero__visual {
-    min-height: 240px;
+    min-height: 220px;
+  }
+
+  .hero__ring {
+    max-width: 250px;
+    max-height: 250px;
   }
 
   .hero__logo {
-    width: 7.25rem;
-    height: 7.25rem;
+    width: 6rem;
+    height: 6rem;
+  }
+
+  .hero__orbit {
+    width: 2.4rem;
+    height: 2.4rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .hero__actions {
+    width: 100%;
+  }
+
+  .hero__actions :deep(.app-button) {
+    width: 100%;
+    justify-content: center;
   }
 }
 
@@ -1567,31 +1600,84 @@ html[dir='rtl'] .catalog-section__footer-btn svg {
   transform: scaleX(-1);
 }
 
-@media (max-width: 560px) {
+/* ── Tablet Breakpoint ────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .categories__grid,
+  .featured__grid,
+  .catalog-section__grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1rem;
+  }
+}
+
+/* ── Mobile Breakpoint ────────────────────────────────────────── */
+@media (max-width: 600px) {
   .categories__head,
-  .catalog-section__head {
+  .catalog-section__head,
+  .featured__head--flex {
     flex-direction: column;
     align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .categories__all,
+  .catalog-section__view-all,
+  .featured__toggle-btn {
+    align-self: flex-start;
   }
 
   .categories {
-    padding: 3rem var(--dz-gutter);
+    padding: 2.5rem var(--dz-gutter);
   }
 
   .featured {
-    padding: 3rem var(--dz-gutter) 0;
+    padding: 2.5rem var(--dz-gutter) 0;
+  }
+
+  .featured--popular {
+    padding-top: 2.5rem;
+  }
+
+  .featured--flash {
+    padding-top: 2.25rem;
   }
 
   .providers {
-    padding: 2rem 0 3rem;
+    padding: 1.5rem 0 2.5rem;
   }
 
   .catalog-section {
-    padding: 3rem var(--dz-gutter) 4rem;
+    padding: 2.5rem var(--dz-gutter) 3.5rem;
+  }
+
+  .categories__grid,
+  .featured__grid,
+  .catalog-section__grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
   }
 
   .providers__skeleton-card {
-    flex-basis: 210px;
+    flex-basis: 200px;
+  }
+
+  .catalog-section__footer {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+  }
+
+  .catalog-section__footer-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ── Extra-Small Mobile Breakpoint ────────────────────────────── */
+@media (max-width: 360px) {
+  .categories__grid,
+  .featured__grid,
+  .catalog-section__grid {
+    grid-template-columns: 1fr;
   }
 }
 

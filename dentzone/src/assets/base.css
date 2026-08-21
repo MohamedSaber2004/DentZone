@@ -11,6 +11,12 @@ html {
   scroll-behavior: smooth;
 }
 
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
 body {
   min-height: 100vh;
   color: var(--dz-ink);
@@ -24,7 +30,10 @@ body {
 }
 
 img,
-svg {
+svg,
+video,
+canvas,
+iframe {
   display: block;
   max-width: 100%;
 }
