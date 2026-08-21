@@ -277,6 +277,20 @@ const logout = () => {
               <AppIcon name="bell" :size="16" />
               {{ t('nav.notifications') }}
             </RouterLink>
+
+            <div class="app-header__dropdown-divider" />
+
+            <button type="button" class="app-header__dropdown-link" @click="toggleLocale">
+              <span class="app-header__dropdown-lang-icon">{{ locale === 'en' ? 'ع' : 'EN' }}</span>
+              <span>{{ locale === 'en' ? 'العربية' : 'English' }}</span>
+            </button>
+            <button type="button" class="app-header__dropdown-link" @click="toggleTheme">
+              <AppIcon :name="theme === 'dark' ? 'sun' : 'moon'" :size="16" />
+              <span>{{ theme === 'dark' ? t('nav.lightMode') : t('nav.darkMode') }}</span>
+            </button>
+
+            <div class="app-header__dropdown-divider" />
+
             <button type="button" class="app-header__dropdown-link app-header__dropdown-link--danger" @click="logout">
               <AppIcon name="logout" :size="16" />
               {{ t('nav.logout') }}
@@ -353,6 +367,17 @@ const logout = () => {
           <AppIcon name="bell" :size="17" />
           {{ t('nav.notifications') }}
         </RouterLink>
+
+        <div class="app-header__panel-divider" />
+
+        <button type="button" class="app-header__panel-link" @click="toggleLocale">
+          <span class="app-header__dropdown-lang-icon">{{ locale === 'en' ? 'ع' : 'EN' }}</span>
+          <span>{{ locale === 'en' ? 'العربية' : 'English' }}</span>
+        </button>
+        <button type="button" class="app-header__panel-link" @click="toggleTheme">
+          <AppIcon :name="theme === 'dark' ? 'sun' : 'moon'" :size="17" />
+          <span>{{ theme === 'dark' ? t('nav.lightMode') : t('nav.darkMode') }}</span>
+        </button>
       </div>
     </nav>
   </header>
@@ -754,6 +779,33 @@ html[dir='rtl'] .app-header__mobile-search-btn svg {
 .app-header__dropdown-link--danger:hover {
   background: var(--dz-danger-soft);
   color: var(--dz-danger);
+}
+
+.app-header__dropdown-divider {
+  height: 1px;
+  background: var(--dz-border);
+  margin: 0.35rem 0.2rem;
+}
+
+.app-header__panel-divider {
+  height: 1px;
+  background: var(--dz-border);
+  margin: 0.5rem 0.5rem;
+}
+
+.app-header__dropdown-lang-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: var(--dz-radius-sm);
+  background: var(--dz-surface-soft);
+  color: var(--dz-primary-strong);
+  font-family: var(--dz-font-display);
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .app-header__menu {

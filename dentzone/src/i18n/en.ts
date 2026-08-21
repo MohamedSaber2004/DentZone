@@ -26,6 +26,8 @@ export const en: Messages = {
     closeMenu: 'Close menu',
     toggleTheme: 'Toggle dark mode',
     toggleLanguage: 'Switch to Arabic',
+    darkMode: 'Dark Mode',
+    lightMode: 'Light Mode',
     login: 'Log in',
     profile: 'Profile',
     myOrders: 'My orders',

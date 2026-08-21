@@ -24,6 +24,8 @@ export type Messages = {
     closeMenu: string
     toggleTheme: string
     toggleLanguage: string
+    darkMode: string
+    lightMode: string
     login: string
     profile: string
     myOrders: string

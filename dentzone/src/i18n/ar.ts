@@ -26,6 +26,8 @@ export const ar: Messages = {
     closeMenu: 'إغلاق القائمة',
     toggleTheme: 'تبديل الوضع الداكن',
     toggleLanguage: 'التبديل إلى الإنجليزية',
+    darkMode: 'الوضع الداكن',
+    lightMode: 'الوضع الفاتح',
     login: 'تسجيل الدخول',
     profile: 'الملف الشخصي',
     myOrders: 'طلباتي',
