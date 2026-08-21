@@ -476,8 +476,8 @@ const logout = () => {
 
 .app-header__logo-img {
   display: block;
-  width: 2.85rem;
-  height: 2.85rem;
+  width: 3.35rem;
+  height: 3.35rem;
   border-radius: var(--dz-radius-md);
   object-fit: contain;
   box-shadow: 0 4px 14px rgb(0 0 0 / 0.12);
@@ -491,7 +491,7 @@ const logout = () => {
 
 .app-header__wordmark {
   font-family: var(--dz-font-display);
-  font-size: 1.42rem;
+  font-size: 1.52rem;
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--dz-ink);
@@ -1033,16 +1033,16 @@ html[dir='rtl'] .app-header__mobile-search-btn svg {
   }
 
   .app-header__brand {
-    gap: 0.5rem;
+    gap: 0.55rem;
   }
 
   .app-header__logo-img {
-    width: 2.35rem;
-    height: 2.35rem;
+    width: 2.85rem;
+    height: 2.85rem;
   }
 
   .app-header__wordmark {
-    font-size: 1.25rem;
+    font-size: 1.35rem;
   }
 
   .app-header__dropdown {
@@ -1069,16 +1069,16 @@ html[dir='rtl'] .app-header__mobile-search-btn svg {
   }
 
   .app-header__brand {
-    gap: 0.4rem;
+    gap: 0.45rem;
   }
 
   .app-header__logo-img {
-    width: 2.1rem;
-    height: 2.1rem;
+    width: 2.5rem;
+    height: 2.5rem;
   }
 
   .app-header__wordmark {
-    font-size: 1.12rem;
+    font-size: 1.2rem;
   }
 
   .app-header__cart-badge {
@@ -1101,16 +1101,16 @@ html[dir='rtl'] .app-header__mobile-search-btn svg {
   }
 
   .app-header__brand {
-    gap: 0.3rem;
+    gap: 0.35rem;
   }
 
   .app-header__logo-img {
-    width: 1.85rem;
-    height: 1.85rem;
+    width: 2.2rem;
+    height: 2.2rem;
   }
 
   .app-header__wordmark {
-    font-size: 0.98rem;
+    font-size: 1.05rem;
   }
 
   .app-header__cart,

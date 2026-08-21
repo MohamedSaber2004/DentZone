@@ -169,8 +169,8 @@ const socialLinks = [
 
 .app-footer__logo-img {
   display: block;
-  width: 2.6rem;
-  height: 2.6rem;
+  width: 3.2rem;
+  height: 3.2rem;
   border-radius: var(--dz-radius-md);
   object-fit: contain;
   box-shadow: 0 4px 12px rgb(0 0 0 / 0.1);

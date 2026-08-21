@@ -305,7 +305,10 @@ watch(isAuthenticated, (authed) => {
           <circle class="hero__ring-dash" cx="160" cy="160" r="122" />
         </svg>
 
-        <img src="/denta-logo.png" alt="DentZone" class="hero__logo" />
+        <div class="hero__logo-card">
+          <div class="hero__logo-glow" />
+          <img src="/denta-logo.png" alt="DentZone" class="hero__logo" />
+        </div>
 
         <span class="hero__orbit hero__orbit--one"><AppIcon name="brush" :size="20" /></span>
         <span class="hero__orbit hero__orbit--two"><AppIcon name="tube" :size="20" /></span>
@@ -776,16 +779,42 @@ watch(isAuthenticated, (authed) => {
   opacity: 0.75;
 }
 
+.hero__logo-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 11.5rem;
+  height: 11.5rem;
+  border-radius: 28px;
+  background: linear-gradient(145deg, #ffffff 0%, #f4f8fc 100%);
+  border: 2.5px solid var(--dz-gold);
+  box-shadow:
+    0 0 0 6px rgb(255 255 255 / 0.18),
+    0 24px 60px rgb(0 0 0 / 0.55),
+    0 0 45px rgb(247 147 59 / 0.35);
+  padding: 0.85rem;
+  z-index: 2;
+  animation: hero-breathe 5s ease-in-out infinite;
+}
+
+.hero__logo-glow {
+  position: absolute;
+  inset: -1.75rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(247 147 59 / 0.45) 0%, rgb(255 255 255 / 0.2) 45%, transparent 70%);
+  filter: blur(18px);
+  pointer-events: none;
+  z-index: -1;
+}
+
 .hero__logo {
   display: block;
-  width: 8.75rem;
-  height: 8.75rem;
-  border-radius: var(--dz-radius-lg);
+  width: 100%;
+  height: 100%;
+  border-radius: 18px;
   object-fit: contain;
-  box-shadow:
-    0 18px 44px rgb(0 0 0 / 0.45),
-    inset 0 0 0 1px rgb(255 255 255 / 0.12);
-  animation: hero-breathe 5s ease-in-out infinite;
+  filter: drop-shadow(0 4px 12px rgb(0 0 0 / 0.2));
 }
 
 .hero__orbit {
@@ -899,9 +928,11 @@ watch(isAuthenticated, (authed) => {
     max-height: 250px;
   }
 
-  .hero__logo {
-    width: 6rem;
-    height: 6rem;
+  .hero__logo-card {
+    width: 8.5rem;
+    height: 8.5rem;
+    border-radius: 20px;
+    padding: 0.65rem;
   }
 
   .hero__orbit {
@@ -928,7 +959,7 @@ watch(isAuthenticated, (authed) => {
   }
 
   .hero__ring,
-  .hero__logo {
+  .hero__logo-card {
     animation: none;
   }
 }

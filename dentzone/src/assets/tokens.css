@@ -64,35 +64,35 @@
     'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', monospace;
 
   --dz-max-width: 1200px;
-  --dz-header-height: 72px;
+  --dz-header-height: 78px;
   --dz-gutter: 1.5rem;
 }
 
 @media (max-width: 960px) {
   :root {
     --dz-gutter: 1.25rem;
-    --dz-header-height: 68px;
+    --dz-header-height: 72px;
   }
 }
 
 @media (max-width: 768px) {
   :root {
     --dz-gutter: 1rem;
-    --dz-header-height: 62px;
+    --dz-header-height: 66px;
   }
 }
 
 @media (max-width: 480px) {
   :root {
     --dz-gutter: 0.75rem;
-    --dz-header-height: 58px;
+    --dz-header-height: 60px;
   }
 }
 
 @media (max-width: 360px) {
   :root {
     --dz-gutter: 0.5rem;
-    --dz-header-height: 54px;
+    --dz-header-height: 56px;
   }
 }
 
