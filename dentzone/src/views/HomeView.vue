@@ -46,32 +46,7 @@ const featuredProducts = computed(() => home.value?.products ?? [])
 const flashSales = computed(() => home.value?.flashSales ?? [])
 
 // --- 1. Top Providers Section (Independent Endpoint /api/Users/get-top-providers) ---
-const topProviders = ref<HomeProviderDto[]>([
-  {
-    id: 'd5cc331b-7ff4-47f4-810d-02418a467ff1',
-    fullName: 'Dental Capital',
-    userName: 'Dentalcapitale',
-    email: 'Dentalcapitale@gmail.com',
-    isAvailableNow: false,
-    profileImage: 'https://dentzoneapi.runasp.net/Uploads/providers/04d797fc-901c-4a98-bbbb-d0d683977a13.jpg',
-  },
-  {
-    id: 'b0ad0aa7-b8c8-48ea-affa-56f10e9f6dc3',
-    fullName: 'BAZZAR  DENT',
-    userName: 'bazzardent',
-    email: 'bazzardent@gmail.com',
-    isAvailableNow: false,
-    profileImage: 'https://dentzoneapi.runasp.net/Uploads/providers/f8ebb260-8750-48c6-b6fc-b6f4dcc5bf2e.jpeg',
-  },
-  {
-    id: '754c84ef-6718-442d-94c4-db69f661e9a8',
-    fullName: 'MCS Dental Sector',
-    userName: 'ahmedmagdyfox',
-    email: 'ahmedmagdyfox@gmail.com',
-    isAvailableNow: false,
-    profileImage: 'https://dentzoneapi.runasp.net/Uploads/providers/df27ba13-e98c-4892-bf8b-0f1ea6aa3f26.jpg',
-  },
-])
+const topProviders = ref<HomeProviderDto[]>([])
 const topProvidersLoading = ref(false)
 const topProvidersError = ref(false)
 
