@@ -15,6 +15,7 @@ import { ApiNotificationRepository } from '../data/repositories/api-notification
 import { FirebaseMessagingService } from '../infrastructure/firebase/firebase-messaging.service'
 import { AuthService } from '../application/auth.service'
 import { CartService } from '../application/cart.service'
+import { WishlistService } from '../application/wishlist.service'
 
 type AnyConstructor = new (...args: never[]) => unknown
 
@@ -88,12 +89,20 @@ container.register(CartService, () =>
   ),
 )
 
+container.register(WishlistService, () =>
+  new WishlistService(
+    container.resolve<ApiProductRepository>(ApiProductRepository),
+    container.resolve<AuthService>(AuthService),
+  ),
+)
+
 export const services = {
   tokenStore: container.resolve<TokenStore>(TokenStore),
   authBridge: container.resolve<AuthBridge>(AuthBridge),
   modalService: container.resolve<ModalService>(ModalService),
   authService: container.resolve<AuthService>(AuthService),
   cartService: container.resolve<CartService>(CartService),
+  wishlistService: container.resolve<WishlistService>(WishlistService),
   categoryRepository: container.resolve<ApiCategoryRepository>(ApiCategoryRepository),
   productRepository: container.resolve<ApiProductRepository>(ApiProductRepository),
   policyRepository: container.resolve<ApiPolicyRepository>(ApiPolicyRepository),

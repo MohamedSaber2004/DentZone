@@ -53,6 +53,7 @@ export const PRODUCT_ROUTES = {
     return `${base}/Products/search-product${suffix ? `?${suffix}` : ''}`
   },
   byId: (id: string, lang: number) => `${base}/Products/${id}?lang=${lang}`,
+  pricesByProduct: (productId: string) => `${base}/ProductPrices/by-product/${productId}`,
   toggleFavorite: (userId: string, productId: string, productPriceId: string) => {
     const query = new URLSearchParams({ userId, productId, productPriceId })
     return `${base}/Products/toggle-Favorite?${query.toString()}`

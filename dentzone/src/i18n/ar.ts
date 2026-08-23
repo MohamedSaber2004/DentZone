@@ -18,6 +18,7 @@ export const ar: Messages = {
     shop: 'المتجر',
     allProducts: 'المنتجات',
     categories: 'التصنيفات',
+    vendors: 'الموردون',
     privacyPolicy: 'سياسة الخصوصية',
     termsConditions: 'الشروط والأحكام',
     whitening: 'التبييض',
@@ -330,6 +331,9 @@ export const ar: Messages = {
     removedToast: 'تمت إزالة {name} من المفضلة',
     clearedToast: 'تم مسح المفضلة',
     errorToast: 'تعذر تحديث قائمة المفضلة. حاول مرة أخرى.',
+    forbiddenToast: 'حفظ المفضلة غير متاح لحسابك حالياً.',
+    viewWishlist: 'عرض المفضلة',
+    loginToast: 'سجّل الدخول لحفظ المنتجات في المفضلة',
   },
   chat: {
     agentName: 'دعم DentZone',
@@ -568,9 +572,6 @@ export const ar: Messages = {
     pushNotSupported: 'الإشعارات الفورية غير مدعومة على هذا الجهاز/المتصفح',
     pushPromptTitle: 'احصل على تحديثات فورية',
     pushPromptDesc: 'فعّل إشعارات المتصفح لتصلك تنبيهات فورية بحالة طلباتك والعروض الحصرية.',
-    copyToken: 'نسخ رمز الجهاز (Token)',
-    tokenCopied: 'تم نسخ رمز الجهاز إلى الحافظة',
-    deviceToken: 'رمز جهاز FCM',
   },
 }
 

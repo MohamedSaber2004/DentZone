@@ -10,12 +10,11 @@ import ProductCard from '../components/products/ProductCard.vue'
 import type { ProviderProductDto } from '../domain/models/product'
 
 const router = useRouter()
-const { authService, productRepository, cartService } = services
+const { productRepository, cartService, wishlistService } = services
 
 const products = ref<ProviderProductDto[]>([])
 const loading = ref(true)
 const error = ref(false)
-const removingIds = ref<Set<string>>(new Set())
 
 const load = async () => {
   loading.value = true
@@ -39,19 +38,13 @@ const detailsTo = (product: ProviderProductDto) => ({
 })
 
 const remove = async (product: ProviderProductDto) => {
-  const user = authService.user.value
-  if (!user || removingIds.value.has(product.productPriceId)) return
-  removingIds.value = new Set(removingIds.value).add(product.productPriceId)
-  try {
-    await productRepository.toggleFavorite(user.id, product.productId, product.productPriceId)
-    products.value = products.value.filter((p) => p.productPriceId !== product.productPriceId)
-  } catch {
-    products.value = products.value.filter((p) => p.productPriceId !== product.productPriceId)
-  } finally {
-    const next = new Set(removingIds.value)
-    next.delete(product.productPriceId)
-    removingIds.value = next
-  }
+  const removed = await wishlistService.toggle({
+    productId: product.productId,
+    productPriceId: product.productPriceId,
+    name: product.productName,
+  })
+  if (!removed) return
+  products.value = products.value.filter((p) => p.productPriceId !== product.productPriceId)
 }
 
 const addToCart = (product: ProviderProductDto) => {
@@ -115,7 +108,7 @@ onMounted(load)
         :key="product.productPriceId"
         :product="product"
         :favorite="true"
-        :favorite-busy="removingIds.has(product.productPriceId)"
+        :favorite-busy="wishlistService.busyIds.value.has(product.productId)"
         :details-to="detailsTo(product)"
         @toggle-favorite="remove"
         @add-to-cart="addToCart"

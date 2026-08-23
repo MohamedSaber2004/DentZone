@@ -13,7 +13,7 @@ import type { ProviderProductDto } from '../domain/models/product'
 
 const route = useRoute()
 const router = useRouter()
-const { productRepository, categoryRepository, authService, cartService } = services
+const { productRepository, categoryRepository, cartService, wishlistService } = services
 
 const PAGE_SIZE = 15
 
@@ -25,8 +25,6 @@ const loading = ref(true)
 const error = ref(false)
 const search = ref(typeof route.query.search === 'string' ? route.query.search : '')
 const currentPage = ref(1)
-const favoriteIds = ref<Set<string>>(new Set())
-const favoriteBusyIds = ref<Set<string>>(new Set())
 
 const categories = ref<CategoryDto[]>([])
 const selectedCategory = ref(typeof route.query.cat === 'string' ? route.query.cat : '')
@@ -36,9 +34,9 @@ const hasQuery = computed(() => search.value.trim().length > 0)
 function normalizeText(text: string): string {
   return text
     .toLowerCase()
-    .replace(/[أإآ]/g, 'ا')
-    .replace(/ة/g, 'ه')
-    .replace(/ى/g, 'ي')
+    .replace(/[Ø£Ø¥Ø¢]/g, 'Ø§')
+    .replace(/Ø©/g, 'Ù‡')
+    .replace(/Ù‰/g, 'ÙŠ')
     .trim()
 }
 
@@ -69,47 +67,13 @@ const paginatedProducts = computed(() => {
   return filteredProducts.value.slice(start, start + PAGE_SIZE)
 })
 
-const loadFavorites = async () => {
-  if (!authService.isAuthenticated) return
-  try {
-    const list = await productRepository.getMyFavorites()
-    favoriteIds.value = new Set(list.map((p) => p.productPriceId))
-  } catch {
-    // Favorites are a secondary enhancement; a failed load keeps cards un-favorited.
-  }
-}
-
-const toggleFavorite = async (product: ProviderProductDto) => {
-  const user = authService.user.value
-  if (!user) {
-    void router.push({ name: 'login', query: { redirect: route.fullPath } })
-    return
-  }
-  if (favoriteBusyIds.value.has(product.productPriceId)) return
-  const wasFavorite = favoriteIds.value.has(product.productPriceId)
-  favoriteBusyIds.value = new Set(favoriteBusyIds.value).add(product.productPriceId)
-  const next = new Set(favoriteIds.value)
-  if (wasFavorite) {
-    next.delete(product.productPriceId)
-  } else {
-    next.add(product.productPriceId)
-  }
-  favoriteIds.value = next
-  try {
-    await productRepository.toggleFavorite(user.id, product.productId, product.productPriceId)
-  } catch {
-    const restored = new Set(favoriteIds.value)
-    if (wasFavorite) {
-      restored.add(product.productPriceId)
-    } else {
-      restored.delete(product.productPriceId)
-    }
-    favoriteIds.value = restored
-  } finally {
-    const busy = new Set(favoriteBusyIds.value)
-    busy.delete(product.productPriceId)
-    favoriteBusyIds.value = busy
-  }
+const toggleFavorite = (product: ProviderProductDto) => {
+  void wishlistService.toggle({
+    productId: product.productId,
+    productPriceId: product.productPriceId,
+    inventoryUserId: product.inventoryUserId,
+    name: product.productName,
+  })
 }
 
 const addToCart = (product: ProviderProductDto) => {
@@ -206,7 +170,7 @@ onMounted(() => {
   selectedCategory.value = typeof route.query.cat === 'string' ? route.query.cat : ''
   void loadCategories()
   void load()
-  void loadFavorites()
+  void wishlistService.refresh()
 })
 
 watch(
@@ -323,8 +287,8 @@ watch(
         v-for="product in paginatedProducts"
         :key="product.productPriceId || product.productId"
         :product="product"
-        :favorite="favoriteIds.has(product.productPriceId)"
-        :favorite-busy="favoriteBusyIds.has(product.productPriceId)"
+        :favorite="wishlistService.isFavorite(product.productId, product.productPriceId)"
+        :favorite-busy="wishlistService.busyIds.value.has(product.productId)"
         :details-to="{
           name: 'product-details',
           params: { inventoryUserId: inventoryId(), productId: product.productId },

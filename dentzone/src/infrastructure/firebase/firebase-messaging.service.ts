@@ -14,7 +14,8 @@ import { toastService } from '../feedback/toast.service'
 
 export type PushNotificationCallback = (payload: MessagePayload) => void
 
-const LOCAL_STORAGE_FCM_TOKEN_KEY = 'dz_fcm_token'
+/** Legacy cache key used by older builds — removed on init so tokens are never persisted. */
+const LEGACY_FCM_TOKEN_KEY = 'dz_fcm_token'
 
 export class FirebaseMessagingService {
   private app: FirebaseApp | null = null
@@ -25,9 +26,7 @@ export class FirebaseMessagingService {
   private tokenListeners: Set<(token: string) => void> = new Set()
   private initialized = false
 
-  readonly token: Ref<string | null> = ref(
-    typeof window !== 'undefined' ? localStorage.getItem(LOCAL_STORAGE_FCM_TOKEN_KEY) : null,
-  )
+  readonly token: Ref<string | null> = ref(null)
   readonly permission: Ref<NotificationPermission> = ref(
     typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'default',
   )
@@ -43,6 +42,10 @@ export class FirebaseMessagingService {
     this.initialized = true
 
     try {
+      // Purge any token cached by older builds — the token must never be
+      // persisted or shown to the user; it only lives in memory.
+      localStorage.removeItem(LEGACY_FCM_TOKEN_KEY)
+
       // 1. Initialize Firebase App
       if (!getApps().length) {
         this.app = initializeApp(FIREBASE_CONFIG)
@@ -171,8 +174,6 @@ export class FirebaseMessagingService {
 
       if (currentToken) {
         this.token.value = currentToken
-        localStorage.setItem(LOCAL_STORAGE_FCM_TOKEN_KEY, currentToken)
-        console.log('[FirebaseMessagingService] FCM Device Token:', currentToken)
         this.tokenListeners.forEach((cb) => {
           try {
             cb(currentToken)
@@ -246,21 +247,6 @@ export class FirebaseMessagingService {
     this.listeners.add(callback)
     return () => {
       this.listeners.delete(callback)
-    }
-  }
-
-  /**
-   * Copies the FCM device token to the clipboard (useful for testing and debugging).
-   */
-  async copyToken(): Promise<boolean> {
-    if (!this.token.value) return false
-    try {
-      await navigator.clipboard.writeText(this.token.value)
-      toastService.success('Token copied to clipboard!')
-      return true
-    } catch {
-      toastService.error('Failed to copy token.')
-      return false
     }
   }
 

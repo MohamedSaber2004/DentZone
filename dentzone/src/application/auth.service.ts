@@ -147,10 +147,8 @@ export class AuthService {
     const userId = this.user.value?.id
     if (!userId) return
 
-    let fcmToken =
-      token ??
-      this.firebaseMessagingService?.token.value ??
-      (typeof localStorage !== 'undefined' ? localStorage.getItem('dz_fcm_token') : null)
+    // The token only ever lives in memory (passed in or freshly retrieved) — never localStorage.
+    let fcmToken = token ?? this.firebaseMessagingService?.token.value ?? null
 
     if (!fcmToken && this.firebaseMessagingService) {
       try {
@@ -168,7 +166,6 @@ export class AuthService {
     try {
       await this.authRepository.saveFcmToken({ userId, fcmToken })
       this.lastSyncedFcmKey = syncKey
-      console.log('[AuthService] FCM device token registered for user:', userId)
     } catch (err) {
       console.warn('[AuthService] Failed to save FCM token to backend:', err)
     }

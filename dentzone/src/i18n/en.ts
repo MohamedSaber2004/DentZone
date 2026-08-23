@@ -18,6 +18,7 @@ export const en: Messages = {
     shop: 'Shop',
     allProducts: 'Products',
     categories: 'Categories',
+    vendors: 'Suppliers',
     privacyPolicy: 'Privacy Policy',
     termsConditions: 'Terms & Conditions',
     whitening: 'Whitening',
@@ -332,6 +333,9 @@ export const en: Messages = {
     removedToast: '{name} removed from wishlist',
     clearedToast: 'Wishlist cleared',
     errorToast: 'Could not update your wishlist. Please try again.',
+    forbiddenToast: 'Saving favourites is not available for your account yet.',
+    viewWishlist: 'View wishlist',
+    loginToast: 'Sign in to save items to your wishlist',
   },
   chat: {
     agentName: 'DentZone Care',
@@ -568,9 +572,6 @@ export const en: Messages = {
     pushNotSupported: 'Push notifications not supported on this device/browser',
     pushPromptTitle: 'Get real-time updates',
     pushPromptDesc: 'Enable browser push notifications to get instant alerts on order updates and flash offers.',
-    copyToken: 'Copy device token',
-    tokenCopied: 'Device token copied to clipboard',
-    deviceToken: 'FCM Device Token',
   },
 }
 

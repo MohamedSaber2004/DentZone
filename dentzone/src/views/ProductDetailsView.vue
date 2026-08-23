@@ -11,7 +11,7 @@ import type { ProductDetailDto, ProductPriceDto } from '../domain/models/product
 
 const route = useRoute()
 const router = useRouter()
-const { productRepository, policyRepository, authService, cartService } = services
+const { productRepository, policyRepository, cartService, wishlistService } = services
 
 const productId = () => (typeof route.params.productId === 'string' ? route.params.productId : '')
 const inventoryUserId = () =>
@@ -46,7 +46,6 @@ const load = async () => {
   detail.value = null
   activeImage.value = 0
   imageFailed.value = false
-  favorite.value = false
   quantity.value = 1
   try {
     detail.value = await productRepository.getProductById(productId(), lang.value)
@@ -59,19 +58,7 @@ const load = async () => {
   } finally {
     loading.value = false
   }
-  void seedFavorite()
-}
-
-const seedFavorite = async () => {
-  if (!authService.user.value) return
-  const price = currentPrice.value
-  if (!price) return
-  try {
-    const list = await productRepository.getMyFavorites()
-    favorite.value = list.some((p) => p.productId === price.productId && p.productPriceId === price.id)
-  } catch {
-    // Favorites are a secondary enhancement; a failed load keeps the heart un-favorited.
-  }
+  void wishlistService.refresh()
 }
 
 const displayName = computed(() => {
@@ -120,8 +107,14 @@ const refundLoading = ref(false)
 const refundFailed = ref(false)
 const refundLoadedLocale = ref('')
 const refundFrameRef = ref<HTMLIFrameElement | null>(null)
-const favorite = ref(false)
-const favoriteBusy = ref(false)
+const favorite = computed(() => {
+  const price = currentPrice.value
+  return price ? wishlistService.isFavorite(price.productId, price.id) : false
+})
+const favoriteBusy = computed(() => {
+  const price = currentPrice.value
+  return price ? wishlistService.busyIds.value.has(price.productId) : false
+})
 const quantity = ref(1)
 
 const cartLimit = computed(() => {
@@ -155,20 +148,15 @@ const addToCart = () => {
   })
 }
 
-const toggleFavorite = async () => {
-  const user = authService.user.value
+const toggleFavorite = () => {
   const price = currentPrice.value
-  if (!user || !price || favoriteBusy.value) return
-  favoriteBusy.value = true
-  const previous = favorite.value
-  favorite.value = !previous
-  try {
-    await productRepository.toggleFavorite(user.id, price.productId, price.id)
-  } catch {
-    favorite.value = previous
-  } finally {
-    favoriteBusy.value = false
-  }
+  if (!price) return
+  void wishlistService.toggle({
+    productId: price.productId,
+    productPriceId: price.id,
+    inventoryUserId: detail.value?.inventoryUserId || price.inventoryUserId,
+    name: displayName.value || detail.value?.productName || '',
+  })
 }
 
 const fetchRefundPolicy = (lang: number): Promise<string> => policyRepository.getRefundPolicy(lang)

@@ -102,6 +102,15 @@ export interface ProviderProductDto {
   isFavorite?: boolean
 }
 
+/** Lightweight per-supplier price row from /api/ProductPrices/by-product/{productId}. */
+export interface ProductPriceOptionDto {
+  productPriceId: string
+  salesPrice: number
+  effectiveSalesPrice: number
+  stockQuantity: number
+  inventoryUserId: string
+}
+
 export interface FavoriteProductDto {
   productId: string
   productPriceId: string

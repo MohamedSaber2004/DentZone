@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { services } from '../../di/container'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-const { authService, cartService, notificationRepository } = services
+const { authService, cartService, notificationRepository, wishlistService } = services
 import { useRouter } from 'vue-router'
 import { t, locale, setLocale } from '../../i18n'
 import { theme, toggleTheme } from '../../application/theme.service'
@@ -33,6 +33,7 @@ const onHeaderSearch = () => {
 const isAuthenticated = computed(() => authService.isAuthenticated)
 const user = computed(() => authService.user.value)
 const cartCount = computed(() => cartService.count.value)
+const wishlistCount = computed(() => wishlistService.count.value)
 
 const loadNotifCount = async () => {
   if (!authService.isAuthenticated || !user.value?.id) {
@@ -175,6 +176,14 @@ const logout = () => {
           {{ t('nav.categories') }}
         </RouterLink>
         <RouterLink
+          to="/vendors"
+          class="app-header__nav-link"
+          active-class="app-header__nav-link--active"
+        >
+          <AppIcon name="truck" :size="16" />
+          {{ t('nav.vendors') }}
+        </RouterLink>
+        <RouterLink
           v-if="isAuthenticated"
           to="/wishlist"
           class="app-header__nav-link"
@@ -182,6 +191,7 @@ const logout = () => {
         >
           <AppIcon name="heart" :size="16" />
           {{ t('nav.wishlist') }}
+          <span v-if="wishlistCount > 0" :key="wishlistCount" class="app-header__nav-count">{{ wishlistCount > 99 ? '99+' : wishlistCount }}</span>
         </RouterLink>
         <RouterLink
           v-if="isAuthenticated"
@@ -283,6 +293,7 @@ const logout = () => {
             <RouterLink to="/wishlist" class="app-header__dropdown-link" @click="closeUserMenu">
               <AppIcon name="heart" :size="16" />
               {{ t('nav.wishlist') }}
+              <span v-if="wishlistCount > 0" class="app-header__nav-count">{{ wishlistCount > 99 ? '99+' : wishlistCount }}</span>
             </RouterLink>
             <RouterLink to="/orders" class="app-header__dropdown-link" @click="closeUserMenu">
               <AppIcon name="box" :size="16" />
@@ -353,6 +364,15 @@ const logout = () => {
           {{ t('nav.categories') }}
         </RouterLink>
         <RouterLink
+          to="/vendors"
+          class="app-header__panel-link"
+          active-class="app-header__nav-link--active"
+          @click="closeMobileMenu"
+        >
+          <AppIcon name="truck" :size="17" />
+          {{ t('nav.vendors') }}
+        </RouterLink>
+        <RouterLink
           v-if="isAuthenticated"
           to="/wishlist"
           class="app-header__panel-link"
@@ -361,6 +381,7 @@ const logout = () => {
         >
           <AppIcon name="heart" :size="17" />
           {{ t('nav.wishlist') }}
+          <span v-if="wishlistCount > 0" class="app-header__nav-count">{{ wishlistCount > 99 ? '99+' : wishlistCount }}</span>
         </RouterLink>
         <RouterLink
           v-if="isAuthenticated"
@@ -500,6 +521,8 @@ const logout = () => {
   color: var(--dz-ink);
   white-space: nowrap;
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .app-header__wordmark span {
@@ -547,6 +570,38 @@ const logout = () => {
   font-weight: 700;
 }
 
+.app-header__nav-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  padding: 0 0.3rem;
+  border-radius: var(--dz-radius-full);
+  background: var(--dz-danger, #e11d48);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1;
+  animation: nav-count-pop 0.25s ease;
+}
+
+.app-header__dropdown-link .app-header__nav-count,
+.app-header__panel-link .app-header__nav-count {
+  margin-inline-start: auto;
+}
+
+@keyframes nav-count-pop {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
 .app-header__search {
   display: flex;
   align-items: center;
@@ -582,6 +637,7 @@ const logout = () => {
   font-size: 0.85rem;
   color: var(--dz-ink);
   outline: none;
+  text-overflow: ellipsis;
 }
 
 .app-header__search-input::placeholder {
@@ -887,6 +943,7 @@ const logout = () => {
   border-bottom: 1px solid var(--dz-border);
   box-shadow: var(--dz-shadow);
   animation: header-panel-in 0.22s ease;
+  padding-bottom: env(safe-area-inset-bottom, 0);
 }
 
 .app-header__panel-inner {
@@ -947,21 +1004,42 @@ const logout = () => {
   }
 }
 
-/* ── Tablets (≤ 900px): collapse nav to panel, search stays in topbar ─ */
-@media (max-width: 900px) {
-  .app-header__search {
-    display: flex;
-    min-width: 0;
-    max-width: none;
-    padding: 0.35rem 0.75rem;
+/* ── Small laptops (≤ 1320px): compact links so 6 items still fit ── */
+@media (max-width: 1320px) {
+  .app-header__nav {
+    gap: 0.15rem;
   }
 
+  .app-header__nav-link {
+    padding: 0.45rem 0.62rem;
+    gap: 0.3rem;
+    font-size: 0.79rem;
+  }
+
+  .app-header__search {
+    min-width: 110px;
+    max-width: 180px;
+  }
+}
+
+/* ── Tablets & small laptops (≤ 1120px): collapse nav into drawer ── */
+@media (max-width: 1120px) {
   .app-header__nav {
     display: none;
   }
 
   .app-header__menu {
     display: flex;
+  }
+}
+
+/* ── Tablets (≤ 900px): search takes remaining topbar space ──────── */
+@media (max-width: 900px) {
+  .app-header__search {
+    display: flex;
+    min-width: 100px;
+    max-width: none;
+    padding: 0.35rem 0.75rem;
   }
 }
 
@@ -1012,6 +1090,16 @@ const logout = () => {
     font-size: 1.35rem;
   }
 
+  .app-header__search {
+    min-width: 90px;
+    padding: 0.3rem 0.6rem;
+    gap: 0.35rem;
+  }
+
+  .app-header__search-input {
+    font-size: 0.8rem;
+  }
+
   .app-header__dropdown {
     width: min(260px, calc(100vw - 1.5rem));
   }
@@ -1020,7 +1108,7 @@ const logout = () => {
 /* ── Small phones (≤ 480px) ───────────────────────────────────────── */
 @media (max-width: 480px) {
   .app-header__inner {
-    gap: 0.45rem;
+    gap: 0.4rem;
   }
 
   .app-header__actions {
@@ -1045,7 +1133,12 @@ const logout = () => {
   }
 
   .app-header__wordmark {
-    display: none;
+    font-size: 1.05rem;
+  }
+
+  .app-header__search {
+    min-width: 76px;
+    padding: 0.28rem 0.55rem;
   }
 
   .app-header__cart-badge {
@@ -1060,7 +1153,7 @@ const logout = () => {
 /* ── Extra-small phones / Redmi (≤ 360px) ─────────────────────────── */
 @media (max-width: 360px) {
   .app-header__inner {
-    gap: 0.35rem;
+    gap: 0.3rem;
   }
 
   .app-header__actions {
@@ -1082,6 +1175,16 @@ const logout = () => {
   .app-header__login {
     width: 1.95rem;
     height: 1.95rem;
+  }
+
+  .app-header__wordmark {
+    display: none;
+  }
+
+  .app-header__search {
+    min-width: 60px;
+    padding: 0.25rem 0.45rem;
+    gap: 0.25rem;
   }
 
   .app-header__dropdown {

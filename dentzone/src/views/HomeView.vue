@@ -15,7 +15,7 @@ import type { HomeDto, HomeProviderDto } from '../domain/models/home'
 import type { ProviderProductDto } from '../domain/models/product'
 
 const router = useRouter()
-const { authService, categoryRepository, homeRepository, productRepository, cartService } = services
+const { authService, categoryRepository, homeRepository, productRepository, cartService, wishlistService } = services
 
 const isAuthenticated = computed(() => authService.isAuthenticated)
 
@@ -117,8 +117,7 @@ const viewAllVendors = () => {
   void router.push({ name: 'vendors' })
 }
 
-const favoriteIds = ref<Set<string>>(new Set())
-const favoriteBusy = ref<Set<string>>(new Set())
+const favoriteBusy = computed(() => wishlistService.busyIds.value)
 
 const detailsTo = (product: ProviderProductDto) => ({
   name: 'product-details',
@@ -126,27 +125,13 @@ const detailsTo = (product: ProviderProductDto) => ({
   query: { supplier: product.inventoryUserName || undefined },
 })
 
-const toggleFavorite = async (product: ProviderProductDto) => {
-  const user = authService.user.value
-  if (!user || favoriteBusy.value.has(product.productPriceId)) return
-  favoriteBusy.value = new Set(favoriteBusy.value).add(product.productPriceId)
-  const wasFavorite = favoriteIds.value.has(product.productPriceId)
-  try {
-    await productRepository.toggleFavorite(user.id, product.productId, product.productPriceId)
-    const next = new Set(favoriteIds.value)
-    if (wasFavorite) {
-      next.delete(product.productPriceId)
-    } else {
-      next.add(product.productPriceId)
-    }
-    favoriteIds.value = next
-  } catch {
-    // keep the current state unchanged
-  } finally {
-    const next = new Set(favoriteBusy.value)
-    next.delete(product.productPriceId)
-    favoriteBusy.value = next
-  }
+const toggleFavorite = (product: ProviderProductDto) => {
+  void wishlistService.toggle({
+    productId: product.productId,
+    productPriceId: product.productPriceId,
+    inventoryUserId: product.inventoryUserId,
+    name: product.productName,
+  })
 }
 
 const addToCart = (product: ProviderProductDto) => {
@@ -183,12 +168,7 @@ const loadPopularProducts = async () => {
   try {
     const list = await productRepository.getPopularProducts()
     popularProducts.value = list
-    const favs = list.filter((p) => p.isFavorite).map((p) => p.productPriceId)
-    if (favs.length > 0) {
-      const next = new Set(favoriteIds.value)
-      for (const id of favs) next.add(id)
-      favoriteIds.value = next
-    }
+    wishlistService.mergeFavorites(list.filter((p) => p.isFavorite).map((p) => p.productPriceId))
   } catch {
     popularError.value = true
   } finally {
@@ -201,10 +181,7 @@ const loadHome = async () => {
   homeError.value = false
   try {
     home.value = await homeRepository.getHome(locale.value === 'ar' ? API_LANG.ARABIC : API_LANG.ENGLISH)
-    const homeFavs = home.value.products.filter((p) => p.isFavorite).map((p) => p.productPriceId)
-    const next = new Set(favoriteIds.value)
-    for (const id of homeFavs) next.add(id)
-    favoriteIds.value = next
+    wishlistService.mergeFavorites(home.value.products.filter((p) => p.isFavorite).map((p) => p.productPriceId))
 
     if (catalogProducts.value.length === 0 && home.value?.products?.length) {
       catalogProducts.value = home.value.products
@@ -242,12 +219,7 @@ const loadCatalogProducts = async () => {
   try {
     const list = await productRepository.searchProducts({})
     catalogProducts.value = list
-    const favs = list.filter((p) => p.isFavorite).map((p) => p.productPriceId)
-    if (favs.length > 0) {
-      const next = new Set(favoriteIds.value)
-      for (const id of favs) next.add(id)
-      favoriteIds.value = next
-    }
+    wishlistService.mergeFavorites(list.filter((p) => p.isFavorite).map((p) => p.productPriceId))
   } catch {
     catalogError.value = true
   } finally {
@@ -261,6 +233,7 @@ onMounted(() => {
   void loadHome()
   void loadTopProviders()
   void loadCatalogProducts()
+  void wishlistService.refresh()
 })
 
 watch(isAuthenticated, (authed) => {
@@ -269,6 +242,7 @@ watch(isAuthenticated, (authed) => {
     void loadPopularProducts()
     void loadTopProviders()
     void loadCatalogProducts()
+    void wishlistService.refresh(true)
   }
 })
 </script>
@@ -466,8 +440,8 @@ watch(isAuthenticated, (authed) => {
             v-for="product in displayedPopularProducts"
             :key="product.productPriceId"
             :product="product"
-            :favorite="favoriteIds.has(product.productPriceId)"
-            :favorite-busy="favoriteBusy.has(product.productPriceId)"
+            :favorite="wishlistService.isFavorite(product.productId, product.productPriceId)"
+            :favorite-busy="favoriteBusy.has(product.productId)"
             :details-to="detailsTo(product)"
             :provider-count="getProductProviderCount(product)"
             @toggle-favorite="toggleFavorite"
@@ -506,8 +480,8 @@ watch(isAuthenticated, (authed) => {
             v-for="product in featuredProducts"
             :key="product.productPriceId"
             :product="product"
-            :favorite="favoriteIds.has(product.productPriceId)"
-            :favorite-busy="favoriteBusy.has(product.productPriceId)"
+            :favorite="wishlistService.isFavorite(product.productId, product.productPriceId)"
+            :favorite-busy="favoriteBusy.has(product.productId)"
             :details-to="detailsTo(product)"
             :provider-count="getProductProviderCount(product)"
             @toggle-favorite="toggleFavorite"
@@ -531,8 +505,8 @@ watch(isAuthenticated, (authed) => {
             v-for="product in flashSales"
             :key="product.productPriceId"
             :product="product"
-            :favorite="favoriteIds.has(product.productPriceId)"
-            :favorite-busy="favoriteBusy.has(product.productPriceId)"
+            :favorite="wishlistService.isFavorite(product.productId, product.productPriceId)"
+            :favorite-busy="favoriteBusy.has(product.productId)"
             :details-to="detailsTo(product)"
             :provider-count="getProductProviderCount(product)"
             @toggle-favorite="toggleFavorite"
@@ -621,8 +595,8 @@ watch(isAuthenticated, (authed) => {
             v-for="product in displayedCatalogProducts"
             :key="product.productPriceId || product.productId"
             :product="product"
-            :favorite="favoriteIds.has(product.productPriceId)"
-            :favorite-busy="favoriteBusy.has(product.productPriceId)"
+            :favorite="wishlistService.isFavorite(product.productId, product.productPriceId)"
+            :favorite-busy="favoriteBusy.has(product.productId)"
             :details-to="detailsTo(product)"
             :provider-count="getProductProviderCount(product)"
             @toggle-favorite="toggleFavorite"
@@ -1640,7 +1614,7 @@ html[dir='rtl'] .catalog-section__footer-btn svg {
   transform: scaleX(-1);
 }
 
-/* ── Tablet Breakpoint ────────────────────────────────────────── */
+/* â”€â”€ Tablet Breakpoint â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @media (max-width: 900px) {
   .categories__grid,
   .featured__grid,
@@ -1655,7 +1629,7 @@ html[dir='rtl'] .catalog-section__footer-btn svg {
   }
 }
 
-/* ── Mobile Breakpoint ────────────────────────────────────────── */
+/* â”€â”€ Mobile Breakpoint â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @media (max-width: 600px) {
   .categories__head,
   .catalog-section__head,
@@ -1720,7 +1694,7 @@ html[dir='rtl'] .catalog-section__footer-btn svg {
   }
 }
 
-/* ── Extra-Small Mobile Breakpoint ────────────────────────────── */
+/* â”€â”€ Extra-Small Mobile Breakpoint â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @media (max-width: 360px) {
   .categories__grid,
   .featured__grid,

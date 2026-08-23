@@ -11,12 +11,10 @@ const { authService, notificationRepository, firebaseMessagingService } = servic
 const notifications = ref<NotificationDto[]>([])
 const loading = ref(true)
 const error = ref(false)
-const showToken = ref(false)
 
 const user = computed(() => authService.user.value)
 const isPushSupported = computed(() => firebaseMessagingService.isSupported.value)
 const pushPermission = computed(() => firebaseMessagingService.permission.value)
-const pushToken = computed(() => firebaseMessagingService.token.value)
 const isPushLoading = computed(() => firebaseMessagingService.isLoading.value)
 
 let unsubscribeNotif: (() => void) | null = null
@@ -36,10 +34,6 @@ const load = async () => {
 
 const enablePush = async () => {
   await firebaseMessagingService.requestPushPermission()
-}
-
-const copyToken = async () => {
-  await firebaseMessagingService.copyToken()
 }
 
 const formatDate = (dateStr: string): string => {
@@ -135,20 +129,6 @@ onUnmounted(() => {
                     : t('notifications.pushPromptDesc')
               }}
             </p>
-
-            <div v-if="pushPermission === 'granted' && pushToken" class="push-token-actions">
-              <button type="button" class="push-token-toggle" @click="showToken = !showToken">
-                <AppIcon name="user" :size="13" />
-                {{ showToken ? 'Hide token' : t('notifications.copyToken') }}
-              </button>
-
-              <div v-if="showToken" class="push-token-box">
-                <code class="push-token-text">{{ pushToken }}</code>
-                <button type="button" class="push-token-copy" @click="copyToken">
-                  {{ t('notifications.copyToken') }}
-                </button>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -385,62 +365,6 @@ onUnmounted(() => {
   color: var(--dz-muted);
   line-height: 1.45;
   margin: 0;
-}
-
-.push-token-actions {
-  margin-top: 0.5rem;
-}
-
-.push-token-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--dz-primary-strong);
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  text-decoration: underline;
-}
-
-.push-token-toggle:hover {
-  color: var(--dz-primary);
-}
-
-.push-token-box {
-  margin-top: 0.5rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  background: var(--dz-surface-soft);
-  border: 1px solid var(--dz-border);
-  border-radius: var(--dz-radius);
-  max-width: 100%;
-}
-
-.push-token-text {
-  font-size: 0.75rem;
-  font-family: monospace;
-  color: var(--dz-ink-soft);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  flex: 1;
-}
-
-.push-token-copy {
-  flex-shrink: 0;
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 0.25rem 0.55rem;
-  border-radius: var(--dz-radius-sm);
-  background: var(--dz-primary);
-  color: var(--dz-on-primary);
-  border: none;
-  cursor: pointer;
 }
 
 .push-card__action {

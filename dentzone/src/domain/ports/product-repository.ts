@@ -1,4 +1,4 @@
-import type { ProductDetailDto, ProviderProductDto } from '../models/product'
+import type { ProductDetailDto, ProductPriceOptionDto, ProviderProductDto } from '../models/product'
 
 export interface SearchProductsParams {
   catId?: string
@@ -21,6 +21,7 @@ export interface ProductRepository {
     pageSize: number
   }): Promise<PaginatedProductsResult>
   getProductById(id: string, lang: number): Promise<ProductDetailDto>
+  getPricesByProduct(productId: string): Promise<ProductPriceOptionDto[]>
   toggleFavorite(userId: string, productId: string, productPriceId: string): Promise<unknown>
   getMyFavorites(): Promise<ProviderProductDto[]>
   getPopularProducts(): Promise<ProviderProductDto[]>

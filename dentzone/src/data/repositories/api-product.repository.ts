@@ -3,6 +3,7 @@ import type {
   FavoriteProductDto,
   PopularProductDto,
   ProductDetailDto,
+  ProductPriceOptionDto,
   ProviderProductDto,
 } from '../../domain/models/product'
 import { PRODUCT_ROUTES } from '../../config/api.config'
@@ -42,6 +43,8 @@ function normalizeSearchText(text: string): string {
     .replace(/ى/g, 'ي')
     .trim()
 }
+
+const EMPTY_GUID = /^0{8}-0{4}-0{4}-0{4}-0{12}$/i
 
 function extractProductItems(raw: unknown): SearchProductItemDto[] {
   if (!raw) return []
@@ -272,6 +275,30 @@ export class ApiProductRepository implements ProductRepository {
     return this.http.get<ProductDetailDto>(PRODUCT_ROUTES.byId(id, lang), {
       showFeedback: false,
     })
+  }
+
+  async getPricesByProduct(productId: string): Promise<ProductPriceOptionDto[]> {
+    const rows = await this.http.get<unknown[]>(PRODUCT_ROUTES.pricesByProduct(productId), {
+      showFeedback: false,
+    })
+    if (!Array.isArray(rows)) return []
+    const options: ProductPriceOptionDto[] = []
+    for (const row of rows) {
+      const raw = row as Record<string, unknown>
+      const priceId =
+        (typeof raw.productPriceId === 'string' && raw.productPriceId) ||
+        (typeof raw.id === 'string' && raw.id) ||
+        ''
+      if (!priceId || EMPTY_GUID.test(priceId)) continue
+      options.push({
+        productPriceId: priceId,
+        salesPrice: typeof raw.salesPrice === 'number' ? raw.salesPrice : 0,
+        effectiveSalesPrice: typeof raw.effectiveSalesPrice === 'number' ? raw.effectiveSalesPrice : 0,
+        stockQuantity: typeof raw.stockQuantity === 'number' ? raw.stockQuantity : 0,
+        inventoryUserId: typeof raw.inventoryUserId === 'string' ? raw.inventoryUserId : '',
+      })
+    }
+    return options
   }
 
   toggleFavorite(userId: string, productId: string, productPriceId: string): Promise<unknown> {

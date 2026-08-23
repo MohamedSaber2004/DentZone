@@ -16,6 +16,7 @@ export type Messages = {
     shop: string
     allProducts: string
     categories: string
+    vendors: string
     privacyPolicy: string
     termsConditions: string
     whitening: string
@@ -324,6 +325,9 @@ export type Messages = {
     removedToast: string
     clearedToast: string
     errorToast: string
+    forbiddenToast: string
+    viewWishlist: string
+    loginToast: string
   }
   chat: {
     agentName: string
@@ -556,9 +560,6 @@ export type Messages = {
     pushNotSupported: string
     pushPromptTitle: string
     pushPromptDesc: string
-    copyToken: string
-    tokenCopied: string
-    deviceToken: string
   }
 }
 
