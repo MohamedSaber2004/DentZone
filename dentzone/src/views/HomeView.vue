@@ -230,10 +230,6 @@ watch(isAuthenticated, (authed) => {
 
     <section class="container hero__inner">
       <div class="hero__copy">
-        <span class="hero__badge">
-          <AppIcon name="shield-check" :size="14" />
-          {{ t('home.trustBadge') }}
-        </span>
 
         <h1 class="hero__title">
           {{ t('home.titleLine1') }}
