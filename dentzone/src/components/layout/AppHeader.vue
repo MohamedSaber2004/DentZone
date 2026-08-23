@@ -13,6 +13,7 @@ const headerSearch = ref('')
 const userMenuOpen = ref(false)
 const mobileMenuOpen = ref(false)
 const userMenuRef = ref<HTMLElement | null>(null)
+const userMenuButtonRef = ref<HTMLElement | null>(null)
 const mobileMenuRef = ref<HTMLElement | null>(null)
 const mobileMenuButtonRef = ref<HTMLElement | null>(null)
 const avatarImageFailed = ref(false)
@@ -94,6 +95,12 @@ const onClickOutside = (event: MouseEvent) => {
 
 const onEscape = (event: KeyboardEvent) => {
   if (event.key === 'Escape') {
+    if (userMenuOpen.value && userMenuButtonRef.value) {
+      userMenuButtonRef.value.focus()
+    }
+    if (mobileMenuOpen.value && mobileMenuButtonRef.value) {
+      mobileMenuButtonRef.value.focus()
+    }
     closeUserMenu()
     closeMobileMenu()
   }
@@ -146,7 +153,7 @@ const logout = () => {
         <span class="app-header__wordmark">Dent<span>Zone</span></span>
       </RouterLink>
 
-      <nav class="app-header__nav" aria-label="Main">
+      <nav class="app-header__nav" :aria-label="t('nav.navigation')">
         <RouterLink to="/" class="app-header__nav-link" exact-active-class="app-header__nav-link--active">
           <AppIcon name="home" :size="16" />
           {{ t('nav.home') }}
@@ -210,13 +217,18 @@ const logout = () => {
           v-if="isAuthenticated"
           to="/notifications"
           class="app-header__cart"
-          :aria-label="t('notifications.title')"
+          :aria-label="unreadNotifCount > 0 ? `${t('notifications.title')} (${unreadNotifCount})` : t('notifications.title')"
         >
           <AppIcon name="bell" :size="17" />
           <span v-if="unreadNotifCount > 0" :key="unreadNotifCount" class="app-header__cart-badge">{{ unreadNotifCount }}</span>
         </RouterLink>
 
-        <RouterLink v-if="isAuthenticated" to="/cart" class="app-header__cart" :aria-label="t('cart.title')">
+        <RouterLink
+          v-if="isAuthenticated"
+          to="/cart"
+          class="app-header__cart"
+          :aria-label="cartCount > 0 ? `${t('cart.title')} (${cartCount})` : t('cart.title')"
+        >
           <AppIcon name="cart" :size="17" />
           <span v-if="cartCount > 0" :key="cartCount" class="app-header__cart-badge">{{ cartCount }}</span>
         </RouterLink>
@@ -228,12 +240,14 @@ const logout = () => {
 
         <div v-else ref="userMenuRef" class="app-header__user">
           <button
+            ref="userMenuButtonRef"
             type="button"
             class="app-header__avatar"
             :class="{ 'app-header__avatar--open': userMenuOpen }"
             :style="{ '--tint': user?.tint ?? '' }"
-            :aria-label="t('profile.title')"
+            :aria-label="t('nav.userMenu')"
             :aria-expanded="userMenuOpen"
+            aria-haspopup="true"
             @click.stop="toggleUserMenu"
           >
             <img
@@ -305,6 +319,8 @@ const logout = () => {
           type="button"
           :aria-label="mobileMenuOpen ? t('nav.closeMenu') : t('nav.toggleMenu')"
           :aria-expanded="mobileMenuOpen"
+          aria-haspopup="true"
+          aria-controls="mobile-menu"
           @click.stop="toggleMobileMenu"
         >
           <AppIcon :name="mobileMenuOpen ? 'close' : 'menu'" :size="18" />
@@ -312,21 +328,8 @@ const logout = () => {
       </div>
     </div>
 
-    <nav v-if="mobileMenuOpen" ref="mobileMenuRef" class="app-header__panel" aria-label="Mobile">
+    <nav v-if="mobileMenuOpen" id="mobile-menu" ref="mobileMenuRef" class="app-header__panel" :aria-label="t('nav.navigation')">
       <div class="container app-header__panel-inner">
-        <form class="app-header__mobile-search" role="search" @submit.prevent="onHeaderSearch">
-          <span class="app-header__search-icon"><AppIcon name="search" :size="16" /></span>
-          <input
-            v-model="headerSearch"
-            type="search"
-            class="app-header__search-input"
-            :placeholder="t('nav.searchPlaceholder')"
-            :aria-label="t('nav.searchPlaceholder')"
-          />
-          <button type="submit" class="app-header__mobile-search-btn" :aria-label="t('products.search')">
-            <AppIcon name="arrow-right" :size="14" />
-          </button>
-        </form>
         <RouterLink to="/" class="app-header__panel-link" exact-active-class="app-header__nav-link--active" @click="closeMobileMenu">
           <AppIcon name="home" :size="17" />
           {{ t('nav.home') }}
@@ -583,45 +586,6 @@ const logout = () => {
 
 .app-header__search-input::placeholder {
   color: var(--dz-muted);
-}
-
-.app-header__mobile-search {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.45rem 0.75rem;
-  margin-bottom: 0.75rem;
-  background: var(--dz-surface-soft);
-  border: 1px solid var(--dz-border);
-  border-radius: var(--dz-radius-full);
-}
-
-.app-header__mobile-search:focus-within {
-  border-color: var(--dz-primary);
-  background: var(--dz-surface);
-}
-
-.app-header__mobile-search-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.85rem;
-  height: 1.85rem;
-  border: none;
-  border-radius: var(--dz-radius-full);
-  background: var(--dz-primary);
-  color: var(--dz-on-primary);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background-color 0.2s;
-}
-
-.app-header__mobile-search-btn:hover {
-  background: var(--dz-primary-strong);
-}
-
-html[dir='rtl'] .app-header__mobile-search-btn svg {
-  transform: scaleX(-1);
 }
 
 .app-header__theme {
@@ -983,10 +947,13 @@ html[dir='rtl'] .app-header__mobile-search-btn svg {
   }
 }
 
-/* ── Tablets (≤ 900px): collapse search & nav to mobile panel ─────── */
+/* ── Tablets (≤ 900px): collapse nav to panel, search stays in topbar ─ */
 @media (max-width: 900px) {
   .app-header__search {
-    display: none;
+    display: flex;
+    min-width: 0;
+    max-width: none;
+    padding: 0.35rem 0.75rem;
   }
 
   .app-header__nav {
@@ -1078,7 +1045,7 @@ html[dir='rtl'] .app-header__mobile-search-btn svg {
   }
 
   .app-header__wordmark {
-    font-size: 1.2rem;
+    display: none;
   }
 
   .app-header__cart-badge {
@@ -1107,10 +1074,6 @@ html[dir='rtl'] .app-header__mobile-search-btn svg {
   .app-header__logo-img {
     width: 2.2rem;
     height: 2.2rem;
-  }
-
-  .app-header__wordmark {
-    font-size: 1.05rem;
   }
 
   .app-header__cart,

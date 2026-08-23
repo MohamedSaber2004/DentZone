@@ -79,7 +79,7 @@ onMounted(load)
       </div>
     </div>
 
-    <div v-if="loading" class="wishlist__grid" aria-label="Loading">
+    <div v-if="loading" class="wishlist__grid" role="status" :aria-label="t('common.loading')">
       <div v-for="i in 8" :key="i" class="wishlist__skeleton">
         <span class="wishlist__skeleton-media" />
         <span class="wishlist__skeleton-line wishlist__skeleton-line--wide" />

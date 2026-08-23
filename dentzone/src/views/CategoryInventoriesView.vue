@@ -46,12 +46,7 @@ const filteredInventories = computed(() => {
   const q = normalizeText(search.value)
   if (q) {
     list = list.filter((inv) => {
-      const fields = [
-        inv.fullName,
-        inv.addresses,
-        inv.email,
-        inv.phoneNumber,
-      ]
+      const fields = [inv.fullName, inv.addresses]
         .filter(Boolean)
         .map((f) => normalizeText(String(f)))
 
@@ -150,7 +145,7 @@ watch(() => route.params.catId, load)
       </button>
     </div>
 
-    <div v-if="loading" class="page__list" aria-label="Loading">
+    <div v-if="loading" class="page__list" role="status" :aria-label="t('common.loading')">
       <div v-for="i in 4" :key="i" class="skeleton-card">
         <span class="skeleton skeleton-card__avatar" />
         <div class="skeleton-card__lines">

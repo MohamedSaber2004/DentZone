@@ -9,7 +9,7 @@ import AppIcon from '../components/ui/AppIcon.vue'
 import CategoryCard from '../components/categories/CategoryCard.vue'
 import ProductCard from '../components/products/ProductCard.vue'
 import OfferSlider from '../components/home/OfferSlider.vue'
-import ProviderMarquee from '../components/home/ProviderMarquee.vue'
+import ProviderGrid from '../components/home/ProviderGrid.vue'
 import type { CategoryDto } from '../domain/models/category'
 import type { HomeDto, HomeProviderDto } from '../domain/models/home'
 import type { ProviderProductDto } from '../domain/models/product'
@@ -78,6 +78,11 @@ const topProvidersError = ref(false)
 // --- 2. All Suppliers / Providers (General section) ---
 const allProviders = computed(() => home.value?.providers ?? [])
 
+// Home sections show the first 8 providers; "View all suppliers" opens the full list.
+const HOME_PROVIDERS_LIMIT = 8
+const displayedTopProviders = computed(() => topProviders.value.slice(0, HOME_PROVIDERS_LIMIT))
+const displayedAllProviders = computed(() => allProviders.value.slice(0, HOME_PROVIDERS_LIMIT))
+
 // --- 3. Products Section (First Page 15 items + View All) ---
 const catalogProducts = ref<ProviderProductDto[]>([])
 const catalogLoading = ref(true)
@@ -106,6 +111,10 @@ const getProductProviderCount = (product: ProviderProductDto): number => {
 
 const viewAllProducts = () => {
   void router.push({ name: 'products' })
+}
+
+const viewAllVendors = () => {
+  void router.push({ name: 'vendors' })
 }
 
 const favoriteIds = ref<Set<string>>(new Set())
@@ -319,7 +328,7 @@ watch(isAuthenticated, (authed) => {
     </section>
   </div>
 
-  <section class="categories" aria-label="Categories">
+    <section class="categories" :aria-label="t('home.shopByCategory')">
     <div class="container">
       <div class="categories__head">
         <div>
@@ -333,7 +342,7 @@ watch(isAuthenticated, (authed) => {
         </RouterLink>
       </div>
 
-      <div v-if="categoriesLoading" class="categories__grid" aria-label="Loading">
+      <div v-if="categoriesLoading" class="categories__grid" role="status" :aria-label="t('common.loading')">
         <div v-for="i in 10" :key="i" class="categories__skeleton">
           <span class="categories__skeleton-media" />
           <span class="categories__skeleton-line categories__skeleton-line--wide" />
@@ -368,7 +377,7 @@ watch(isAuthenticated, (authed) => {
     </section>
 
     <!-- SECTION 1: Top Providers (Independent Section) -->
-    <section class="providers providers--top" aria-label="Top providers">
+    <section class="providers providers--top" :aria-label="t('home.topProvidersTitle')">
       <div class="container">
         <div class="providers__head">
           <div>
@@ -382,7 +391,7 @@ watch(isAuthenticated, (authed) => {
         </div>
 
         <!-- Loading skeleton -->
-        <div v-if="topProvidersLoading && topProviders.length === 0" class="providers__skeleton-row" aria-label="Loading top providers">
+        <div v-if="topProvidersLoading && topProviders.length === 0" class="providers__skeleton-row" role="status" :aria-label="t('common.loading')">
           <div v-for="i in 5" :key="i" class="providers__skeleton-card">
             <span class="providers__skeleton-avatar" />
             <span class="providers__skeleton-lines">
@@ -401,12 +410,9 @@ watch(isAuthenticated, (authed) => {
             {{ t('categories.retry') }}
           </button>
         </div>
-      </div>
 
-      <!-- Top Providers Marquee -->
-      <div v-if="topProviders.length > 0" class="providers__marquees">
-        <ProviderMarquee :providers="topProviders" />
-        <ProviderMarquee :providers="topProviders" reverse-order reverse-animation decorative />
+        <!-- Top Providers Grid -->
+        <ProviderGrid v-if="!topProvidersLoading && displayedTopProviders.length > 0" :providers="displayedTopProviders" />
       </div>
     </section>
 
@@ -414,7 +420,6 @@ watch(isAuthenticated, (authed) => {
       :offers="offersOne"
       :title="t('home.specialOffers')"
       :subtitle="t('home.specialOffersSubtitle')"
-      ariaLabel="Special offers"
       show-states
       :loading="homeLoading"
       :error="homeError"
@@ -424,7 +429,7 @@ watch(isAuthenticated, (authed) => {
     <section
       v-if="popularLoading || (!popularError && popularProducts.length)"
       class="featured featured--popular"
-      aria-label="Popular products"
+      :aria-label="t('home.popularTitle')"
     >
       <div class="container">
         <div class="featured__head featured__head--flex">
@@ -448,7 +453,7 @@ watch(isAuthenticated, (authed) => {
           </button>
         </div>
 
-        <div v-if="popularLoading" class="featured__grid" aria-label="Loading popular products">
+        <div v-if="popularLoading" class="featured__grid" role="status" :aria-label="t('common.loading')">
           <div v-for="i in 4" :key="i" class="categories__skeleton">
             <span class="categories__skeleton-media" />
             <span class="categories__skeleton-line categories__skeleton-line--wide" />
@@ -487,7 +492,7 @@ watch(isAuthenticated, (authed) => {
       </div>
     </section>
 
-    <section v-if="!homeLoading && !homeError && featuredProducts.length" class="featured" aria-label="Featured products">
+    <section v-if="!homeLoading && !homeError && featuredProducts.length" class="featured" :aria-label="t('home.featuredTitle')">
       <div class="container">
         <div class="featured__head">
           <div>
@@ -512,7 +517,7 @@ watch(isAuthenticated, (authed) => {
       </div>
     </section>
 
-    <section v-if="!homeLoading && !homeError && flashSales.length" class="featured featured--flash" aria-label="Flash sales">
+    <section v-if="!homeLoading && !homeError && flashSales.length" class="featured featured--flash" :aria-label="t('home.flashSalesTitle')">
       <div class="container">
         <div class="featured__head">
           <div>
@@ -542,28 +547,29 @@ watch(isAuthenticated, (authed) => {
       :offers="offersTwo"
       :title="t('home.moreOffersTitle')"
       :subtitle="t('home.moreOffersSubtitle')"
-      ariaLabel="More offers"
     />
 
     <!-- SECTION 2: All Suppliers / Providers (General Section) -->
-    <section v-if="!homeLoading && allProviders.length > 0" class="providers providers--all" aria-label="All suppliers">
+    <section v-if="!homeLoading && allProviders.length > 0" class="providers providers--all" :aria-label="t('home.shopByVendor')">
       <div class="container">
-        <div class="providers__head">
+        <div class="providers__head providers__head--flex">
           <div>
             <h2 class="providers__title">{{ t('home.shopByVendor') }}</h2>
             <p class="providers__subtitle">{{ t('home.vendorSubtitle') }}</p>
           </div>
+          <button type="button" class="catalog-section__view-all providers__view-all" @click="viewAllVendors">
+            <span>{{ t('home.viewAllVendors') }}</span>
+            <AppIcon name="arrow-right" :size="15" />
+          </button>
         </div>
-      </div>
 
-      <div class="providers__marquees">
-        <ProviderMarquee :providers="allProviders" />
-        <ProviderMarquee :providers="allProviders" reverse-order reverse-animation decorative />
+        <!-- All Suppliers Grid -->
+        <ProviderGrid :providers="displayedAllProviders" />
       </div>
     </section>
 
     <!-- SECTION 3: Products Catalog (First Page 15 items + View All) -->
-    <section class="catalog-section" aria-label="Products Catalog">
+    <section class="catalog-section" :aria-label="t('home.allProductsTitle')">
       <div class="container">
         <div class="catalog-section__head">
           <div>
@@ -581,7 +587,7 @@ watch(isAuthenticated, (authed) => {
         </div>
 
         <!-- Loading Skeletons -->
-        <div v-if="catalogLoading" class="catalog-section__grid" aria-label="Loading products">
+        <div v-if="catalogLoading" class="catalog-section__grid" role="status" :aria-label="t('common.loading')">
           <div v-for="i in 6" :key="i" class="categories__skeleton">
             <span class="categories__skeleton-media" />
             <span class="categories__skeleton-line categories__skeleton-line--wide" />
@@ -1277,26 +1283,29 @@ html[dir='rtl'] .categories__all:hover svg:last-child {
   margin-bottom: 1.75rem;
 }
 
-.providers__marquees {
+.providers__head--flex {
   display: flex;
-  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
   gap: 1rem;
+}
+
+.providers__view-all {
+  flex-shrink: 0;
 }
 
 /* Providers skeleton */
 .providers__skeleton-row {
-  display: flex;
-  gap: 1rem;
-  overflow: hidden;
-  padding-bottom: 0.25rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 0.85rem;
 }
 
 .providers__skeleton-card {
   display: flex;
-  flex: 0 0 240px;
   align-items: center;
   gap: 0.8rem;
-  padding: 0.9rem 1rem;
+  padding: 0.9rem 1.1rem;
   background: var(--dz-surface);
   border: 1px solid var(--dz-border);
   border-radius: var(--dz-radius-lg);
@@ -1639,13 +1648,19 @@ html[dir='rtl'] .catalog-section__footer-btn svg {
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 1rem;
   }
+
+  .providers__skeleton-row {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
+  }
 }
 
 /* ── Mobile Breakpoint ────────────────────────────────────────── */
 @media (max-width: 600px) {
   .categories__head,
   .catalog-section__head,
-  .featured__head--flex {
+  .featured__head--flex,
+  .providers__head--flex {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.75rem;
@@ -1653,7 +1668,8 @@ html[dir='rtl'] .catalog-section__footer-btn svg {
 
   .categories__all,
   .catalog-section__view-all,
-  .featured__toggle-btn {
+  .featured__toggle-btn,
+  .providers__view-all {
     align-self: flex-start;
   }
 
@@ -1688,8 +1704,9 @@ html[dir='rtl'] .catalog-section__footer-btn svg {
     gap: 0.75rem;
   }
 
-  .providers__skeleton-card {
-    flex-basis: 200px;
+  .providers__skeleton-row {
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
   }
 
   .catalog-section__footer {

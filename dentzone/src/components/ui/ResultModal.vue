@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import { modalService } from '../../di/container'
 import { t } from '../../i18n'
 import AppIcon, { type IconName } from './AppIcon.vue'
@@ -26,17 +26,54 @@ const currentIcon = computed(() => {
   const type = modalService.data.value?.type
   return type ? icons[type] ?? 'smile' : 'smile'
 })
+
+const dialogRef = ref<HTMLDivElement | null>(null)
+let previouslyFocused: HTMLElement | null = null
+
+watch(
+  () => modalService.visible.value,
+  async (visible) => {
+    if (visible) {
+      previouslyFocused = document.activeElement as HTMLElement | null
+      await nextTick()
+      dialogRef.value?.focus()
+    } else if (previouslyFocused) {
+      previouslyFocused.focus()
+      previouslyFocused = null
+    }
+  },
+)
+
+const onKeydown = (event: KeyboardEvent) => {
+  if (event.key === 'Escape' && modalService.visible.value) {
+    event.stopPropagation()
+    modalService.close()
+  }
+}
+
+document.addEventListener('keydown', onKeydown)
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', onKeydown)
+})
 </script>
 
 <template>
   <Teleport to="body">
     <Transition name="result-modal">
       <div v-if="modalService.visible.value" class="result-modal__backdrop" @click.self="modalService.close()">
-        <div class="result-modal" role="dialog" aria-modal="true" :aria-label="currentTitle">
-          <span class="result-modal__icon" :class="`result-modal__icon--${modalService.data.value?.type}`">
+        <div
+          ref="dialogRef"
+          class="result-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="result-modal-title"
+          tabindex="-1"
+        >
+          <span class="result-modal__icon" :class="`result-modal__icon--${modalService.data.value?.type}`" aria-hidden="true">
             <AppIcon :name="currentIcon" :size="22" />
           </span>
-          <h3 class="result-modal__title">{{ currentTitle }}</h3>
+          <h3 id="result-modal-title" class="result-modal__title">{{ currentTitle }}</h3>
           <p class="result-modal__message">{{ modalService.data.value?.message }}</p>
           <AppButton class="result-modal__action" @click="modalService.close()">
             {{ t('common.ok') }}
@@ -72,6 +109,10 @@ const currentIcon = computed(() => {
   border: 1px solid var(--dz-border);
   box-shadow: var(--dz-shadow-lg);
   text-align: center;
+}
+
+.result-modal:focus {
+  outline: none;
 }
 
 .result-modal__icon {

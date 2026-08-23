@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { requestTracker } from '../../application/request.tracker'
+import { t } from '../../i18n'
 
 const visible = ref(false)
 let showTimer: ReturnType<typeof setTimeout> | undefined
@@ -26,8 +27,8 @@ watch(
 
 <template>
   <Transition name="loading-fade">
-    <div v-if="visible" class="loading-overlay" aria-hidden="true">
-      <div class="loading-overlay__card">
+    <div v-if="visible" class="loading-overlay" role="status" :aria-label="t('common.loading')">
+      <div class="loading-overlay__card" aria-hidden="true">
         <div class="loading-overlay__logo-box">
           <img src="/denta-logo.png" alt="DentZone" class="loading-overlay__logo" />
           <span class="loading-overlay__ring" />

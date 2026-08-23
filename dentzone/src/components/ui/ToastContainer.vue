@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { toastService, type Toast } from '../../infrastructure/feedback/toast.service'
+import { t } from '../../i18n'
 import AppIcon, { type IconName } from './AppIcon.vue'
 
 const icons: Record<Toast['type'], IconName> = {
@@ -7,19 +8,22 @@ const icons: Record<Toast['type'], IconName> = {
   error: 'alert-circle',
   info: 'smile',
 }
+
+// Errors interrupt immediately; other notices are announced politely.
+const toastRole = (type: Toast['type']) => (type === 'error' ? 'alert' : 'status')
 </script>
 
 <template>
-  <div class="toast-container" aria-live="polite" aria-atomic="false">
+  <div class="toast-container">
     <TransitionGroup name="toast">
       <div
         v-for="toast in toastService.toasts"
         :key="toast.id"
         class="toast"
         :class="`toast--${toast.type}`"
-        role="alert"
+        :role="toastRole(toast.type)"
       >
-        <span class="toast__icon">
+        <span class="toast__icon" aria-hidden="true">
           <AppIcon :name="icons[toast.type]" :size="18" />
         </span>
         <span class="toast__message">{{ toast.message }}</span>
@@ -31,7 +35,12 @@ const icons: Record<Toast['type'], IconName> = {
         >
           {{ toast.action.label }}
         </button>
-        <button class="toast__close" type="button" aria-label="Dismiss notification" @click="toastService.dismiss(toast.id)">
+        <button
+          class="toast__close"
+          type="button"
+          :aria-label="t('common.dismissNotification')"
+          @click="toastService.dismiss(toast.id)"
+        >
           <AppIcon name="close" :size="14" />
         </button>
       </div>
@@ -133,8 +142,8 @@ const icons: Record<Toast['type'], IconName> = {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 1.6rem;
-  height: 1.6rem;
+  width: 2rem;
+  height: 2rem;
   border-radius: 50%;
   color: var(--dz-muted);
   flex-shrink: 0;

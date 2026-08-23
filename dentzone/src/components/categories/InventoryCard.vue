@@ -50,14 +50,6 @@ const linkTo = () => {
           <AppIcon name="map-pin" :size="14" />
           <span>{{ inventory.addresses }}</span>
         </li>
-        <li v-if="inventory.phoneNumber">
-          <AppIcon name="phone" :size="14" />
-          <span dir="ltr">{{ inventory.phoneNumber }}</span>
-        </li>
-        <li v-if="inventory.email">
-          <AppIcon name="mail" :size="14" />
-          <span dir="ltr">{{ inventory.email }}</span>
-        </li>
       </ul>
     </div>
 

@@ -7,6 +7,9 @@ export type Messages = {
     ok: string
     operationDone: string
     networkError: string
+    skipToMain: string
+    dismissNotification: string
+    back: string
   }
   nav: {
     home: string
@@ -31,6 +34,8 @@ export type Messages = {
     myOrders: string
     notifications: string
     logout: string
+    navigation: string
+    userMenu: string
   }
   home: {
     trustBadge: string
@@ -178,6 +183,7 @@ export type Messages = {
     noResultsTitle: string
     noResultsDescription: string
     code: string
+    viewImage: string
     inStock: string
     outOfStock: string
     maxPerOrder: string
@@ -236,6 +242,7 @@ export type Messages = {
     errNetwork: string
     otpHint: string
     resetTitle: string
+    recoveryProgress: string
     resetSubtitle: string
     newPassword: string
     confirmPassword: string
@@ -341,6 +348,8 @@ export type Messages = {
     shop: string
     keyFeatures: string
     addToCart: string
+    addToWishlist: string
+    removeFromWishlist: string
     addedToCart: string
     outOfStock: string
     backInStockSoon: string

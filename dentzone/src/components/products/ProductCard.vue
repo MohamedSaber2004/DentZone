@@ -68,7 +68,7 @@ const formatPrice = (value: number) => value.toLocaleString(locale.value === 'ar
           type="button"
           class="product-card__favorite"
           :class="{ 'product-card__favorite--active': favorite }"
-          :aria-label="t('nav.wishlist')"
+          :aria-label="favorite ? t('product.removeFromWishlist') : t('product.addToWishlist')"
           :aria-pressed="favorite"
           :disabled="favoriteBusy"
           @click.stop="emit('toggle-favorite', product)"
@@ -79,7 +79,7 @@ const formatPrice = (value: number) => value.toLocaleString(locale.value === 'ar
           v-if="authService.isAuthenticated"
           type="button"
           class="product-card__cart"
-          :aria-label="t('product.addToCart')"
+          :aria-label="`${t('product.addToCart')}: ${displayName(product)}`"
           :disabled="product.stockQuantity <= 0"
           @click.stop="emit('add-to-cart', product)"
         >
@@ -89,7 +89,7 @@ const formatPrice = (value: number) => value.toLocaleString(locale.value === 'ar
           v-if="detailsTo"
           :to="detailsTo"
           class="product-card__details"
-          :aria-label="t('products.details.title')"
+          :aria-label="`${t('products.details.title')}: ${displayName(product)}`"
         >
           <AppIcon name="eye" :size="15" />
         </RouterLink>
@@ -407,8 +407,8 @@ const formatPrice = (value: number) => value.toLocaleString(locale.value === 'ar
   .product-card__details,
   .product-card__favorite,
   .product-card__cart {
-    width: 1.85rem;
-    height: 1.85rem;
+    width: 2.4rem;
+    height: 2.4rem;
   }
 
   .product-card__media-actions {

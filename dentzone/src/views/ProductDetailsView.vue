@@ -219,7 +219,7 @@ watch(() => route.params.productId, () => {
       {{ t('products.details.back') }}
     </button>
 
-    <div v-if="loading" class="page__loading" aria-label="Loading">
+    <div v-if="loading" class="page__loading" role="status" :aria-label="t('common.loading')">
       <div class="skeleton skeleton-detail skeleton-detail--media" />
       <div class="skeleton-detail__lines">
         <span class="skeleton skeleton-detail__line skeleton-detail__line--wide" />
@@ -259,7 +259,8 @@ watch(() => route.params.productId, () => {
               type="button"
               class="detail__thumb"
               :class="{ 'detail__thumb--active': index === activeImage && !imageFailed }"
-              :aria-label="t('products.details.title')"
+              :aria-label="t('products.viewImage', { n: index + 1 })"
+              :aria-current="activeImage === index && !imageFailed ? 'true' : undefined"
               @click="activeImage = index; imageFailed = false"
             >
               <img :src="image" :alt="''" @error="onThumbnailError(index)" />
@@ -286,7 +287,7 @@ watch(() => route.params.productId, () => {
               class="detail__favorite"
               :class="{ 'detail__favorite--active': favorite }"
               :aria-pressed="favorite"
-              :aria-label="t('nav.wishlist')"
+              :aria-label="favorite ? t('product.removeFromWishlist') : t('product.addToWishlist')"
               :disabled="favoriteBusy || !currentPrice"
               @click="toggleFavorite"
             >
@@ -394,7 +395,7 @@ watch(() => route.params.productId, () => {
         </div>
 
         <div v-else-if="activeTab === 'refund'" class="detail__tab-panel">
-          <div v-if="refundLoading" class="detail__refund-skeleton" aria-label="Loading">
+          <div v-if="refundLoading" class="detail__refund-skeleton" role="status" :aria-label="t('common.loading')">
             <span class="detail__skeleton-line" />
             <span class="detail__skeleton-line" />
             <span class="detail__skeleton-line detail__skeleton-line--short" />

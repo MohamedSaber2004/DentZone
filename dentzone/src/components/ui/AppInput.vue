@@ -3,6 +3,8 @@ import { ref } from 'vue'
 import { t } from '../../i18n'
 import AppIcon from './AppIcon.vue'
 
+let uidCounter = 0
+
 const props = withDefaults(
   defineProps<{
     modelValue?: string
@@ -21,6 +23,8 @@ const props = withDefaults(
 const emit = defineEmits<{
   'update:modelValue': [value: string]
 }>()
+
+const errorId = `app-input-error-${++uidCounter}`
 
 const showPassword = ref(false)
 
@@ -55,6 +59,8 @@ const onInput = (event: Event) => {
         :disabled="disabled"
         :autofocus="autofocus"
         :dir="type === 'email' || type === 'tel' ? 'ltr' : undefined"
+        :aria-invalid="error ? 'true' : undefined"
+        :aria-describedby="error ? errorId : undefined"
         @input="onInput"
       />
       <button
@@ -63,12 +69,13 @@ const onInput = (event: Event) => {
         type="button"
         :aria-label="showPassword ? t('auth.hidePassword') : t('auth.showPassword')"
         :title="showPassword ? t('auth.hidePassword') : t('auth.showPassword')"
+        :aria-pressed="showPassword"
         @click="showPassword = !showPassword"
       >
         <AppIcon :name="showPassword ? 'eye-off' : 'eye'" :size="17" />
       </button>
     </span>
-    <span v-if="error" class="app-input__error">{{ error }}</span>
+    <span v-if="error" :id="errorId" role="alert" class="app-input__error">{{ error }}</span>
   </label>
 </template>
 

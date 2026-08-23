@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { locale, t } from '../../i18n'
 import { resolveMediaUrl } from '../../utils/media'
 import AppIcon from '../ui/AppIcon.vue'
@@ -10,17 +10,20 @@ const props = withDefaults(
     offers: SpecialOfferDto[]
     title: string
     subtitle: string
-    ariaLabel: string
+    ariaLabel?: string
     showStates?: boolean
     loading?: boolean
     error?: boolean
   }>(),
-  { showStates: false, loading: false, error: false },
+  { showStates: false, loading: false, error: false, ariaLabel: '' },
 )
 
 const emit = defineEmits<{ (e: 'retry'): void }>()
 
 const sliderRef = ref<HTMLElement | null>(null)
+
+// Fall back to the visible (translated) title when no explicit label is given.
+const resolvedLabel = computed(() => props.ariaLabel || props.title)
 
 const STEP_MS = 4000
 
@@ -75,7 +78,7 @@ onBeforeUnmount(stopTimer)
 </script>
 
 <template>
-  <section class="offer-slider" :aria-label="ariaLabel">
+  <section class="offer-slider" :aria-label="resolvedLabel">
     <div class="container">
       <div class="offer-slider__head">
         <div>
@@ -84,7 +87,7 @@ onBeforeUnmount(stopTimer)
         </div>
       </div>
 
-      <div v-if="showStates && loading" class="offer-slider__skeleton" aria-label="Loading" />
+      <div v-if="showStates && loading" class="offer-slider__skeleton" role="status" :aria-label="t('common.loading')" />
 
       <div v-else-if="showStates && error" class="offer-slider__error" role="alert">
         <AppIcon name="alert-circle" :size="17" />
@@ -101,7 +104,7 @@ onBeforeUnmount(stopTimer)
         <span>{{ t('categories.emptyDescription') }}</span>
       </div>
 
-      <div v-else-if="offers.length" ref="sliderRef" class="offer-slider__slider" :aria-label="ariaLabel">
+      <div v-else-if="offers.length" ref="sliderRef" class="offer-slider__slider" :aria-label="resolvedLabel">
         <a
           v-for="offer in offers"
           :key="offer.id"
@@ -109,9 +112,9 @@ onBeforeUnmount(stopTimer)
           :href="offer.link"
           target="_blank"
           rel="noopener noreferrer"
-          :aria-label="ariaLabel"
+          :aria-label="resolvedLabel"
         >
-          <img :src="resolveMediaUrl(offer.imagePath)" :alt="ariaLabel" loading="lazy" draggable="false" />
+          <img :src="resolveMediaUrl(offer.imagePath)" :alt="resolvedLabel" loading="lazy" draggable="false" />
         </a>
         <a
           v-if="offers.length > 1"

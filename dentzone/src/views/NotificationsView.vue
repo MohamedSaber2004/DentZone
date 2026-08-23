@@ -161,7 +161,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Loading Skeletons -->
-      <div v-if="loading" class="notifications-page__list" aria-label="Loading">
+      <div v-if="loading" class="notifications-page__list" role="status" :aria-label="t('common.loading')">
         <div v-for="i in 3" :key="i" class="notif-card notif-card--skeleton">
           <div class="notif-card__skeleton-icon" />
           <div class="notif-card__skeleton-body">

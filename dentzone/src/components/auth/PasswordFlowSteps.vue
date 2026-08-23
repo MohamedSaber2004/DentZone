@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { t } from '../../i18n'
+
 withDefaults(
   defineProps<{
     current: number
@@ -8,12 +10,13 @@ withDefaults(
 </script>
 
 <template>
-  <ol class="pw-steps" aria-label="Password recovery progress">
+  <ol class="pw-steps" :aria-label="t('auth.recoveryProgress')">
     <li
       v-for="step in 3"
       :key="step"
       class="pw-steps__item"
       :class="{ 'pw-steps__item--done': step < current, 'pw-steps__item--active': step === current }"
+      :aria-current="step === current ? 'step' : undefined"
     >
       <span class="pw-steps__dot">{{ step }}</span>
       <span v-if="step < 3" class="pw-steps__bar" aria-hidden="true" />

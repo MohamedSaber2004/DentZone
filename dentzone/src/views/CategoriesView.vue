@@ -79,7 +79,7 @@ onMounted(load)
       </button>
     </form>
 
-    <div v-if="loading" class="page__grid" aria-label="Loading">
+    <div v-if="loading" class="page__grid" role="status" :aria-label="t('common.loading')">
       <div v-for="i in 8" :key="i" class="skeleton-card">
         <span class="skeleton skeleton-card__media" />
         <span class="skeleton skeleton-card__line skeleton-card__line--wide" />

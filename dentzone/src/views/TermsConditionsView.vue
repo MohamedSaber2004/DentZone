@@ -66,7 +66,7 @@ onUnmounted(() => {
 
       <h1 class="page__title">{{ t('terms.title') }}</h1>
 
-      <div v-if="loading" class="policy__skeleton" aria-label="Loading">
+      <div v-if="loading" class="policy__skeleton" role="status" :aria-label="t('common.loading')">
         <span class="skeleton skeleton__title" />
         <span class="skeleton skeleton__line" />
         <span class="skeleton skeleton__line" />

@@ -7,16 +7,18 @@ import LoadingBar from './components/ui/LoadingBar.vue'
 import LoadingOverlay from './components/ui/LoadingOverlay.vue'
 import AppIcon from './components/ui/AppIcon.vue'
 import { WHATSAPP_LINK } from './config/contact.config'
+import { t } from './i18n'
 </script>
 
 <template>
   <div class="app-shell">
+    <a class="skip-link" href="#main-content">{{ t('common.skipToMain') }}</a>
     <LoadingBar />
     <LoadingOverlay />
     <AppHeader />
     <ToastContainer />
     <ResultModal />
-    <main class="app-main">
+    <main id="main-content" class="app-main" tabindex="-1">
       <RouterView v-slot="{ Component }">
         <Transition name="page" mode="out-in">
           <component :is="Component" />
@@ -46,6 +48,10 @@ import { WHATSAPP_LINK } from './config/contact.config'
 
 .app-main {
   flex: 1;
+}
+
+.app-main:focus {
+  outline: none;
 }
 
 .app-whatsapp {
