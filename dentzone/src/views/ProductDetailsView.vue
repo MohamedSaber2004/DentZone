@@ -114,7 +114,24 @@ const displayedStores = computed(() => {
 
 const currentStoreName = computed(() => {
   const store = availableStores.value.find((s) => s.inventoryUserId === selectedInventoryUserId.value)
-  return store?.inventoryUserName || detail.value?.prices[0]?.inventoryUserName || ''
+  if (store?.inventoryUserName) return store.inventoryUserName
+
+  const priceMatch = detail.value?.prices?.find((p) => p.inventoryUserId === selectedInventoryUserId.value)
+  if (priceMatch?.inventoryUserName) return priceMatch.inventoryUserName
+
+  const invMatch = detail.value?.inventories?.find((i) => i.inventoryUserId === selectedInventoryUserId.value)
+  if (invMatch?.inventoryName) return invMatch.inventoryName
+
+  if (typeof route.query.supplier === 'string' && route.query.supplier.trim()) {
+    return route.query.supplier.trim()
+  }
+
+  return (
+    availableStores.value[0]?.inventoryUserName ||
+    detail.value?.prices?.[0]?.inventoryUserName ||
+    detail.value?.inventories?.[0]?.inventoryName ||
+    ''
+  )
 })
 
 const backToProducts = () => {
@@ -432,9 +449,16 @@ watch(() => route.params.productId, () => {
         <div class="detail__info">
           <h1 class="detail__name">{{ displayName }}</h1>
 
-          <p class="detail__code">
-            {{ t('products.code') }}: {{ detail.productCode }}
-          </p>
+          <div class="detail__subhead">
+            <p class="detail__code">
+              {{ t('products.code') }}: {{ detail.productCode }}
+            </p>
+            <div v-if="currentStoreName" class="detail__provider-tag">
+              <AppIcon name="store" :size="13" />
+              <span class="detail__provider-tag-label">{{ locale === 'ar' ? 'المورد:' : 'Supplier:' }}</span>
+              <strong class="detail__provider-tag-name">{{ currentStoreName }}</strong>
+            </div>
+          </div>
 
           <!-- Available Stores / Providers Selector -->
           <div v-if="availableStores.length > 1" class="detail__stores">
@@ -520,9 +544,15 @@ watch(() => route.params.productId, () => {
               </span>
             </button>
           </div>
+          <!-- Single Provider Banner -->
           <div v-else-if="currentStoreName" class="detail__single-store">
-            <AppIcon name="store" :size="14" />
-            <span>{{ currentStoreName }}</span>
+            <div class="detail__single-store-icon">
+              <AppIcon name="store" :size="17" />
+            </div>
+            <div class="detail__single-store-info">
+              <span class="detail__single-store-label">{{ locale === 'ar' ? 'المورد المعتمد' : 'Verified Supplier' }}</span>
+              <strong class="detail__single-store-name">{{ currentStoreName }}</strong>
+            </div>
           </div>
 
           <div class="detail__price-row">
@@ -546,6 +576,11 @@ watch(() => route.params.productId, () => {
           </div>
 
           <div class="detail__meta">
+            <div v-if="currentStoreName" class="detail__meta-provider">
+              <AppIcon name="store" :size="14" />
+              <span class="detail__meta-provider-label">{{ locale === 'ar' ? 'المورد:' : 'Supplier:' }}</span>
+              <strong class="detail__meta-provider-name">{{ currentStoreName }}</strong>
+            </div>
             <span v-if="currentPrice && currentPrice.stockQuantity > 0" class="detail__stock">
               <AppIcon name="check" :size="14" />
               {{ t('products.inStock', { count: currentPrice.stockQuantity }) }}
@@ -962,10 +997,38 @@ html[dir='rtl'] .page__back svg {
   line-height: 1.2;
 }
 
+.detail__subhead {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
 .detail__code {
   font-family: var(--dz-font-mono);
   font-size: 0.8rem;
   color: var(--dz-muted);
+}
+
+.detail__provider-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--dz-radius-full);
+  background: var(--dz-primary-soft);
+  color: var(--dz-primary-strong);
+  font-size: 0.76rem;
+}
+
+.detail__provider-tag-label {
+  color: var(--dz-muted);
+  font-weight: 500;
+}
+
+.detail__provider-tag-name {
+  font-weight: 700;
+  color: var(--dz-primary-strong);
 }
 
 .detail__price-row {
@@ -1044,9 +1107,30 @@ html[dir='rtl'] .page__back svg {
 .detail__meta {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.75rem;
   flex-wrap: wrap;
   margin-top: 0.2rem;
+}
+
+.detail__meta-provider {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  color: var(--dz-ink);
+  background: var(--dz-surface-soft);
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--dz-radius);
+  border: 1px solid var(--dz-border);
+}
+
+.detail__meta-provider-label {
+  color: var(--dz-muted);
+}
+
+.detail__meta-provider-name {
+  font-weight: 700;
+  color: var(--dz-primary-strong);
 }
 
 .detail__stock {
@@ -1588,14 +1672,40 @@ html[dir='rtl'] .detail__stores-explore-action svg {
 .detail__single-store {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--dz-ink-soft);
-  padding: 0.35rem 0.75rem;
+  gap: 0.75rem;
+  padding: 0.65rem 0.95rem;
   background: var(--dz-surface-soft);
+  border: 1px solid var(--dz-border);
   border-radius: var(--dz-radius);
   align-self: flex-start;
+}
+
+.detail__single-store-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--dz-radius-full);
+  background: var(--dz-primary-soft);
+  color: var(--dz-primary);
+  flex-shrink: 0;
+}
+
+.detail__single-store-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.detail__single-store-label {
+  font-size: 0.72rem;
+  color: var(--dz-muted);
+}
+
+.detail__single-store-name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--dz-ink);
 }
 
 /* --- Similar / Related Products Section --- */
