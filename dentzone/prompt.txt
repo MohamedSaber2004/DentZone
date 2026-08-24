@@ -1,438 +1,132 @@
-﻿DentZone
-تسوق حسب التصنيف
-مستلزمات احترافية في كل تصنيف من تصنيفات العناية
+﻿تمام، كده الصورة أوضح. بما إن الـ stack عندك:
 
-عرض كل التصنيفات
-Oral Care System
-Oral Care System
-Oral Care System
+Backend: .NET
+Frontend: Vue
+Node.js: غالبًا للـ build/dev server أو جزء من الـ frontend
+Deployment: Vercel
+فالمشكلة اللي في الصورة غالبًا Routing/SPA fallback في Vue على Vercel، وليس إن الـ site محتاج "restart".
 
-Laboratories
-Laboratories
-Laboratories
+إيه اللي بيحصل؟
+افترض إن Vue عنده route:
 
-Others
-Others
-Others
+/products/123
 
-Prosthodontics
-Prosthodontics
-Prosthodontics
+لو دخلت للموقع من الـ Home وبعدين Vue نقلك إلى:
 
-Machine Inquiries
-Machine Inquiries
-Machine Inquiries
+/products/123
 
-Restorative
-Restorative
-Restorative
+كل شيء ممكن يشتغل طبيعي.
 
-Surgery
-Surgery
-Surgery
+لكن لما تعمل Refresh، المتصفح بيطلب مباشرة:
 
-Disposable Material
-Disposable Material
-Disposable Material
+/products/123
 
-Orthodontics
-Orthodontics
-Orthodontics
+من Vercel.
 
-Implantology
-Implantology
-Implantology
+Vercel يحاول يلاقي resource أو page بهذا المسار، ولو الـ rewrite مش متظبط، يرجع:
 
-أفضل الموردين
-أفضل الموردين
-الموردون المعتمدون والأعلى تقييماً لتجهيز العيادات الطبية
+404: NOT_FOUND
 
-Dental Capital
-Dental Capital
-غير متاح الآن
-BAZZAR  DENT
-BAZZAR DENT
-غير متاح الآن
-MCS Dental Sector
-MCS Dental Sector
-غير متاح الآن
-عروض خاصة
-عروض حصرية لعيادتك، تتجدد باستمرار
+وده بالضبط النوع الظاهر في الصورة.
 
-الأكثر مبيعًا
-المنتجات الأكثر طلباً
-أفضل الأدوات والمستلزمات الطبية المعتمدة والمختارة من كبرى العيادات
+الحل الأفضل في Vue + Vercel
+لو أنت تستخدم Vue Router مع History Mode، مثل:
 
+createRouter({
+  history: createWebHistory(),
+  routes
+})
 
-عرض الكل
-Diamond Burs Stone BR-41
+فأنت محتاج تعمل rewrite لكل الـ routes إلى index.html.
 
+في مشروع الـ frontend أضف ملف:
 
-Diamond Burs Stone BR-41
-الرمز: 97511820
+vercel.json
 
-متوفر لدى 2 موردين
-٧٫٨
-ج.م
-500 في المخزون
-Dental Non Woven Gauze
+وفيه:
 
+{
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
 
-Dental Non Woven Gauze
-الرمز: 34857437
+ثم اعمل deploy جديد.
 
-متوفر لدى مورد معتمد
-٣٨٫٤
-ج.م
-500 في المخزون
-Kids Stainless Steel Crown Refill Upper Left E7 1 Pc
+ليه ده بيحل المشكلة؟
+لما المستخدم يعمل:
 
+/products/123
 
-Kids Stainless Steel Crown Refill Upper Left E7 1 Pc
-الرمز: 35352129
+Vercel بدل ما يقول:
 
-متوفر لدى 2 موردين
-٦٤٫٠٥
-ج.م
-500 في المخزون
-Egypt Napkin
+مفيش ملف اسمه /products/123
 
+هيقول:
 
-Egypt Napkin
-الرمز: 28640528
+تمام، هجيب index.html، وبعدها Vue Router هو اللي يقرر يعرض Product 123.
 
-متوفر لدى 2 موردين
-٨٠٫٣
-ج.م
-492 في المخزون
-EgypTCotton Mahala500 Gr
+وبالتالي:
 
+Home
+ ↓
+Vue Router
+ ↓
+/products/123
+ ↓
+Refresh
+ ↓
+Vercel → index.html
+ ↓
+Vue Router
+ ↓
+/products/123 ✅
 
-EgypTCotton Mahala500 Gr
-الرمز: 57083891
+لكن فيه نقطة مهمة جدًا
+ما تعملش Auto Restart أو Auto Refresh للـ browser كحل للمشكلة.
 
-متوفر لدى مورد معتمد
-٩٦٫٣
-ج.م
-46 في المخزون
-Cotisen Cotton Roll Dispenser Blue
+لأن لو المشكلة:
 
+Vercel → 404
 
-Cotisen Cotton Roll Dispenser Blue
-الرمز: 65166953
+فـ:
 
-متوفر لدى مورد معتمد
-١٠٩٫٢٥
-ج.م
-غير متوفر
-Gutta Percha #25 Taper 4%
+location.reload()
 
-
-Gutta Percha #25 Taper 4%
-الرمز: 31359371
-
-متوفر لدى مورد معتمد
-١٢١
-ج.م
-54 في المخزون
-Plastic Syringes 3 Ml
-
-
-Plastic Syringes 3 Ml
-الرمز: 93017311
-
-متوفر لدى مورد معتمد
-١٤٣٫٧٥
-ج.م
-49 في المخزون
-Latex Gloves Powder Free Medium White
+ممكن يعمل:
 
-
-Latex Gloves Powder Free Medium White
-الرمز: 27512019
-
-متوفر لدى 2 موردين
-١٥٣٫٩٢
-ج.م
-478 في المخزون
-Gloves Latex Powder Free Large White 100 Pcs
+404
+ ↓
+reload
+ ↓
+404
+ ↓
+reload
+ ↓
+404
+...
 
+وتدخل في loop.
 
-Gloves Latex Powder Free Large White 100 Pcs
-الرمز: 86535124
-
-متوفر لدى 3 موردين
-١٥٣٫٩٢
-ج.م
-500 في المخزون
+ولو أنت تستخدم Vue Router
+ابعتلي الجزء الموجود عندك في:
 
-عرض الكل (19)
-منتجات مميزة
-مختارات للعيادات من فريق التوريد لدينا
+src/router/index.js
 
-Yousi Contra Without LED
-
+أو:
 
-Yousi Contra Without LED
-متوفر لدى 2 موردين
-١٬٨٩٠
-ج.م
-500 في المخزون
-Adseal Resin Sealer 13.5 Gr
+src/router/index.ts
 
+خصوصًا الجزء ده:
 
-Adseal Resin Sealer 13.5 Gr
-متوفر لدى 2 موردين
-٨٥٠٫٥
-ج.م
-500 في المخزون
-Latex Gloves Powder Free Medium White
+createRouter({
+    history: ...,
+    routes: [...]
+})
 
+وكمان لو عندك vercel.json ابعته.
 
-Latex Gloves Powder Free Medium White
-متوفر لدى 2 موردين
-١٥٣٫٩٢
-ج.م
-478 في المخزون
-Dentsply Prime and Bond Universal 4ml
-
-
-Dentsply Prime and Bond Universal 4ml
-متوفر لدى 2 موردين
-٢٬٦٤٤٫٥
-ج.م
-500 في المخزون
-المزيد من العروض
-عروض إضافية وترويجات شركائنا لعيادتك
-
-تسوق حسب المورد
-منتجات من موردين ومصنعين موثوقين
-
-
-عرض جميع الموردين
-Tri Group
-Tri Group
-متاح الآن
-Top Dent
-Top Dent
-متاح الآن
-شركة مصر للتجارة والتوزيع
-شركة مصر للتجارة والتوزيع
-متاح الآن
-Dental Hub Company 
-Dental Hub Company
-متاح الآن
-MCS Dental Sector
-MCS Dental Sector
-متاح الآن
-Dental Capital
-Dental Capital
-غير متاح الآن
-Tri Group Equipments
-Tri Group Equipments
-متاح الآن
-BAZZAR  DENT
-BAZZAR DENT
-غير متاح الآن
-جميع المنتجات والمستلزمات
-جميع المنتجات والمستلزمات
-تصفح قائمة المنتجات الكاملة مع إمكانية البحث والتصفية حسب المورد
-
-
-عرض جميع المنتجات
-Film Mount Ez View 2H 1 Pc
-
-
-Film Mount Ez View 2H 1 Pc
-الرمز: 66485627
-
-Top Dent
-٢٫٦
-ج.م
-50 في المخزون
-Film Mount Ez - View Fastear 1 Pc
-
-
-Film Mount Ez - View Fastear 1 Pc
-الرمز: 89847977
-
-Top Dent
-٢٫٦
-ج.م
-50 في المخزون
-Film Mount Ez View 4H 1 Pc
-
-
-Film Mount Ez View 4H 1 Pc
-الرمز: 89693010
-
-Top Dent
-٣٫٩
-ج.م
-50 في المخزون
-Glass slap
-
-
-Glass slap
-الرمز: 73161144
-
-متوفر لدى 2 موردين
-٦٫٨
-ج.م
-500 في المخزون
-Over Gloves Light Transparent
-
-
-Over Gloves Light Transparent
-الرمز: 16391186
-
-متوفر لدى 2 موردين
-٥٫٢
-ج.م
-30 في المخزون
-Matrix Band China
-
-
-Matrix Band China
-الرمز: 34950425
-
-Tri Group
-٨
-ج.م
-500 في المخزون
-Plastic Over Gloves Normal
-
-
-Plastic Over Gloves Normal
-الرمز: 63121493
-
-Tri Group
-٦٫٣٣
-ج.م
-500 في المخزون
-Over Gloves Light Transparent
-
-
-Over Gloves Light Transparent
-الرمز: 16391186
-
-متوفر لدى 2 موردين
-٧٫٥٤
-ج.م
-50 في المخزون
-Over Gloves Transparent
-
-
-Over Gloves Transparent
-الرمز: 26869452
-
-Top Dent
-٧٫٥٤
-ج.م
-50 في المخزون
-Diamond Burs TR-26 Round End Taper Stone
-
-
-Diamond Burs TR-26 Round End Taper Stone
-الرمز: 28064168
-
-Tri Group
-٧٫٨
-ج.م
-500 في المخزون
-Diamond Burs FO29 Egg Stone
-
-
-Diamond Burs FO29 Egg Stone
-الرمز: 22999554
-
-Tri Group
-٧٫٨
-ج.م
-490 في المخزون
-Diamond Burs TR-11F Fine Round End Taper Stone
-
-
-Diamond Burs TR-11F Fine Round End Taper Stone
-الرمز: 43882555
-
-Tri Group
-٧٫٨
-ج.م
-499 في المخزون
-Diamond Burs TF12C Flat End Tapered Stone
-
-
-Diamond Burs TF12C Flat End Tapered Stone
-الرمز: 66748589
-
-Tri Group
-٧٫٨
-ج.م
-500 في المخزون
-Diamond Burs Stone EX-20B
-
-
-Diamond Burs Stone EX-20B
-الرمز: 55398772
-
-متوفر لدى 2 موردين
-٧٫٨
-ج.م
-500 في المخزون
-Diamond Burs Stone SF-11
-
-
-Diamond Burs Stone SF-11
-الرمز: 43568766
-
-متوفر لدى 2 موردين
-٧٫٨
-ج.م
-500 في المخزون
-
-عرض جميع المنتجات
-DentZoneDent
-Zone
-أدوات ومستلزمات أسنان احترافية للعيادات والممارسات.
-
-تابعنا
-الشركة
-من نحن
-الشحن والإرجاع
-سياسة الخصوصية
-الشروط والأحكام
-اتصل بنا
-حمّل التطبيق
-اطلب أينما كنت مع تطبيق DentZone.
-
-حمّله من
-متجر آبل
-احصل عليه من
-جوجل بلاي
-المساعدة
-support@dentzone.store
-+20 12 77591339
-© 2026 DentZone. جميع الحقوق محفوظة.
-صُنع بـ ♥ من أجل مهنيي طب الأسنان
-[vue/compiler-sfc] Unexpected token (236:0)
-
-E:/Dent-Zone/DentZone/dentzone/src/views/HomeView.vue
-233|      void wishlistService.refresh(true)
-234|    }
-235|  })
-   |     ^
-236|  </script>
-   |  ^
-237|
-unknown file:236:0
-    at constructor (E:\Dent-Zone\DentZone\dentzone\node_modules\@babel\parser\lib\index.js:369:19)
-    at TypeScriptParserMixin.raise (E:\Dent-Zone\DentZone\dentzone\node_modules\@babel\parser\lib\index.js:6620:19)
-    at TypeScriptParserMixin.unexpected (E:\Dent-Zone\DentZone\dentzone\node_modules\@babel\parser\lib\index.js:6640:16)
-    at TypeScriptParserMixin.parseExprAtom (E:\Dent-Zone\DentZone\dentzone\node_modules\@babel\parser\lib\index.js:11468:22)
-    at TypeScriptParserMixin.parseExprSubscripts (E:\Dent-Zone\DentZone\dentzone\node_modules\@babel\parser\lib\index.js:11102:23)
-    at TypeScriptParserMixin.parseUpdate (E:\Dent-Zone\DentZone\dentzone\node_modules\@babel\parser\lib\index.js:11087:21)
-    at TypeScriptParserMixin.parseMaybeUnary (E:\Dent-Zone\DentZone\dentzone\node_modules\@babel\parser\lib\index.js:11067:23)
-    at TypeScriptParserMixin.parseMaybeUnary (E:\Dent-Zone\DentZone\dentzone\node_modules\@babel\parser\lib\index.js:9858:18)
-    at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (E:\Dent-Zone\DentZone\dentzone\node_modules\@babel\parser\lib\index.js:10920:61)
-    at TypeScriptParserMixin.parseExprOps (E:\Dent-Zone\DentZone\dentzone\node_modules\@babel\parser\lib\index.js:10925:23)
+لأن من الصورة وحدها أقدر أرجّح إن المشكلة SPA routing، لكن أقدر أحدد لك التعديل بالضبط لما أشوف إعدادات Vue Router وVercel.
