@@ -76,18 +76,8 @@ const load = async () => {
   error.value = false
   try {
     const lang = locale.value === 'ar' ? API_LANG.ARABIC : API_LANG.ENGLISH
-    let list: HomeProviderDto[] = []
-    try {
-      const top = await homeRepository.getTopProviders(lang)
-      if (top && top.length > 0) list = top
-    } catch {
-      // fallback to getHome
-    }
-    if (list.length === 0) {
-      const home = await homeRepository.getHome(lang)
-      list = home.providers ?? []
-    }
-    providers.value = list
+    const all = await homeRepository.getAllProviders(lang)
+    providers.value = all
     page.value = 1
   } catch {
     error.value = true

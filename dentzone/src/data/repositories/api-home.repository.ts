@@ -210,12 +210,14 @@ export class ApiHomeRepository implements HomeRepository {
   async getHome(lang: number): Promise<HomeDto> {
     try {
       const payload = await this.http.get<RawHomePayload>(HOME_ROUTES.getHome(lang), { showFeedback: false })
+      const rawProviders = extractArray(payload?.providers)
+      const normalizedProviders = rawProviders.length > 0 ? rawProviders.map(normalizeProvider) : []
 
       return {
         banners: payload?.banners ?? [],
         categories: (payload?.categories ?? []).map((category) => this.toCategory(category)),
         products: (payload?.products ?? []).map((product) => this.toProviderProduct(product)),
-        providers: payload?.providers ?? [],
+        providers: normalizedProviders,
         brands: payload?.brands ?? [],
         specialOffersone: payload?.specialOffersone ?? [],
         specialOfferstwo: payload?.specialOfferstwo ?? [],
@@ -235,6 +237,68 @@ export class ApiHomeRepository implements HomeRepository {
         fullName: null,
       }
     }
+  }
+
+  async getAllProviders(lang?: number): Promise<HomeProviderDto[]> {
+    const langCode = lang ?? 1
+    const providerMap = new Map<string, HomeProviderDto>()
+
+    // 1. Fetch from getHome which contains the full registered provider list
+    try {
+      const home = await this.getHome(langCode)
+      for (const p of home.providers) {
+        if (p.id && (p.fullName || p.userName)) {
+          providerMap.set(p.id, p)
+        }
+      }
+
+      // Also harvest any additional provider references from products
+      for (const prod of home.products) {
+        if (prod.inventoryUserId && prod.inventoryUserName && !providerMap.has(prod.inventoryUserId)) {
+          providerMap.set(prod.inventoryUserId, {
+            id: prod.inventoryUserId,
+            fullName: prod.inventoryUserName,
+            userName: prod.inventoryUserName,
+            email: '',
+            isAvailableNow: true,
+            profileImage: '',
+          })
+        }
+      }
+    } catch {
+      // safe fallback
+    }
+
+    // 2. Fetch top providers and merge them (updating photo/status if available)
+    try {
+      const top = await this.getTopProviders(langCode)
+      for (const p of top) {
+        if (p.id) {
+          const existing = providerMap.get(p.id)
+          if (existing) {
+            providerMap.set(p.id, {
+              ...existing,
+              profileImage: p.profileImage || existing.profileImage,
+              isAvailableNow: p.isAvailableNow ?? existing.isAvailableNow,
+            })
+          } else {
+            providerMap.set(p.id, p)
+          }
+        }
+      }
+    } catch {
+      // safe fallback
+    }
+
+    // 3. If still empty, use categories fallback
+    if (providerMap.size === 0) {
+      const fallback = await this.fetchProvidersFallback(langCode)
+      for (const p of fallback) {
+        if (p.id) providerMap.set(p.id, p)
+      }
+    }
+
+    return Array.from(providerMap.values())
   }
 
   private async fetchProvidersFallback(lang: number): Promise<HomeProviderDto[]> {
