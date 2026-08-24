@@ -412,6 +412,9 @@ export type Messages = {
     viewCart: string
     outOfStock: string
     maxHint: string
+    providerTotal: string
+    providerGroupTitle: string
+    viewProviderStore: string
   }
   summary: {
     subtotal: string
