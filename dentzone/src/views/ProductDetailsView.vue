@@ -15,7 +15,7 @@ import type { ProductDetailDto, ProductPriceDto, ProviderProductDto } from '../d
 
 const route = useRoute()
 const router = useRouter()
-const { productRepository, policyRepository, cartService, wishlistService } = services
+const { productRepository, policyRepository, cartService, wishlistService, homeRepository } = services
 
 const productId = () => (typeof route.params.productId === 'string' ? route.params.productId : '')
 const inventoryUserId = () =>
@@ -33,6 +33,7 @@ const showProviderModal = ref(false)
 const selectedInventoryUserId = ref<string>('')
 const relatedProducts = ref<ProviderProductDto[]>([])
 const relatedLoading = ref(false)
+const providerNameMap = ref<Map<string, string>>(new Map())
 
 const openLightbox = (index?: number) => {
   if (typeof index === 'number') {
@@ -53,18 +54,35 @@ export interface StoreOption {
   priceId: string
 }
 
+const resolveStoreName = (id: string, directName?: string | null, index = 0): string => {
+  const direct = (directName || '').trim()
+  const genericAr = 'متوفر لدى مورد معتمد'
+  const genericEn = 'Available from verified supplier'
+  if (direct && direct !== genericAr && direct !== genericEn) {
+    return direct
+  }
+  if (id && providerNameMap.value.has(id)) {
+    return providerNameMap.value.get(id)!
+  }
+  if (typeof route.query.supplier === 'string' && route.query.supplier.trim()) {
+    return route.query.supplier.trim()
+  }
+  return locale.value === 'ar' ? `مورد معتمد #${index + 1}` : `Verified Supplier #${index + 1}`
+}
+
 const availableStores = computed<StoreOption[]>(() => {
   const d = detail.value
   if (!d) return []
   const list: StoreOption[] = []
   const seenIds = new Set<string>()
 
-  for (const p of d.prices || []) {
+  for (let i = 0; i < (d.prices || []).length; i++) {
+    const p = d.prices[i]!
     if (!p.inventoryUserId || seenIds.has(p.inventoryUserId)) continue
     seenIds.add(p.inventoryUserId)
     list.push({
       inventoryUserId: p.inventoryUserId,
-      inventoryUserName: p.inventoryUserName || t('home.singleProvider'),
+      inventoryUserName: resolveStoreName(p.inventoryUserId, p.inventoryUserName, list.length),
       salesPrice: p.salesPrice,
       effectiveSalesPrice: p.effectiveSalesPrice > 0 ? p.effectiveSalesPrice : p.salesPrice,
       stockQuantity: p.stockQuantity,
@@ -75,12 +93,13 @@ const availableStores = computed<StoreOption[]>(() => {
     })
   }
 
-  for (const inv of d.inventories || []) {
+  for (let i = 0; i < (d.inventories || []).length; i++) {
+    const inv = d.inventories[i]!
     if (!inv.inventoryUserId || seenIds.has(inv.inventoryUserId)) continue
     seenIds.add(inv.inventoryUserId)
     list.push({
       inventoryUserId: inv.inventoryUserId,
-      inventoryUserName: inv.inventoryName || t('home.singleProvider'),
+      inventoryUserName: resolveStoreName(inv.inventoryUserId, inv.inventoryName, list.length),
       salesPrice: inv.salesPrice,
       effectiveSalesPrice: inv.effectiveSalesPrice > 0 ? inv.effectiveSalesPrice : inv.salesPrice,
       stockQuantity: inv.stockQuantity,
@@ -113,25 +132,40 @@ const displayedStores = computed(() => {
 })
 
 const currentStoreName = computed(() => {
+  const genericAr = 'متوفر لدى مورد معتمد'
+  const genericEn = 'Available from verified supplier'
+  const isMeaningful = (str?: string | null): str is string => {
+    const s = (str || '').trim()
+    return s.length > 0 && s !== genericAr && s !== genericEn
+  }
+
   const store = availableStores.value.find((s) => s.inventoryUserId === selectedInventoryUserId.value)
-  if (store?.inventoryUserName) return store.inventoryUserName
+  if (store && isMeaningful(store.inventoryUserName)) return store.inventoryUserName
 
   const priceMatch = detail.value?.prices?.find((p) => p.inventoryUserId === selectedInventoryUserId.value)
-  if (priceMatch?.inventoryUserName) return priceMatch.inventoryUserName
+  if (priceMatch && isMeaningful(priceMatch.inventoryUserName)) return priceMatch.inventoryUserName
 
   const invMatch = detail.value?.inventories?.find((i) => i.inventoryUserId === selectedInventoryUserId.value)
-  if (invMatch?.inventoryName) return invMatch.inventoryName
+  if (invMatch && isMeaningful(invMatch.inventoryName)) return invMatch.inventoryName
 
-  if (typeof route.query.supplier === 'string' && route.query.supplier.trim()) {
+  if (selectedInventoryUserId.value && providerNameMap.value.has(selectedInventoryUserId.value)) {
+    return providerNameMap.value.get(selectedInventoryUserId.value)!
+  }
+
+  if (typeof route.query.supplier === 'string' && isMeaningful(route.query.supplier)) {
     return route.query.supplier.trim()
   }
 
-  return (
-    availableStores.value[0]?.inventoryUserName ||
-    detail.value?.prices?.[0]?.inventoryUserName ||
-    detail.value?.inventories?.[0]?.inventoryName ||
-    ''
-  )
+  const first = availableStores.value[0]
+  if (first && isMeaningful(first.inventoryUserName)) return first.inventoryUserName
+
+  const p0 = detail.value?.prices?.[0]?.inventoryUserName
+  if (isMeaningful(p0)) return p0
+
+  const i0 = detail.value?.inventories?.[0]?.inventoryName
+  if (isMeaningful(i0)) return i0
+
+  return t('home.singleProvider')
 })
 
 const backToProducts = () => {
@@ -166,6 +200,21 @@ const loadRelated = async (categoryId?: string) => {
   }
 }
 
+const loadProviderNames = async () => {
+  if (providerNameMap.value.size > 0) return
+  try {
+    const providers = await homeRepository.getTopProviders(lang.value)
+    for (const p of providers) {
+      if (p.id) {
+        const name = (p.fullName || p.userName || '').trim()
+        if (name) providerNameMap.value.set(p.id, name)
+      }
+    }
+  } catch {
+    // silent fallback
+  }
+}
+
 const load = async () => {
   loading.value = true
   error.value = false
@@ -173,6 +222,7 @@ const load = async () => {
   activeImage.value = 0
   imageFailed.value = false
   quantity.value = 1
+  void loadProviderNames()
   try {
     const data = await productRepository.getProductById(productId(), lang.value)
     detail.value = data
