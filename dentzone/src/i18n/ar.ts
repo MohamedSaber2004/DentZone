@@ -424,6 +424,9 @@ export const ar: Messages = {
     viewCart: 'عرض السلة',
     outOfStock: 'غير متوفر',
     maxHint: 'الحد الأقصى {count} لكل طلب',
+    providerTotal: 'إجمالي المورد ({name})',
+    providerGroupTitle: 'منتجات المورد',
+    viewProviderStore: 'زيارة متجر المورد',
   },
   summary: {
     subtotal: 'المجموع الفرعي',

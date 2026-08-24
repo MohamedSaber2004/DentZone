@@ -13,9 +13,10 @@ watch(
     clearTimeout(showTimer)
     clearTimeout(hideTimer)
     if (loading) {
+      // Only show full-screen overlay if operation is exceptionally slow (2.5s+), letting LoadingBar and skeletons handle routine queries smoothly
       showTimer = setTimeout(() => {
         visible.value = true
-      }, 200)
+      }, 2500)
     } else {
       hideTimer = setTimeout(() => {
         visible.value = false

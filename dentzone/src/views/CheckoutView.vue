@@ -12,6 +12,7 @@ import type { DeliveryTimeSlotDto } from '../domain/models/order'
 const router = useRouter()
 
 const loadError = ref(false)
+const pageLoading = ref(true)
 const addresses = ref<AddressDto[]>([])
 const areas = ref<AreaDto[]>([])
 const addressesLoading = ref(true)
@@ -233,15 +234,23 @@ const parseOrderNumber = (response: unknown): string | null => {
 }
 
 const load = async () => {
+  pageLoading.value = true
   loadError.value = false
-  if (!(await cartService.refresh()) || !cartService.cart.value) {
-    void router.replace({ name: 'cart' })
-    return
+  try {
+    const ok = await cartService.refresh()
+    if (!ok || !cartService.cart.value || cartService.cart.value.items.length === 0) {
+      void router.replace({ name: 'cart' })
+      return
+    }
+    await Promise.all([
+      loadAddresses(),
+      addressRepository.getAllAreas().then((items: AreaDto[]) => (areas.value = items)).catch(() => undefined),
+    ])
+  } catch {
+    loadError.value = true
+  } finally {
+    pageLoading.value = false
   }
-  await Promise.all([
-    loadAddresses(),
-    addressRepository.getAllAreas().then((items: AreaDto[]) => (areas.value = items)).catch(() => undefined),
-  ])
 }
 
 onMounted(load)
@@ -283,7 +292,12 @@ onMounted(load)
         </RouterLink>
       </div>
 
-      <div v-if="loadError" class="page__state" role="alert">
+      <div v-if="pageLoading" class="page__loading" role="status" :aria-label="t('common.loading')">
+        <AppIcon name="refresh" :size="24" class="page__spinner" />
+        <span>{{ t('common.loading') }}</span>
+      </div>
+
+      <div v-else-if="loadError" class="page__state" role="alert">
         <span class="page__state-icon"><AppIcon name="alert-circle" :size="30" /></span>
         <h2 class="page__state-title">{{ t('checkout.title') }}</h2>
         <p class="page__state-desc">{{ t('checkout.loadError') }}</p>
@@ -578,6 +592,27 @@ onMounted(load)
 
 .checkout__back:hover {
   color: var(--dz-primary-strong);
+}
+
+.page__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 4rem 1rem;
+  text-align: center;
+  color: var(--dz-muted);
+}
+
+.page__spinner {
+  animation: page-spin 0.8s linear infinite;
+  color: var(--dz-primary);
+}
+
+@keyframes page-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .page__state {

@@ -66,18 +66,28 @@ const initials = (name: string) =>
 
 const failedImages = ref<Set<string>>(new Set())
 
-const linkTo = (provider: HomeProviderDto) => ({
-  name: 'inventory-products',
-  params: { inventoryUserId: provider.id },
-  query: { supplier: provider.fullName },
-})
+import { inventoryRoute } from '../utils/route-crypto'
+
+const linkTo = (provider: HomeProviderDto) =>
+  inventoryRoute(provider.id, { supplier: provider.fullName })
 
 const load = async () => {
   loading.value = true
   error.value = false
   try {
-    const home = await homeRepository.getHome(locale.value === 'ar' ? API_LANG.ARABIC : API_LANG.ENGLISH)
-    providers.value = home.providers ?? []
+    const lang = locale.value === 'ar' ? API_LANG.ARABIC : API_LANG.ENGLISH
+    let list: HomeProviderDto[] = []
+    try {
+      const top = await homeRepository.getTopProviders(lang)
+      if (top && top.length > 0) list = top
+    } catch {
+      // fallback to getHome
+    }
+    if (list.length === 0) {
+      const home = await homeRepository.getHome(lang)
+      list = home.providers ?? []
+    }
+    providers.value = list
     page.value = 1
   } catch {
     error.value = true

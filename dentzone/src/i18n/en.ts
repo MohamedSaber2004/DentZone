@@ -424,6 +424,9 @@ export const en: Messages = {
     viewCart: 'View cart',
     outOfStock: 'Out of stock',
     maxHint: 'Max {count} per order',
+    providerTotal: 'Supplier Total ({name})',
+    providerGroupTitle: 'Supplier Products',
+    viewProviderStore: 'Visit Supplier Store',
   },
   summary: {
     subtotal: 'Subtotal',

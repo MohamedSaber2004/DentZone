@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import type { ProviderProductDto } from '../../domain/models/product'
 import { locale, t } from '../../i18n'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import AppIcon from '../ui/AppIcon.vue'
 import { authService } from '../../di/container'
 import { resolveMediaUrl } from '../../utils/media'
+import { productRoute } from '../../utils/route-crypto'
 
 import type { RouteLocationRaw } from 'vue-router'
 
-defineProps<{
+const props = defineProps<{
   product: ProviderProductDto
   detailsTo?: RouteLocationRaw
   favorite?: boolean
@@ -20,6 +21,16 @@ const emit = defineEmits<{
   (e: 'toggle-favorite', product: ProviderProductDto): void
   (e: 'add-to-cart', product: ProviderProductDto): void
 }>()
+
+const resolvedDetailsTo = computed<RouteLocationRaw | undefined>(() => {
+  if (props.detailsTo) return props.detailsTo
+  if (props.product?.productId) {
+    return productRoute(props.product.productId, props.product.inventoryUserId, {
+      supplier: props.product.inventoryUserName || undefined,
+    })
+  }
+  return undefined
+})
 
 const imageFailed = ref(false)
 
@@ -38,7 +49,7 @@ const formatPrice = (value: number) => value.toLocaleString(locale.value === 'ar
 <template>
   <article class="product-card">
     <div class="product-card__media">
-      <RouterLink v-if="detailsTo" :to="detailsTo" class="product-card__media-link">
+      <RouterLink v-if="resolvedDetailsTo" :to="resolvedDetailsTo" class="product-card__media-link">
         <img
           v-if="product.images?.length && !imageFailed"
           :src="resolveMediaUrl(product.images[0])"
@@ -87,8 +98,8 @@ const formatPrice = (value: number) => value.toLocaleString(locale.value === 'ar
           <AppIcon name="cart" :size="16" />
         </button>
         <RouterLink
-          v-if="detailsTo"
-          :to="detailsTo"
+          v-if="resolvedDetailsTo"
+          :to="resolvedDetailsTo"
           class="product-card__details"
           :aria-label="`${t('products.details.title')}: ${displayName(product)}`"
         >
@@ -101,7 +112,7 @@ const formatPrice = (value: number) => value.toLocaleString(locale.value === 'ar
     </div>
 
     <div class="product-card__body">
-      <RouterLink v-if="detailsTo" :to="detailsTo" class="product-card__name-link">
+      <RouterLink v-if="resolvedDetailsTo" :to="resolvedDetailsTo" class="product-card__name-link">
         <h3 class="product-card__name">{{ displayName(product) }}</h3>
       </RouterLink>
       <h3 v-else class="product-card__name">{{ displayName(product) }}</h3>

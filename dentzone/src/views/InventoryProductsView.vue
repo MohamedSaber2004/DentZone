@@ -11,13 +11,16 @@ import AppPagination from '../components/ui/AppPagination.vue'
 import type { CategoryDto } from '../domain/models/category'
 import type { ProviderProductDto } from '../domain/models/product'
 
+import { categoryRoute, decryptId, encryptId, productRoute } from '../utils/route-crypto'
+
 const route = useRoute()
 const router = useRouter()
 const { productRepository, categoryRepository, cartService, wishlistService } = services
 
 const PAGE_SIZE = 15
 
-const inventoryId = () => (typeof route.params.inventoryUserId === 'string' ? route.params.inventoryUserId : '')
+const rawInventoryId = () => (typeof route.params.inventoryUserId === 'string' ? route.params.inventoryUserId : '')
+const inventoryId = () => decryptId(rawInventoryId())
 const supplierName = () => (typeof route.query.supplier === 'string' ? route.query.supplier : '')
 
 const allProducts = ref<ProviderProductDto[]>([])
@@ -27,7 +30,8 @@ const search = ref(typeof route.query.search === 'string' ? route.query.search :
 const currentPage = ref(1)
 
 const categories = ref<CategoryDto[]>([])
-const selectedCategory = ref(typeof route.query.cat === 'string' ? route.query.cat : '')
+const rawCatQuery = () => (typeof route.query.cat === 'string' ? route.query.cat : '')
+const selectedCategory = ref(decryptId(rawCatQuery()))
 
 const hasQuery = computed(() => search.value.trim().length > 0)
 
@@ -76,17 +80,14 @@ const toggleFavorite = (product: ProviderProductDto) => {
   })
 }
 
-const detailsTo = (product: ProviderProductDto) => ({
-  name: 'product-details',
-  params: { inventoryUserId: inventoryId() || product.inventoryUserId || 'default', productId: product.productId },
-  query: {
+const detailsTo = (product: ProviderProductDto) =>
+  productRoute(product.productId, inventoryId() || product.inventoryUserId, {
     supplier: supplierName() || product.inventoryUserName || undefined,
-    cat: route.query.cat,
+    cat: selectedCategory.value ? encryptId(selectedCategory.value) : undefined,
     name: route.query.name,
     page: currentPage.value > 1 ? String(currentPage.value) : undefined,
     search: search.value.trim() || undefined,
-  },
-})
+  })
 
 const addToCart = (product: ProviderProductDto) => {
   const invId = inventoryId() || product.inventoryUserId
@@ -109,10 +110,11 @@ const backToInventories = () => {
     router.back()
     return
   }
-  const catId = typeof route.query.cat === 'string' ? route.query.cat : ''
+  const rawCat = typeof route.query.cat === 'string' ? route.query.cat : ''
+  const catId = decryptId(rawCat)
   const name = typeof route.query.name === 'string' ? route.query.name : ''
   if (catId) {
-    void router.push({ name: 'category-inventories', params: { catId }, query: name ? { name } : {} })
+    void router.push(categoryRoute(catId, name ? { name } : {}))
   } else {
     void router.push({ name: 'categories' })
   }

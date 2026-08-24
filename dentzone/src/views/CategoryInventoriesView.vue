@@ -8,11 +8,14 @@ import AppButton from '../components/ui/AppButton.vue'
 import AppIcon from '../components/ui/AppIcon.vue'
 import type { InventoryDto } from '../domain/models/category'
 
+import { decryptId, encryptId } from '../utils/route-crypto'
+
 const route = useRoute()
 const router = useRouter()
 const { categoryRepository } = services
 
-const catId = () => (typeof route.params.catId === 'string' ? route.params.catId : '')
+const rawCatId = () => (typeof route.params.catId === 'string' ? route.params.catId : '')
+const catId = () => decryptId(rawCatId())
 const categoryName = () => (typeof route.query.name === 'string' ? route.query.name : '')
 
 const inventories = ref<InventoryDto[]>([])
@@ -75,7 +78,7 @@ const load = async () => {
 }
 
 const viewCategoryProducts = (searchQuery?: string) => {
-  const query: Record<string, string> = { cat: catId() }
+  const query: Record<string, string> = { cat: encryptId(catId()) }
   if (categoryName()) query.name = categoryName()
   if (searchQuery) query.search = searchQuery
   void router.push({ name: 'inventory-products', params: { inventoryUserId: 'all' }, query })

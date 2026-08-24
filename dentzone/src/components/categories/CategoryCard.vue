@@ -1,16 +1,23 @@
 <script setup lang="ts">
 import { categoryImageUrl, type CategoryDto } from '../../domain/models/category'
 import { locale } from '../../i18n'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import { categoryRoute } from '../../utils/route-crypto'
 import AppIcon from '../ui/AppIcon.vue'
 
 const props = withDefaults(
   defineProps<{
     category: CategoryDto
-    to?: string
+    to?: string | object
   }>(),
   { to: undefined },
 )
+
+const targetRoute = computed(() => {
+  if (props.to) return props.to
+  if (props.category?.id) return categoryRoute(props.category.id)
+  return undefined
+})
 
 const imageFailed = ref(false)
 
@@ -43,10 +50,10 @@ const onImageError = () => {
 
 <template>
   <Component
-    :is="to ? 'RouterLink' : 'div'"
-    :to="to"
+    :is="targetRoute ? 'RouterLink' : 'div'"
+    :to="targetRoute"
     class="category-card"
-    :class="{ 'category-card--link': to }"
+    :class="{ 'category-card--link': targetRoute }"
   >
     <div class="category-card__media">
       <img

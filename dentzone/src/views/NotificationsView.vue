@@ -20,7 +20,10 @@ const isPushLoading = computed(() => firebaseMessagingService.isLoading.value)
 let unsubscribeNotif: (() => void) | null = null
 
 const load = async () => {
-  if (!user.value?.id) return
+  if (!authService.isAuthenticated || !user.value?.id) {
+    loading.value = false
+    return
+  }
   loading.value = true
   error.value = false
   try {
@@ -164,6 +167,21 @@ onUnmounted(() => {
           <AppIcon name="refresh" :size="15" />
           {{ t('notifications.retry') }}
         </AppButton>
+      </div>
+
+      <!-- Unauthenticated State -->
+      <div v-else-if="!authService.isAuthenticated" class="notifications-page__state">
+        <span class="notifications-page__state-icon">
+          <AppIcon name="user" :size="30" />
+        </span>
+        <h2 class="notifications-page__state-title">{{ t('auth.login') }}</h2>
+        <p class="notifications-page__state-desc">{{ t('auth.errSessionExpired') }}</p>
+        <RouterLink to="/auth/login?redirect=/notifications">
+          <AppButton variant="primary">
+            {{ t('auth.login') }}
+            <AppIcon name="arrow-right" :size="15" />
+          </AppButton>
+        </RouterLink>
       </div>
 
       <!-- Empty State -->

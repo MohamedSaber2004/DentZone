@@ -3,6 +3,7 @@ import { services } from '../di/container'
 import { computed, onMounted, ref } from 'vue'
 import { t, locale } from '../i18n'
 import { API_LANG } from '../config/api.config'
+import { categoryRoute } from '../utils/route-crypto'
 import CategoryCard from '../components/categories/CategoryCard.vue'
 import AppButton from '../components/ui/AppButton.vue'
 import AppIcon from '../components/ui/AppIcon.vue'
@@ -111,7 +112,7 @@ onMounted(load)
         v-for="category in filteredCategories"
         :key="category.id"
         :category="category"
-        :to="`/categories/${category.id}`"
+        :to="categoryRoute(category.id)"
       />
     </div>
   </div>

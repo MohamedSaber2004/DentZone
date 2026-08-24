@@ -98,16 +98,15 @@ const toggleFavorite = (product: ProviderProductDto) => {
   })
 }
 
-const detailsTo = (product: ProviderProductDto) => ({
-  name: 'product-details',
-  params: { inventoryUserId: product.inventoryUserId || 'default', productId: product.productId },
-  query: {
+import { productRoute } from '../utils/route-crypto'
+
+const detailsTo = (product: ProviderProductDto) =>
+  productRoute(product.productId, product.inventoryUserId, {
     supplier: product.inventoryUserName || undefined,
     page: currentPage.value > 1 ? String(currentPage.value) : undefined,
     search: search.value.trim() || undefined,
     provider: selectedProvider.value || undefined,
-  },
-})
+  })
 
 const addToCart = (product: ProviderProductDto) => {
   if (!product.inventoryUserId || product.inventoryUserId === 'default') {

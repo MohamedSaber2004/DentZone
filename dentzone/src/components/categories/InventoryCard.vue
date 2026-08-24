@@ -19,12 +19,15 @@ const initials = (name: string) =>
     .map((part) => part.charAt(0).toUpperCase())
     .join('')
 
+import { inventoryRoute } from '../../utils/route-crypto'
+
 const linkTo = () => {
   const query: Record<string, string> = { supplier: props.inventory.fullName }
   if (props.categoryName) query.name = props.categoryName
   if (props.categoryId) query.cat = props.categoryId
-  return { name: 'inventory-products', params: { inventoryUserId: props.inventory.inventoryId }, query }
-}</script>
+  return inventoryRoute(props.inventory.inventoryId, query)
+}
+</script>
 
 <template>
   <RouterLink :to="linkTo()" class="inventory-card">

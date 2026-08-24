@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { locale, t } from '../i18n'
 import { cartService } from '../di/container'
 import { resolveMediaUrl } from '../utils/media'
+import { inventoryRoute, productRoute } from '../utils/route-crypto'
 import AppIcon from '../components/ui/AppIcon.vue'
 import AppButton from '../components/ui/AppButton.vue'
 
@@ -20,7 +21,17 @@ interface CartLine {
   maxQuantity: number
 }
 
+interface ProviderGroup {
+  inventoryUserId: string
+  supplierName: string
+  supplierPhoto: string | null
+  items: CartLine[]
+  subtotal: number
+  totalItems: number
+}
+
 const loadError = ref(false)
+const loading = ref(!cartService.cart.value)
 const busyKeys = ref<Set<string>>(new Set())
 
 const localizedName = (name: string, arabicName?: string) =>
@@ -35,13 +46,60 @@ const lines = computed<CartLine[]>(() => {
     inventoryId: item.inventoryUserId,
     name: localizedName(item.product.name, item.product.arabicName),
     image: item.product.productImage,
-    supplier: item.inventoryUser.fullName,
+    supplier: (item.inventoryUser?.fullName || item.inventoryUser?.userName || '').trim() || t('home.singleProvider'),
     unitPrice: item.productPrice.effectiveSalesPrice,
     lineTotal: item.totalAmount,
     quantity: item.quantity,
     stockQuantity: item.productPrice.stockQuantity,
     maxQuantity: item.productPrice.maxQuantity,
   }))
+})
+
+const providerGroups = computed<ProviderGroup[]>(() => {
+  const cart = cartService.cart.value
+  if (!cart || !cart.items || cart.items.length === 0) return []
+
+  const groupsMap = new Map<string, ProviderGroup>()
+
+  for (const item of cart.items) {
+    const invId = item.inventoryUserId || item.inventoryUser?.id || 'default'
+    const sName =
+      (item.inventoryUser?.fullName || item.inventoryUser?.userName || '').trim() ||
+      t('home.singleProvider')
+    const sPhoto = item.inventoryUser?.photo || null
+
+    if (!groupsMap.has(invId)) {
+      groupsMap.set(invId, {
+        inventoryUserId: invId,
+        supplierName: sName,
+        supplierPhoto: sPhoto,
+        items: [],
+        subtotal: 0,
+        totalItems: 0,
+      })
+    }
+
+    const group = groupsMap.get(invId)!
+    const line: CartLine = {
+      key: `${item.productId}:${invId}`,
+      productId: item.productId,
+      inventoryId: invId,
+      name: localizedName(item.product.name, item.product.arabicName),
+      image: item.product.productImage,
+      supplier: sName,
+      unitPrice: item.productPrice.effectiveSalesPrice,
+      lineTotal: item.totalAmount,
+      quantity: item.quantity,
+      stockQuantity: item.productPrice.stockQuantity,
+      maxQuantity: item.productPrice.maxQuantity,
+    }
+
+    group.items.push(line)
+    group.subtotal += line.lineTotal
+    group.totalItems += line.quantity
+  }
+
+  return Array.from(groupsMap.values())
 })
 
 const subtotal = computed(() => lines.value.reduce((acc, line) => acc + line.lineTotal, 0))
@@ -100,8 +158,16 @@ const formatPrice = (value: number) =>
   value.toLocaleString(locale.value === 'ar' ? 'ar-EG' : 'en-US', { maximumFractionDigits: 2 })
 
 const load = async () => {
+  if (!cartService.cart.value) loading.value = true
   loadError.value = false
-  loadError.value = !(await cartService.refresh())
+  try {
+    const ok = await cartService.refresh()
+    loadError.value = !ok
+  } catch {
+    loadError.value = true
+  } finally {
+    loading.value = false
+  }
 }
 
 onMounted(load)
@@ -118,7 +184,12 @@ onMounted(load)
       </div>
     </div>
 
-    <div v-if="loadError" class="page__state" role="alert">
+    <div v-if="loading" class="page__loading" role="status" :aria-label="t('common.loading')">
+      <AppIcon name="refresh" :size="24" class="page__spinner" />
+      <span>{{ t('common.loading') }}</span>
+    </div>
+
+    <div v-else-if="loadError" class="page__state" role="alert">
       <span class="page__state-icon"><AppIcon name="alert-circle" :size="30" /></span>
       <h2 class="page__state-title">{{ t('cart.title') }}</h2>
       <p class="page__state-desc">{{ t('cart.errorToast') }}</p>
@@ -141,81 +212,119 @@ onMounted(load)
     </div>
 
     <div v-else class="cart__layout">
-      <ul class="cart__list">
-        <li v-for="line in lines" :key="line.key" class="cart__item" :class="{ 'cart__item--busy': busyKeys.has(line.key) }">
-          <RouterLink
-            :to="{
-              name: 'product-details',
-              params: { inventoryUserId: line.inventoryId, productId: line.productId },
-            }"
-            class="cart__media"
-          >
-            <img v-if="line.image" :src="resolveMediaUrl(line.image)" :alt="line.name" />
-            <span v-else class="cart__placeholder"><AppIcon name="package" :size="22" /></span>
-          </RouterLink>
-
-          <div class="cart__info">
+      <div class="cart__groups">
+        <div
+          v-for="group in providerGroups"
+          :key="group.inventoryUserId"
+          class="cart__group"
+        >
+          <div class="cart__group-header">
+            <div class="cart__group-provider">
+              <span class="cart__group-icon">
+                <AppIcon name="store" :size="18" />
+              </span>
+              <div class="cart__group-info">
+                <h2 class="cart__group-name">{{ group.supplierName }}</h2>
+                <span class="cart__group-count">
+                  {{ t('summary.items', { count: group.totalItems }) }}
+                </span>
+              </div>
+            </div>
             <RouterLink
-              :to="{
-                name: 'product-details',
-                params: { inventoryUserId: line.inventoryId, productId: line.productId },
-              }"
-              class="cart__name"
+              v-if="group.inventoryUserId && group.inventoryUserId !== 'default'"
+              :to="inventoryRoute(group.inventoryUserId, { supplier: group.supplierName })"
+              class="cart__group-link"
             >
-              {{ line.name }}
+              {{ t('cart.viewProviderStore') }}
+              <AppIcon name="arrow-right" :size="13" />
             </RouterLink>
-            <p v-if="line.supplier" class="cart__supplier">
-              {{ line.supplier }}
-            </p>
-            <p v-if="outOfStock(line)" class="cart__out">
-              {{ t('cart.outOfStock') }}
-            </p>
-            <p v-else-if="atLimit(line)" class="cart__limit">
-              {{ t('cart.maxHint', { count: quantityLimit(line) }) }}
-            </p>
-            <p class="cart__unit">
-              {{ t('cart.each', { price: `${formatPrice(line.unitPrice)} ${t('products.currency')}` }) }}
-            </p>
           </div>
 
-          <div class="cart__stepper" role="group" :aria-label="line.name">
-            <button
-              type="button"
-              class="cart__stepper-btn"
-              :disabled="minusDisabled(line) || busyKeys.has(line.key)"
-              :aria-label="t('cart.remove')"
-              @click="changeQuantity(line, -1)"
+          <ul class="cart__list">
+            <li
+              v-for="line in group.items"
+              :key="line.key"
+              class="cart__item"
+              :class="{ 'cart__item--busy': busyKeys.has(line.key) }"
             >
-              <AppIcon name="minus" :size="14" />
-            </button>
-            <span class="cart__stepper-value">{{ line.quantity }}</span>
-            <button
-              type="button"
-              class="cart__stepper-btn"
-              :disabled="plusDisabled(line) || busyKeys.has(line.key)"
-              :aria-label="t('cart.title')"
-              @click="changeQuantity(line, 1)"
-            >
-              <AppIcon name="plus" :size="14" />
-            </button>
-          </div>
+              <RouterLink
+                :to="productRoute(line.productId, line.inventoryId, { supplier: line.supplier })"
+                class="cart__media"
+              >
+                <img v-if="line.image" :src="resolveMediaUrl(line.image)" :alt="line.name" />
+                <span v-else class="cart__placeholder"><AppIcon name="package" :size="22" /></span>
+              </RouterLink>
 
-          <div class="cart__line-total">
-            {{ formatPrice(line.lineTotal) }}
-            <span class="cart__line-currency">{{ t('products.currency') }}</span>
-          </div>
+              <div class="cart__info">
+                <RouterLink
+                  :to="productRoute(line.productId, line.inventoryId, { supplier: line.supplier })"
+                  class="cart__name"
+                >
+                  {{ line.name }}
+                </RouterLink>
+                <p v-if="line.supplier" class="cart__supplier">
+                  {{ line.supplier }}
+                </p>
+                <p v-if="outOfStock(line)" class="cart__out">
+                  {{ t('cart.outOfStock') }}
+                </p>
+                <p v-else-if="atLimit(line)" class="cart__limit">
+                  {{ t('cart.maxHint', { count: quantityLimit(line) }) }}
+                </p>
+                <p class="cart__unit">
+                  {{ t('cart.each', { price: `${formatPrice(line.unitPrice)} ${t('products.currency')}` }) }}
+                </p>
+              </div>
 
-          <button
-            type="button"
-            class="cart__remove"
-            :disabled="busyKeys.has(line.key)"
-            :aria-label="t('cart.remove')"
-            @click="remove(line)"
-          >
-            <AppIcon name="trash" :size="16" />
-          </button>
-        </li>
-      </ul>
+              <div class="cart__stepper" role="group" :aria-label="line.name">
+                <button
+                  type="button"
+                  class="cart__stepper-btn"
+                  :disabled="minusDisabled(line) || busyKeys.has(line.key)"
+                  :aria-label="t('cart.remove')"
+                  @click="changeQuantity(line, -1)"
+                >
+                  <AppIcon name="minus" :size="14" />
+                </button>
+                <span class="cart__stepper-value">{{ line.quantity }}</span>
+                <button
+                  type="button"
+                  class="cart__stepper-btn"
+                  :disabled="plusDisabled(line) || busyKeys.has(line.key)"
+                  :aria-label="t('cart.title')"
+                  @click="changeQuantity(line, 1)"
+                >
+                  <AppIcon name="plus" :size="14" />
+                </button>
+              </div>
+
+              <div class="cart__line-total">
+                {{ formatPrice(line.lineTotal) }}
+                <span class="cart__line-currency">{{ t('products.currency') }}</span>
+              </div>
+
+              <button
+                type="button"
+                class="cart__remove"
+                :disabled="busyKeys.has(line.key)"
+                :aria-label="t('cart.remove')"
+                @click="remove(line)"
+              >
+                <AppIcon name="trash" :size="16" />
+              </button>
+            </li>
+          </ul>
+
+          <div class="cart__group-footer">
+            <span class="cart__group-footer-label">
+              {{ t('cart.providerTotal', { name: group.supplierName }) }}:
+            </span>
+            <strong class="cart__group-footer-val">
+              {{ formatPrice(Math.ceil(group.subtotal)) }} {{ t('products.currency') }}
+            </strong>
+          </div>
+        </div>
+      </div>
 
       <aside class="cart__summary">
         <h2 class="cart__summary-title">{{ t('summary.total') }}</h2>
@@ -268,6 +377,27 @@ onMounted(load)
   color: var(--dz-muted);
 }
 
+.page__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 4rem 1rem;
+  text-align: center;
+  color: var(--dz-muted);
+}
+
+.page__spinner {
+  animation: page-spin 0.8s linear infinite;
+  color: var(--dz-primary);
+}
+
+@keyframes page-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .page__state {
   display: flex;
   flex-direction: column;
@@ -306,6 +436,111 @@ onMounted(load)
   grid-template-columns: minmax(0, 1fr) 300px;
   gap: 1.5rem;
   align-items: start;
+}
+
+.cart__groups {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.cart__group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 1.25rem;
+  border: 1px solid var(--dz-border);
+  border-radius: var(--dz-radius-xl);
+  background: var(--dz-surface);
+  box-shadow: var(--dz-shadow-xs);
+}
+
+.cart__group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px dashed var(--dz-border);
+}
+
+.cart__group-provider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.cart__group-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.3rem;
+  height: 2.3rem;
+  border-radius: var(--dz-radius-full);
+  background: var(--dz-primary-soft);
+  color: var(--dz-primary-strong);
+  flex-shrink: 0;
+}
+
+.cart__group-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.cart__group-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--dz-ink);
+  margin: 0;
+  line-height: 1.25;
+}
+
+.cart__group-count {
+  font-size: 0.78rem;
+  color: var(--dz-muted);
+  font-weight: 500;
+}
+
+.cart__group-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--dz-primary-strong);
+  padding: 0.35rem 0.7rem;
+  border-radius: var(--dz-radius-full);
+  background: var(--dz-surface-soft);
+  transition: all 0.2s ease;
+}
+
+.cart__group-link:hover {
+  background: var(--dz-primary-soft);
+  color: var(--dz-primary-strong);
+}
+
+.cart__group-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--dz-radius-md);
+  background: var(--dz-surface-soft);
+  margin-top: 0.25rem;
+}
+
+.cart__group-footer-label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--dz-ink-soft);
+}
+
+.cart__group-footer-val {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--dz-primary-strong);
 }
 
 .cart__list {

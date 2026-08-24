@@ -32,10 +32,12 @@ const load = async () => {
   }
 }
 
-const detailsTo = (product: ProviderProductDto) => ({
-  name: 'product-details',
-  params: { inventoryUserId: product.inventoryUserId, productId: product.productId },
-})
+import { productRoute } from '../utils/route-crypto'
+
+const detailsTo = (product: ProviderProductDto) =>
+  productRoute(product.productId, product.inventoryUserId, {
+    supplier: product.inventoryUserName || undefined,
+  })
 
 const remove = async (product: ProviderProductDto) => {
   const removed = await wishlistService.toggle({

@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { t } from '../../i18n'
 import { resolveMediaUrl } from '../../utils/media'
+import { inventoryRoute } from '../../utils/route-crypto'
 import AppIcon from '../ui/AppIcon.vue'
 import type { HomeProviderDto } from '../../domain/models/home'
 
@@ -17,7 +18,7 @@ const failedImages = ref<Set<string>>(new Set())
     <RouterLink
       v-for="provider in providers"
       :key="provider.id"
-      :to="{ name: 'inventory-products', params: { inventoryUserId: provider.id }, query: { supplier: provider.fullName } }"
+      :to="inventoryRoute(provider.id, { supplier: provider.fullName })"
       class="provider-card"
     >
       <span class="provider-card__avatar">

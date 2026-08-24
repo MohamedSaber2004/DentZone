@@ -13,13 +13,18 @@ import ProviderSelectorModal from '../components/products/ProviderSelectorModal.
 import ProductCard from '../components/products/ProductCard.vue'
 import type { ProductDetailDto, ProductPriceDto, ProviderProductDto } from '../domain/models/product'
 
+import { decryptId, inventoryRoute, productRoute } from '../utils/route-crypto'
+
 const route = useRoute()
 const router = useRouter()
 const { productRepository, policyRepository, cartService, wishlistService, homeRepository } = services
 
-const productId = () => (typeof route.params.productId === 'string' ? route.params.productId : '')
-const inventoryUserId = () =>
+const rawProductId = () => (typeof route.params.productId === 'string' ? route.params.productId : '')
+const rawInventoryUserId = () =>
   typeof route.params.inventoryUserId === 'string' ? route.params.inventoryUserId : ''
+
+const productId = () => decryptId(rawProductId())
+const inventoryUserId = () => decryptId(rawInventoryUserId())
 
 const lang = computed(() => (locale.value === 'ar' ? API_LANG.ARABIC : API_LANG.ENGLISH))
 
@@ -769,11 +774,7 @@ watch(() => route.params.productId, () => {
             :product="rel"
             :favorite="wishlistService.isFavorite(rel.productId, rel.productPriceId)"
             :favorite-busy="wishlistService.busyIds.value.has(rel.productId)"
-            :details-to="{
-              name: 'product-details',
-              params: { inventoryUserId: rel.inventoryUserId || 'default', productId: rel.productId },
-              query: { supplier: rel.inventoryUserName || undefined },
-            }"
+            :details-to="productRoute(rel.productId, rel.inventoryUserId, { supplier: rel.inventoryUserName || undefined })"
             @toggle-favorite="toggleRelatedFavorite"
             @add-to-cart="addRelatedToCart"
           />

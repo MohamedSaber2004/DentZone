@@ -92,13 +92,14 @@ const viewAllVendors = () => {
   void router.push({ name: 'vendors' })
 }
 
+import { categoryRoute, productRoute } from '../utils/route-crypto'
+
 const favoriteBusy = computed(() => wishlistService.busyIds.value)
 
-const detailsTo = (product: ProviderProductDto) => ({
-  name: 'product-details',
-  params: { inventoryUserId: product.inventoryUserId || 'default', productId: product.productId },
-  query: { supplier: product.inventoryUserName || undefined },
-})
+const detailsTo = (product: ProviderProductDto) =>
+  productRoute(product.productId, product.inventoryUserId, {
+    supplier: product.inventoryUserName || undefined,
+  })
 
 const toggleFavorite = (product: ProviderProductDto) => {
   void wishlistService.toggle({
@@ -347,7 +348,7 @@ watch(isAuthenticated, (authed) => {
           v-for="category in categories"
           :key="category.id"
           :category="category"
-          :to="`/categories/${category.id}`"
+          :to="categoryRoute(category.id)"
         />
       </div>
     </div>
