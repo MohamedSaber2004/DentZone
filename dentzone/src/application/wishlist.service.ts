@@ -15,8 +15,11 @@ export interface WishlistToggleInput {
   name: string
 }
 
-/** All-zero GUID — some catalog endpoints return this instead of a real price id. */
+/** Valid non-empty GUID regex */
+const VALID_GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const EMPTY_GUID = /^0{8}-0{4}-0{4}-0{4}-0{12}$/i
+
+const isValidGuid = (id?: string | null): boolean => !!id && VALID_GUID.test(id) && !EMPTY_GUID.test(id)
 
 /**
  * Shared wishlist state + toggle flow.
@@ -163,7 +166,7 @@ export class WishlistService {
 
     try {
       const priceId =
-        input.productPriceId && !EMPTY_GUID.test(input.productPriceId)
+        isValidGuid(input.productPriceId)
           ? input.productPriceId
           : await this.resolvePriceId(input.productId, input.inventoryUserId)
       await this.productRepository.toggleFavorite(user.id, input.productId, priceId)

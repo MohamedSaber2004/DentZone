@@ -271,7 +271,8 @@ onMounted(load)
 }
 
 .skeleton-card__media {
-  height: 9rem;
+  aspect-ratio: 4 / 3;
+  width: 100%;
   border-radius: 0;
 }
 

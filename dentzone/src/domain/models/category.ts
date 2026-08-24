@@ -1,5 +1,7 @@
+import { resolveMediaUrl } from '../../utils/media'
+
 export const categoryImageUrl = (imageName: string): string =>
-  imageName.startsWith('http://') ? imageName.replace('http://', 'https://') : imageName
+  resolveMediaUrl(imageName)
 
 export interface CategoryDto {
   id: string

@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { locale, t } from '../i18n'
 import { cartService } from '../di/container'
+import { resolveMediaUrl } from '../utils/media'
 import AppIcon from '../components/ui/AppIcon.vue'
 import AppButton from '../components/ui/AppButton.vue'
 
@@ -149,7 +150,7 @@ onMounted(load)
             }"
             class="cart__media"
           >
-            <img v-if="line.image" :src="line.image" :alt="line.name" />
+            <img v-if="line.image" :src="resolveMediaUrl(line.image)" :alt="line.name" />
             <span v-else class="cart__placeholder"><AppIcon name="package" :size="22" /></span>
           </RouterLink>
 
@@ -331,12 +332,18 @@ onMounted(load)
   border-radius: var(--dz-radius);
   overflow: hidden;
   background: var(--dz-surface-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem;
+  flex-shrink: 0;
 }
 
 .cart__media img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  object-position: center;
   display: block;
 }
 

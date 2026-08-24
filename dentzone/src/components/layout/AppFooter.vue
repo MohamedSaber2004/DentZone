@@ -228,14 +228,15 @@ const socialLinks = [
 .app-footer__social-icons {
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .app-footer__social-link {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2.2rem;
-  height: 2.2rem;
+  width: 2.75rem;
+  height: 2.75rem;
   border-radius: var(--dz-radius);
   border: 1px solid var(--dz-border);
   background: var(--dz-surface);
@@ -245,6 +246,13 @@ const socialLinks = [
     border-color 0.2s,
     transform 0.15s,
     background-color 0.2s;
+}
+
+.app-footer__social-link:focus-visible,
+.app-footer__store-badge:focus-visible,
+.app-footer__link:focus-visible {
+  outline: 3px solid var(--dz-primary);
+  outline-offset: 2px;
 }
 
 .app-footer__social-link:hover {
@@ -264,7 +272,8 @@ const socialLinks = [
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
-  padding: 0.5rem 0.9rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 1rem;
   border: 1px solid var(--dz-border);
   border-radius: var(--dz-radius);
   background: var(--dz-band);
@@ -297,6 +306,10 @@ const socialLinks = [
 }
 
 .app-footer__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding-block: 0.15rem;
   font-size: 0.875rem;
   color: var(--dz-ink-soft);
   transition: color 0.2s;

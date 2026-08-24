@@ -28,9 +28,9 @@ const hasFilters = computed(() => hasQuery.value || selectedProvider.value !== '
 function normalizeText(text: string): string {
   return text
     .toLowerCase()
-    .replace(/[Ø£Ø¥Ø¢]/g, 'Ø§')
-    .replace(/Ø©/g, 'Ù‡')
-    .replace(/Ù‰/g, 'ÙŠ')
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/ى/g, 'ي')
     .trim()
 }
 
@@ -98,7 +98,22 @@ const toggleFavorite = (product: ProviderProductDto) => {
   })
 }
 
+const detailsTo = (product: ProviderProductDto) => ({
+  name: 'product-details',
+  params: { inventoryUserId: product.inventoryUserId || 'default', productId: product.productId },
+  query: {
+    supplier: product.inventoryUserName || undefined,
+    page: currentPage.value > 1 ? String(currentPage.value) : undefined,
+    search: search.value.trim() || undefined,
+    provider: selectedProvider.value || undefined,
+  },
+})
+
 const addToCart = (product: ProviderProductDto) => {
+  if (!product.inventoryUserId || product.inventoryUserId === 'default') {
+    void router.push(detailsTo(product))
+    return
+  }
   void cartService.add({
     productId: product.productId,
     inventoryId: product.inventoryUserId,
@@ -297,11 +312,7 @@ watch(currentPage, () => {
         :product="product"
         :favorite="wishlistService.isFavorite(product.productId, product.productPriceId)"
         :favorite-busy="wishlistService.busyIds.value.has(product.productId)"
-        :details-to="{
-          name: 'product-details',
-          params: { inventoryUserId: product.inventoryUserId || 'default', productId: product.productId },
-          query: { supplier: product.inventoryUserName || undefined },
-        }"
+        :details-to="detailsTo(product)"
         @toggle-favorite="toggleFavorite"
         @add-to-cart="addToCart"
       />
@@ -543,7 +554,8 @@ watch(currentPage, () => {
 }
 
 .skeleton-card__media {
-  height: 9rem;
+  aspect-ratio: 1 / 1;
+  width: 100%;
   border-radius: 0;
 }
 

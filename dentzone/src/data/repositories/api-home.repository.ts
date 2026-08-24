@@ -72,6 +72,9 @@ interface RawProviderItem {
   IsAvailableNow?: boolean
   isAvailable?: boolean
   IsAvailable?: boolean
+  isActive?: boolean
+  IsActive?: boolean
+  status?: number | string | null
 
   profileImage?: string | null
   ProfileImage?: string | null
@@ -83,6 +86,7 @@ interface RawProviderItem {
   ImageFile?: string | null
   avatar?: string | null
   Avatar?: string | null
+  [key: string]: unknown
 }
 
 function extractArray(payload: unknown): RawProviderItem[] {
@@ -141,7 +145,10 @@ function normalizeProvider(item: RawProviderItem): HomeProviderDto {
       item.IsAvailableNow ??
       item.isAvailable ??
       item.IsAvailable ??
-      false,
+      item.isActive ??
+      item.IsActive ??
+      (typeof item.status === 'number' ? item.status === 1 : undefined) ??
+      true,
   )
 
   const profileImage = String(
@@ -166,6 +173,21 @@ function normalizeProvider(item: RawProviderItem): HomeProviderDto {
     isAvailableNow,
     profileImage,
   }
+}
+
+function extractProductImages(raw: Record<string, unknown>): string[] {
+  if (Array.isArray(raw.images) && raw.images.length > 0) {
+    return raw.images.filter((img): img is string => typeof img === 'string' && img.trim().length > 0)
+  }
+  if (typeof raw.images === 'string' && raw.images.trim()) {
+    return raw.images.split(',').map((s) => s.trim()).filter(Boolean)
+  }
+  for (const key of ['image', 'imagePath', 'imageFile', 'profileImage']) {
+    if (typeof raw[key] === 'string' && (raw[key] as string).trim()) {
+      return [(raw[key] as string).trim()]
+    }
+  }
+  return []
 }
 
 export class ApiHomeRepository implements HomeRepository {
@@ -248,6 +270,7 @@ export class ApiHomeRepository implements HomeRepository {
   }
 
   private toCategory(category: RawHomeCategoryDto): CategoryDto {
+    const rawCat = category as unknown as Record<string, string>
     return {
       id: category.id,
       name: category.name,
@@ -256,7 +279,7 @@ export class ApiHomeRepository implements HomeRepository {
       companyPercentage: null,
       orderNum: 0,
       arabicName: category.arabicName,
-      imageName: category.imageFile,
+      imageName: category.imageFile || rawCat.image || rawCat.imageName || rawCat.imagePath || '',
     }
   }
 
@@ -290,7 +313,7 @@ export class ApiHomeRepository implements HomeRepository {
       maxQuantity: 0,
       productCode: '',
       revenuePercentage: 0,
-      images: product.image ? [product.image] : [],
+      images: extractProductImages(product as unknown as Record<string, unknown>),
       isFavorite: product.isFavorite,
     }
   }

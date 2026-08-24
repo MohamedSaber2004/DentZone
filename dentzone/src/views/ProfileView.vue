@@ -2,16 +2,19 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { services } from '../di/container'
-import { t } from '../i18n'
+import { locale, t } from '../i18n'
 import AppButton from '../components/ui/AppButton.vue'
 import AppInput from '../components/ui/AppInput.vue'
 import AppIcon from '../components/ui/AppIcon.vue'
+import ImageLightboxModal from '../components/ui/ImageLightboxModal.vue'
 import { toastService } from '../infrastructure/feedback/toast.service'
 import { resolveMediaUrl } from '../utils/media'
 import type { AddressDto, AreaDto } from '../domain/models/auth'
 
 const { authService, addressRepository } = services
 const router = useRouter()
+
+const showAvatarLightbox = ref(false)
 
   const fullName = ref('')
   const phoneNumber = ref('')
@@ -106,15 +109,54 @@ let deleteArmTimer: ReturnType<typeof setTimeout> | undefined
     }
   }
 
+  const initFromSession = () => {
+    const u = user.value
+    if (u) {
+      if (!fullName.value) fullName.value = `${u.firstName || ''} ${u.lastName || ''}`.trim()
+      if (!email.value) email.value = u.email || ''
+      if (!phoneNumber.value && u.phone) phoneNumber.value = u.phone
+      if (!serverImageUrl.value && u.profileImage) serverImageUrl.value = resolveImageUrl(u.profileImage)
+    }
+  }
+
   const applyProfile = (profile: NonNullable<Awaited<ReturnType<typeof authService.loadProfile>>['profile']>) => {
-    fullName.value = profile.fullName
-    phoneNumber.value = profile.phoneNumber ?? ''
-    email.value = profile.email
-    userName.value = profile.userName ?? ''
-    isActive.value = profile.isActive
-    isPopular.value = profile.isPopular ?? false
-    orderNum.value = profile.orderNum === null || profile.orderNum === undefined ? '' : String(profile.orderNum)
-    serverImageUrl.value = resolveImageUrl(profile.profileImage ?? '')
+    if (profile.fullName) fullName.value = profile.fullName
+    if (profile.phoneNumber !== null && profile.phoneNumber !== undefined) phoneNumber.value = profile.phoneNumber
+    if (profile.email) email.value = profile.email
+    if (profile.userName) userName.value = profile.userName
+    if (typeof profile.isActive === 'boolean') isActive.value = profile.isActive
+    if (typeof profile.isPopular === 'boolean') isPopular.value = profile.isPopular
+    if (profile.orderNum !== null && profile.orderNum !== undefined) orderNum.value = String(profile.orderNum)
+    if (profile.profileImage) serverImageUrl.value = resolveImageUrl(profile.profileImage)
+  }
+
+  const reloadProfile = async () => {
+    loading.value = true
+    error.value = ''
+    initFromSession()
+
+    if (!authService.isAuthenticated) {
+      loading.value = false
+      void router.push({ name: 'login', query: { redirect: '/profile' } })
+      return
+    }
+
+    try {
+      const result = await authService.loadProfile()
+      if (result.ok) {
+        if (result.profile) applyProfile(result.profile)
+      } else if (!user.value) {
+        error.value = result.error || t('common.error')
+      }
+    } catch {
+      if (!user.value) {
+        error.value = t('common.networkError')
+      }
+    } finally {
+      loading.value = false
+    }
+
+    void loadAddresses()
   }
 
   const loadAddresses = async () => {
@@ -294,15 +336,8 @@ const onDeleteAccount = async () => {
   }
 }
 
-  onMounted(async () => {
-    const result = await authService.loadProfile()
-    loading.value = false
-    if (!result.ok) {
-      error.value = result.error
-      return
-    }
-    if (result.profile) applyProfile(result.profile)
-    void loadAddresses()
+  onMounted(() => {
+    void reloadProfile()
   })
 </script>
 
@@ -323,11 +358,34 @@ const onDeleteAccount = async () => {
           <span>{{ t('common.loading') }}</span>
         </div>
 
+        <div v-else-if="!user" class="profile__state" role="alert">
+          <span class="profile__state-icon"><AppIcon name="user" :size="30" /></span>
+          <h2 class="profile__state-title">{{ t('auth.login') }}</h2>
+          <p class="profile__state-desc">{{ t('auth.errSessionExpired') }}</p>
+          <AppButton variant="primary" @click="router.push({ name: 'login', query: { redirect: '/profile' } })">
+            {{ t('auth.login') }}
+          </AppButton>
+        </div>
+
         <form v-else class="profile__form" novalidate @submit.prevent="save">
           <div class="profile__avatar-wrap">
-            <div class="profile__avatar" :style="{ '--tint': user?.tint ?? '' }">
+            <div
+              class="profile__avatar"
+              :class="{ 'profile__avatar--clickable': !!avatarSrc }"
+              :style="{ '--tint': user?.tint ?? '' }"
+              :title="avatarSrc ? (locale === 'ar' ? 'عرض الصورة' : 'View Image') : undefined"
+              :tabindex="avatarSrc ? 0 : undefined"
+              :role="avatarSrc ? 'button' : undefined"
+              :aria-label="avatarSrc ? (locale === 'ar' ? 'عرض صورة الحساب' : 'View profile picture') : undefined"
+              @click="avatarSrc && (showAvatarLightbox = true)"
+              @keydown.enter="avatarSrc && (showAvatarLightbox = true)"
+              @keydown.space.prevent="avatarSrc && (showAvatarLightbox = true)"
+            >
               <img v-if="avatarSrc" :src="avatarSrc" alt="" class="profile__avatar-img" />
               <span v-else>{{ userInitials() }}</span>
+              <span v-if="avatarSrc" class="profile__avatar-zoom" aria-hidden="true">
+                <AppIcon name="zoom-in" :size="16" />
+              </span>
             </div>
             <div class="profile__avatar-actions">
               <label class="profile__upload">
@@ -524,6 +582,14 @@ const onDeleteAccount = async () => {
         </div>
       </div>
     </section>
+
+    <!-- Fullscreen Avatar Lightbox Modal -->
+    <ImageLightboxModal
+      v-if="avatarSrc"
+      v-model="showAvatarLightbox"
+      :images="[avatarSrc]"
+      :title="fullName || user?.firstName || t('profile.title')"
+    />
   </div>
 </template>
 
@@ -531,7 +597,7 @@ const onDeleteAccount = async () => {
   .profile {
     min-height: calc(100vh - var(--dz-header-height));
     background: radial-gradient(40rem 22rem at 15% -5%, var(--dz-primary-soft) 0%, transparent 60%), var(--dz-paper);
-    padding: 3rem var(--dz-gutter);
+    padding-block: var(--dz-page-py) var(--dz-page-pb);
   }
 
   .profile__inner {
@@ -580,6 +646,43 @@ const onDeleteAccount = async () => {
     color: var(--dz-muted);
   }
 
+  .profile__state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 3rem 1rem;
+    text-align: center;
+  }
+
+  .profile__state-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 4rem;
+    height: 4rem;
+    border-radius: var(--dz-radius-full);
+    background: var(--dz-surface-soft);
+    color: var(--dz-muted);
+    margin-bottom: 0.4rem;
+  }
+
+  .profile__state-title {
+    font-family: var(--dz-font-display);
+    font-size: 1.15rem;
+    font-weight: 600;
+  }
+
+  .profile__state-desc {
+    font-size: 0.88rem;
+    color: var(--dz-muted);
+    max-width: 32ch;
+  }
+
+  .profile__state .app-button {
+    margin-top: 0.8rem;
+  }
+
   .profile__spinner {
     animation: profile-spin 0.8s linear infinite;
   }
@@ -605,6 +708,7 @@ const onDeleteAccount = async () => {
   }
 
   .profile__avatar {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -619,6 +723,38 @@ const onDeleteAccount = async () => {
     font-size: 1.1rem;
     font-weight: 700;
     overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .profile__avatar--clickable {
+    cursor: zoom-in;
+  }
+
+  .profile__avatar--clickable:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 14px rgb(27 78 119 / 0.2);
+  }
+
+  .profile__avatar--clickable:focus-visible {
+    outline: 3px solid var(--dz-primary);
+    outline-offset: 2px;
+  }
+
+  .profile__avatar-zoom {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.45);
+    color: #fff;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    border-radius: var(--dz-radius-full);
+  }
+
+  .profile__avatar--clickable:hover .profile__avatar-zoom {
+    opacity: 1;
   }
 
   .profile__avatar-img {
@@ -1016,10 +1152,6 @@ const onDeleteAccount = async () => {
 }
 
 @media (max-width: 640px) {
-  .profile {
-    padding: 1.5rem var(--dz-gutter) 2.5rem;
-  }
-
   .profile__card {
     padding: 1.5rem 1.1rem;
     border-radius: var(--dz-radius);

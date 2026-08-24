@@ -109,7 +109,22 @@ const toggleFavorite = (product: ProviderProductDto) => {
   })
 }
 
+const heroSearchQuery = ref('')
+
+const onHeroSearch = () => {
+  const q = heroSearchQuery.value.trim()
+  if (!q) {
+    void router.push({ name: 'products' })
+    return
+  }
+  void router.push({ name: 'products', query: { search: q } })
+}
+
 const addToCart = (product: ProviderProductDto) => {
+  if (!product.inventoryUserId || product.inventoryUserId === 'default' || getProductProviderCount(product) > 1) {
+    void router.push(detailsTo(product))
+    return
+  }
   void cartService.add({
     productId: product.productId,
     inventoryId: product.inventoryUserId,
@@ -243,6 +258,23 @@ watch(isAuthenticated, (authed) => {
           <span class="hero__chip"><AppIcon name="shield-check" :size="15" />{{ t('home.chipSuppliers') }}</span>
           <span class="hero__chip"><AppIcon name="truck" :size="15" />{{ t('home.chipDelivery') }}</span>
         </div>
+
+        <!-- Hero Search Bar -->
+        <form class="hero__search" role="search" @submit.prevent="onHeroSearch">
+          <span class="hero__search-icon">
+            <AppIcon name="search" :size="18" />
+          </span>
+          <input
+            v-model="heroSearchQuery"
+            class="hero__search-input"
+            type="search"
+            :placeholder="t('products.searchPlaceholder')"
+            :aria-label="t('products.searchPlaceholder')"
+          />
+          <AppButton type="submit" variant="primary" size="md" class="hero__search-btn">
+            {{ t('products.search') }}
+          </AppButton>
+        </form>
 
         <div class="hero__actions">
           <AppButton size="lg" variant="gold" @click="go">
@@ -596,7 +628,7 @@ watch(isAuthenticated, (authed) => {
     radial-gradient(40rem 26rem at 8% 108%, rgb(184 134 43 / 0.1) 0%, transparent 60%),
     var(--dz-band);
   color: var(--dz-white);
-  padding: 5rem var(--dz-gutter) 5.5rem;
+  padding: 5rem 0 5.5rem;
 }
 
 .hero__glow {
@@ -689,6 +721,51 @@ watch(isAuthenticated, (authed) => {
   font-size: 0.78rem;
   font-weight: 600;
   color: rgb(255 255 255 / 0.85);
+}
+
+.hero__search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgb(255 255 255 / 0.95);
+  backdrop-filter: blur(8px);
+  border: 1.5px solid var(--dz-gold);
+  border-radius: var(--dz-radius-full);
+  padding: 0.35rem 0.45rem 0.35rem 1rem;
+  box-shadow: 0 8px 32px rgb(0 0 0 / 0.25);
+  max-width: 32rem;
+  width: 100%;
+}
+
+html[dir='rtl'] .hero__search {
+  padding: 0.35rem 1rem 0.35rem 0.45rem;
+}
+
+.hero__search-icon {
+  display: flex;
+  align-items: center;
+  color: var(--dz-primary);
+  flex-shrink: 0;
+}
+
+.hero__search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 0.95rem;
+  color: var(--dz-ink);
+  outline: none;
+  min-width: 0;
+}
+
+.hero__search-input::placeholder {
+  color: var(--dz-muted);
+}
+
+.hero__search-btn {
+  border-radius: var(--dz-radius-full) !important;
+  flex-shrink: 0;
 }
 
 .hero__actions {
@@ -915,6 +992,33 @@ watch(isAuthenticated, (authed) => {
   }
 }
 
+.featured {
+  padding: 4rem 0 0;
+  background: var(--dz-paper);
+}
+
+.featured--popular {
+  padding-top: 3.5rem;
+}
+
+.featured--flash {
+  padding-top: 3rem;
+}
+
+.featured__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: var(--dz-radius-full);
+  background: var(--dz-primary-soft);
+  color: var(--dz-primary-strong);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin-bottom: 0.5rem;
+}
+
 .featured__title,
 .providers__title {
   font-family: var(--dz-font-display);
@@ -930,41 +1034,45 @@ watch(isAuthenticated, (authed) => {
   color: var(--dz-muted);
 }
 
-.featured {
-  padding: 4rem var(--dz-gutter) 0;
-  background: var(--dz-paper);
-}
-
-.featured--popular {
-  padding-top: 3.5rem;
-}
-
-.featured--flash {
-  padding-top: 3rem;
-}
-
-.featured__badge {
+.featured__all {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.25rem 0.7rem;
+  gap: 0.45rem;
+  padding: 0.55rem 1.1rem;
   border-radius: var(--dz-radius-full);
-  background: var(--dz-primary-soft);
-  color: var(--dz-primary-strong);
-  font-size: 0.76rem;
+  border: 1px solid var(--dz-border-strong);
+  background: var(--dz-surface);
+  font-size: 0.85rem;
   font-weight: 700;
-  margin-bottom: 0.5rem;
+  color: var(--dz-primary-strong);
+  white-space: nowrap;
+  transition:
+    border-color 0.2s,
+    color 0.2s,
+    background-color 0.2s,
+    transform 0.15s;
 }
 
-.featured__head {
-  margin-bottom: 1.75rem;
+.featured__all:hover {
+  border-color: var(--dz-primary);
+  background: var(--dz-primary-faint);
+  transform: translateY(-1px);
 }
 
-.featured__head--flex {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 1rem;
+.featured__all svg:last-child {
+  transition: transform 0.2s;
+}
+
+.featured__all:hover svg:last-child {
+  transform: translateX(3px);
+}
+
+html[dir='rtl'] .featured__all svg:last-child {
+  transform: scaleX(-1);
+}
+
+html[dir='rtl'] .featured__all:hover svg:last-child {
+  transform: scaleX(-1) translateX(-3px);
 }
 
 .featured__toggle-btn {
@@ -1028,7 +1136,7 @@ html[dir='rtl'] .featured__toggle-btn:hover svg {
 }
 
 .categories {
-  padding: 4rem var(--dz-gutter);
+  padding: 4rem 0;
   background: var(--dz-paper);
 }
 
@@ -1119,7 +1227,8 @@ html[dir='rtl'] .categories__all:hover svg:last-child {
 }
 
 .categories__skeleton-media {
-  height: 9rem;
+  aspect-ratio: 1 / 1;
+  width: 100%;
   border-radius: 0;
 }
 
@@ -1353,7 +1462,7 @@ html[dir='rtl'] .categories__all:hover svg:last-child {
    Paginated Catalog Section
    ========================================================================= */
 .catalog-section {
-  padding: 4rem var(--dz-gutter) 5rem;
+  padding: 4rem 0 5rem;
   background: var(--dz-paper);
   border-top: 1px solid var(--dz-border);
 }
@@ -1619,11 +1728,11 @@ html[dir='rtl'] .catalog-section__footer-btn svg {
   }
 
   .categories {
-    padding: 2.5rem var(--dz-gutter);
+    padding: 2.5rem 0;
   }
 
   .featured {
-    padding: 2.5rem var(--dz-gutter) 0;
+    padding: 2.5rem 0 0;
   }
 
   .featured--popular {
@@ -1639,7 +1748,7 @@ html[dir='rtl'] .catalog-section__footer-btn svg {
   }
 
   .catalog-section {
-    padding: 2.5rem var(--dz-gutter) 3.5rem;
+    padding: 2.5rem 0 3.5rem;
   }
 
   .categories__grid,

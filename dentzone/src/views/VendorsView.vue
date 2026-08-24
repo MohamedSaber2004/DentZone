@@ -4,6 +4,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { t, locale } from '../i18n'
 import { API_LANG } from '../config/api.config'
+import { resolveMediaUrl } from '../utils/media'
 import AppButton from '../components/ui/AppButton.vue'
 import AppIcon from '../components/ui/AppIcon.vue'
 import AppPagination from '../components/ui/AppPagination.vue'
@@ -174,7 +175,7 @@ watch(locale, () => {
           <span class="vendor-card__avatar">
             <img
               v-if="provider.profileImage && !failedImages.has(provider.id)"
-              :src="provider.profileImage"
+              :src="resolveMediaUrl(provider.profileImage)"
               :alt="provider.fullName"
               loading="lazy"
               @error="failedImages.add(provider.id)"

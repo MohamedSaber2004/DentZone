@@ -74,6 +74,13 @@ const load = async () => {
   }
 }
 
+const viewCategoryProducts = (searchQuery?: string) => {
+  const query: Record<string, string> = { cat: catId() }
+  if (categoryName()) query.name = categoryName()
+  if (searchQuery) query.search = searchQuery
+  void router.push({ name: 'inventory-products', params: { inventoryUserId: 'all' }, query })
+}
+
 onMounted(load)
 watch(() => route.params.catId, load)
 </script>
@@ -90,13 +97,19 @@ watch(() => route.params.catId, load)
         <h1 class="page__title">{{ categoryName() || t('categories.inventoriesTitle') }}</h1>
         <p class="page__subtitle">{{ t('categories.inventoriesSubtitle') }}</p>
       </div>
-      <span v-if="!loading && !error && filteredInventories.length" class="page__count">
-        {{ t('categories.inventoriesCount', { count: filteredInventories.length }) }}
-      </span>
+      <div class="page__head-actions">
+        <AppButton variant="primary" size="sm" @click="viewCategoryProducts()">
+          <AppIcon name="box" :size="15" />
+          {{ t('nav.allProducts') }}
+        </AppButton>
+        <span v-if="!loading && !error && filteredInventories.length" class="page__count">
+          {{ t('categories.inventoriesCount', { count: filteredInventories.length }) }}
+        </span>
+      </div>
     </div>
 
     <!-- Search input -->
-    <form v-if="!loading && !error && inventories.length > 0" class="page__search" role="search" @submit.prevent>
+    <form v-if="!loading && !error && inventories.length > 0" class="page__search" role="search" @submit.prevent="viewCategoryProducts(search.trim())">
       <span class="page__search-icon">
         <AppIcon name="search" :size="17" />
       </span>
@@ -110,6 +123,9 @@ watch(() => route.params.catId, load)
       <button v-if="search.trim()" type="button" class="page__search-clear" :aria-label="t('products.clearSearch')" @click="search = ''">
         <AppIcon name="close" :size="15" />
       </button>
+      <AppButton v-if="search.trim()" type="button" size="sm" variant="secondary" @click="viewCategoryProducts(search.trim())">
+        {{ t('products.search') }}
+      </AppButton>
     </form>
 
     <!-- Availability Filter Tabs -->
@@ -169,9 +185,15 @@ watch(() => route.params.catId, load)
       <span class="page__state-icon"><AppIcon name="store" :size="30" /></span>
       <h2 class="page__state-title">{{ t('categories.noInventoriesTitle') }}</h2>
       <p class="page__state-desc">{{ t('categories.noInventoriesDescription') }}</p>
-      <AppButton v-if="hasActiveFilter" variant="secondary" @click="clearFilters">
-        {{ t('products.clearSearch') }}
-      </AppButton>
+      <div class="page__state-actions">
+        <AppButton variant="primary" @click="viewCategoryProducts(search.trim())">
+          <AppIcon name="search" :size="15" />
+          {{ t('products.search') }}
+        </AppButton>
+        <AppButton v-if="hasActiveFilter" variant="secondary" @click="clearFilters">
+          {{ t('products.clearSearch') }}
+        </AppButton>
+      </div>
     </div>
 
     <div v-else class="page__list">
@@ -241,6 +263,14 @@ html[dir='rtl'] .page__back svg {
   margin-top: 0.4rem;
   font-size: 0.92rem;
   color: var(--dz-muted);
+}
+
+.page__head-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+  flex-wrap: wrap;
 }
 
 .page__count {
@@ -400,8 +430,13 @@ html[dir='rtl'] .page__back svg {
   max-width: 34ch;
 }
 
-.page__state .app-button {
+.page__state-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
   margin-top: 0.8rem;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .skeleton-card {

@@ -103,11 +103,12 @@ const onInput = (event: Event) => {
 
 .app-input__field {
   width: 100%;
+  min-height: 2.75rem;
   padding: 0.65rem 0.9rem;
   border: 1px solid var(--dz-border-strong);
   border-radius: var(--dz-radius);
   background: var(--dz-surface);
-  font-size: 0.95rem;
+  font-size: 1rem;
   transition:
     border-color 0.2s,
     box-shadow 0.2s;
@@ -147,14 +148,14 @@ const onInput = (event: Event) => {
 
 .app-input__toggle {
   position: absolute;
-  inset-inline-end: 0.55rem;
+  inset-inline-end: 0.4rem;
   top: 50%;
   transform: translateY(-50%);
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 1.9rem;
-  height: 1.9rem;
+  width: 2.35rem;
+  height: 2.35rem;
   border-radius: var(--dz-radius-sm);
   color: var(--dz-muted);
   transition:
@@ -165,6 +166,11 @@ const onInput = (event: Event) => {
 .app-input__toggle:hover {
   color: var(--dz-ink);
   background: var(--dz-surface-soft);
+}
+
+.app-input__toggle:focus-visible {
+  outline: 2px solid var(--dz-primary);
+  outline-offset: 1px;
 }
 
 .app-input__error {

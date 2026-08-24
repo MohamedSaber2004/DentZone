@@ -1,63 +1,438 @@
-﻿"/api/ProductPrices/by-product/{productId}": {
-      "get": {
-        "tags": [
-          "ProductPrices"
-        ],
-        "parameters": [
-          {
-            "name": "productId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    } and that is the response {
-    "id": "34c31afc-727f-423b-a58c-cb1e79a109d5",
-    "productId": "f4d0ea30-c2ef-4bab-89b8-f070088a8ec4",
-    "productPriceId": "34c31afc-727f-423b-a58c-cb1e79a109d5",
-    "imageName": null,
-    "productName": "Endo Scale Blue",
-    "arabicProductName": null,
-    "description": "",
-    "arabicDescription": "",
-    "preef": "Endo Scale Blue",
-    "arabicPreef": "Endo Scale Blue",
-    "purchasePrice": 0,
-    "salesPrice": 0,
-    "flashSaleFromDate": null,
-    "flashSaleToDate": null,
-    "priceBeforeFlashSale": null,
-    "priceAfterFlashSale": null,
-    "isFlashSaleActive": false,
-    "effectiveSalesPrice": 0,
-    "creationDate": "2026-05-04T14:24:45.1800739",
-    "category": null,
-    "inventoryUserId": "bacfce9b-d85f-4d14-af12-0c13aabd9684",
-    "inventoryUser": {
-      "id": "bacfce9b-d85f-4d14-af12-0c13aabd9684",
-      "fullName": "Dental World Company",
-      "userName": "atm18530",
-      "email": "atm18530@gmail.com",
-      "phoneNumber": "01110395311",
-      "isPopular": false,
-      "orderNum": 2,
-      "isActive": false,
-      "isDeleted": true,
-      "createdAt": "2026-04-30T16:51:42.4",
-      "fcmToken": "cmFahKsDRK64ORIdOCq1Vm:APA91bGq1Iwj8H8Lg86khj5XTXVCF1pTAiss3DNoPYInVqDfxMF5-yYJUlrXXzjG8MRv-OJWvFbXNMTbIFrudWKf6F2Fb8AiGJvF5CLEwJBflgu6WAF9b8M",
-      "profileImage": "https://dentzoneapi.runasp.net/Uploads/providers/10a05754-911e-480f-b8a2-b5e5dbcb0eff.jpg",
-      "addresses": [],
-      "roles": []
-    },
-    "stockQuantity": 0,
-    "discountRate": 0
-  } and use it in toggle product to faviourites
+﻿DentZone
+تسوق حسب التصنيف
+مستلزمات احترافية في كل تصنيف من تصنيفات العناية
+
+عرض كل التصنيفات
+Oral Care System
+Oral Care System
+Oral Care System
+
+Laboratories
+Laboratories
+Laboratories
+
+Others
+Others
+Others
+
+Prosthodontics
+Prosthodontics
+Prosthodontics
+
+Machine Inquiries
+Machine Inquiries
+Machine Inquiries
+
+Restorative
+Restorative
+Restorative
+
+Surgery
+Surgery
+Surgery
+
+Disposable Material
+Disposable Material
+Disposable Material
+
+Orthodontics
+Orthodontics
+Orthodontics
+
+Implantology
+Implantology
+Implantology
+
+أفضل الموردين
+أفضل الموردين
+الموردون المعتمدون والأعلى تقييماً لتجهيز العيادات الطبية
+
+Dental Capital
+Dental Capital
+غير متاح الآن
+BAZZAR  DENT
+BAZZAR DENT
+غير متاح الآن
+MCS Dental Sector
+MCS Dental Sector
+غير متاح الآن
+عروض خاصة
+عروض حصرية لعيادتك، تتجدد باستمرار
+
+الأكثر مبيعًا
+المنتجات الأكثر طلباً
+أفضل الأدوات والمستلزمات الطبية المعتمدة والمختارة من كبرى العيادات
+
+
+عرض الكل
+Diamond Burs Stone BR-41
+
+
+Diamond Burs Stone BR-41
+الرمز: 97511820
+
+متوفر لدى 2 موردين
+٧٫٨
+ج.م
+500 في المخزون
+Dental Non Woven Gauze
+
+
+Dental Non Woven Gauze
+الرمز: 34857437
+
+متوفر لدى مورد معتمد
+٣٨٫٤
+ج.م
+500 في المخزون
+Kids Stainless Steel Crown Refill Upper Left E7 1 Pc
+
+
+Kids Stainless Steel Crown Refill Upper Left E7 1 Pc
+الرمز: 35352129
+
+متوفر لدى 2 موردين
+٦٤٫٠٥
+ج.م
+500 في المخزون
+Egypt Napkin
+
+
+Egypt Napkin
+الرمز: 28640528
+
+متوفر لدى 2 موردين
+٨٠٫٣
+ج.م
+492 في المخزون
+EgypTCotton Mahala500 Gr
+
+
+EgypTCotton Mahala500 Gr
+الرمز: 57083891
+
+متوفر لدى مورد معتمد
+٩٦٫٣
+ج.م
+46 في المخزون
+Cotisen Cotton Roll Dispenser Blue
+
+
+Cotisen Cotton Roll Dispenser Blue
+الرمز: 65166953
+
+متوفر لدى مورد معتمد
+١٠٩٫٢٥
+ج.م
+غير متوفر
+Gutta Percha #25 Taper 4%
+
+
+Gutta Percha #25 Taper 4%
+الرمز: 31359371
+
+متوفر لدى مورد معتمد
+١٢١
+ج.م
+54 في المخزون
+Plastic Syringes 3 Ml
+
+
+Plastic Syringes 3 Ml
+الرمز: 93017311
+
+متوفر لدى مورد معتمد
+١٤٣٫٧٥
+ج.م
+49 في المخزون
+Latex Gloves Powder Free Medium White
+
+
+Latex Gloves Powder Free Medium White
+الرمز: 27512019
+
+متوفر لدى 2 موردين
+١٥٣٫٩٢
+ج.م
+478 في المخزون
+Gloves Latex Powder Free Large White 100 Pcs
+
+
+Gloves Latex Powder Free Large White 100 Pcs
+الرمز: 86535124
+
+متوفر لدى 3 موردين
+١٥٣٫٩٢
+ج.م
+500 في المخزون
+
+عرض الكل (19)
+منتجات مميزة
+مختارات للعيادات من فريق التوريد لدينا
+
+Yousi Contra Without LED
+
+
+Yousi Contra Without LED
+متوفر لدى 2 موردين
+١٬٨٩٠
+ج.م
+500 في المخزون
+Adseal Resin Sealer 13.5 Gr
+
+
+Adseal Resin Sealer 13.5 Gr
+متوفر لدى 2 موردين
+٨٥٠٫٥
+ج.م
+500 في المخزون
+Latex Gloves Powder Free Medium White
+
+
+Latex Gloves Powder Free Medium White
+متوفر لدى 2 موردين
+١٥٣٫٩٢
+ج.م
+478 في المخزون
+Dentsply Prime and Bond Universal 4ml
+
+
+Dentsply Prime and Bond Universal 4ml
+متوفر لدى 2 موردين
+٢٬٦٤٤٫٥
+ج.م
+500 في المخزون
+المزيد من العروض
+عروض إضافية وترويجات شركائنا لعيادتك
+
+تسوق حسب المورد
+منتجات من موردين ومصنعين موثوقين
+
+
+عرض جميع الموردين
+Tri Group
+Tri Group
+متاح الآن
+Top Dent
+Top Dent
+متاح الآن
+شركة مصر للتجارة والتوزيع
+شركة مصر للتجارة والتوزيع
+متاح الآن
+Dental Hub Company 
+Dental Hub Company
+متاح الآن
+MCS Dental Sector
+MCS Dental Sector
+متاح الآن
+Dental Capital
+Dental Capital
+غير متاح الآن
+Tri Group Equipments
+Tri Group Equipments
+متاح الآن
+BAZZAR  DENT
+BAZZAR DENT
+غير متاح الآن
+جميع المنتجات والمستلزمات
+جميع المنتجات والمستلزمات
+تصفح قائمة المنتجات الكاملة مع إمكانية البحث والتصفية حسب المورد
+
+
+عرض جميع المنتجات
+Film Mount Ez View 2H 1 Pc
+
+
+Film Mount Ez View 2H 1 Pc
+الرمز: 66485627
+
+Top Dent
+٢٫٦
+ج.م
+50 في المخزون
+Film Mount Ez - View Fastear 1 Pc
+
+
+Film Mount Ez - View Fastear 1 Pc
+الرمز: 89847977
+
+Top Dent
+٢٫٦
+ج.م
+50 في المخزون
+Film Mount Ez View 4H 1 Pc
+
+
+Film Mount Ez View 4H 1 Pc
+الرمز: 89693010
+
+Top Dent
+٣٫٩
+ج.م
+50 في المخزون
+Glass slap
+
+
+Glass slap
+الرمز: 73161144
+
+متوفر لدى 2 موردين
+٦٫٨
+ج.م
+500 في المخزون
+Over Gloves Light Transparent
+
+
+Over Gloves Light Transparent
+الرمز: 16391186
+
+متوفر لدى 2 موردين
+٥٫٢
+ج.م
+30 في المخزون
+Matrix Band China
+
+
+Matrix Band China
+الرمز: 34950425
+
+Tri Group
+٨
+ج.م
+500 في المخزون
+Plastic Over Gloves Normal
+
+
+Plastic Over Gloves Normal
+الرمز: 63121493
+
+Tri Group
+٦٫٣٣
+ج.م
+500 في المخزون
+Over Gloves Light Transparent
+
+
+Over Gloves Light Transparent
+الرمز: 16391186
+
+متوفر لدى 2 موردين
+٧٫٥٤
+ج.م
+50 في المخزون
+Over Gloves Transparent
+
+
+Over Gloves Transparent
+الرمز: 26869452
+
+Top Dent
+٧٫٥٤
+ج.م
+50 في المخزون
+Diamond Burs TR-26 Round End Taper Stone
+
+
+Diamond Burs TR-26 Round End Taper Stone
+الرمز: 28064168
+
+Tri Group
+٧٫٨
+ج.م
+500 في المخزون
+Diamond Burs FO29 Egg Stone
+
+
+Diamond Burs FO29 Egg Stone
+الرمز: 22999554
+
+Tri Group
+٧٫٨
+ج.م
+490 في المخزون
+Diamond Burs TR-11F Fine Round End Taper Stone
+
+
+Diamond Burs TR-11F Fine Round End Taper Stone
+الرمز: 43882555
+
+Tri Group
+٧٫٨
+ج.م
+499 في المخزون
+Diamond Burs TF12C Flat End Tapered Stone
+
+
+Diamond Burs TF12C Flat End Tapered Stone
+الرمز: 66748589
+
+Tri Group
+٧٫٨
+ج.م
+500 في المخزون
+Diamond Burs Stone EX-20B
+
+
+Diamond Burs Stone EX-20B
+الرمز: 55398772
+
+متوفر لدى 2 موردين
+٧٫٨
+ج.م
+500 في المخزون
+Diamond Burs Stone SF-11
+
+
+Diamond Burs Stone SF-11
+الرمز: 43568766
+
+متوفر لدى 2 موردين
+٧٫٨
+ج.م
+500 في المخزون
+
+عرض جميع المنتجات
+DentZoneDent
+Zone
+أدوات ومستلزمات أسنان احترافية للعيادات والممارسات.
+
+تابعنا
+الشركة
+من نحن
+الشحن والإرجاع
+سياسة الخصوصية
+الشروط والأحكام
+اتصل بنا
+حمّل التطبيق
+اطلب أينما كنت مع تطبيق DentZone.
+
+حمّله من
+متجر آبل
+احصل عليه من
+جوجل بلاي
+المساعدة
+support@dentzone.store
++20 12 77591339
+© 2026 DentZone. جميع الحقوق محفوظة.
+صُنع بـ ♥ من أجل مهنيي طب الأسنان
+[vue/compiler-sfc] Unexpected token (236:0)
+
+E:/Dent-Zone/DentZone/dentzone/src/views/HomeView.vue
+233|      void wishlistService.refresh(true)
+234|    }
+235|  })
+   |     ^
+236|  </script>
+   |  ^
+237|
+unknown file:236:0
+    at constructor (E:\Dent-Zone\DentZone\dentzone\node_modules\@babel\parser\lib\index.js:369:19)
+    at TypeScriptParserMixin.raise (E:\Dent-Zone\DentZone\dentzone\node_modules\@babel\parser\lib\index.js:6620:19)
+    at TypeScriptParserMixin.unexpected (E:\Dent-Zone\DentZone\dentzone\node_modules\@babel\parser\lib\index.js:6640:16)
+    at TypeScriptParserMixin.parseExprAtom (E:\Dent-Zone\DentZone\dentzone\node_modules\@babel\parser\lib\index.js:11468:22)
+    at TypeScriptParserMixin.parseExprSubscripts (E:\Dent-Zone\DentZone\dentzone\node_modules\@babel\parser\lib\index.js:11102:23)
+    at TypeScriptParserMixin.parseUpdate (E:\Dent-Zone\DentZone\dentzone\node_modules\@babel\parser\lib\index.js:11087:21)
+    at TypeScriptParserMixin.parseMaybeUnary (E:\Dent-Zone\DentZone\dentzone\node_modules\@babel\parser\lib\index.js:11067:23)
+    at TypeScriptParserMixin.parseMaybeUnary (E:\Dent-Zone\DentZone\dentzone\node_modules\@babel\parser\lib\index.js:9858:18)
+    at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (E:\Dent-Zone\DentZone\dentzone\node_modules\@babel\parser\lib\index.js:10920:61)
+    at TypeScriptParserMixin.parseExprOps (E:\Dent-Zone\DentZone\dentzone\node_modules\@babel\parser\lib\index.js:10925:23)

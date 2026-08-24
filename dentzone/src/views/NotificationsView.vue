@@ -25,6 +25,8 @@ const load = async () => {
   error.value = false
   try {
     notifications.value = await notificationRepository.getUserNotifications(user.value.id)
+    localStorage.setItem('dz_last_notif_view', Date.now().toString())
+    window.dispatchEvent(new Event('dz_notifications_viewed'))
   } catch {
     error.value = true
   } finally {
@@ -222,7 +224,7 @@ onUnmounted(() => {
 <style scoped>
 .notifications-page {
   min-height: 70vh;
-  padding: 3rem var(--dz-gutter) 4.5rem;
+  padding-block: var(--dz-page-py) var(--dz-page-pb);
   background: var(--dz-paper);
 }
 
@@ -580,10 +582,6 @@ html[dir='rtl'] .notif-card__link svg {
 }
 
 @media (max-width: 560px) {
-  .notifications-page {
-    padding: 1.75rem var(--dz-gutter) 3.5rem;
-  }
-
   .notifications-page__head {
     margin-bottom: 1.25rem;
   }

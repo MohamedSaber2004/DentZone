@@ -4,6 +4,7 @@ import { locale, t } from '../../i18n'
 import { ref } from 'vue'
 import AppIcon from '../ui/AppIcon.vue'
 import { authService } from '../../di/container'
+import { resolveMediaUrl } from '../../utils/media'
 
 import type { RouteLocationRaw } from 'vue-router'
 
@@ -40,7 +41,7 @@ const formatPrice = (value: number) => value.toLocaleString(locale.value === 'ar
       <RouterLink v-if="detailsTo" :to="detailsTo" class="product-card__media-link">
         <img
           v-if="product.images?.length && !imageFailed"
-          :src="product.images[0]"
+          :src="resolveMediaUrl(product.images[0])"
           :alt="displayName(product)"
           loading="lazy"
           @error="onImageError"
@@ -52,7 +53,7 @@ const formatPrice = (value: number) => value.toLocaleString(locale.value === 'ar
       <template v-else>
         <img
           v-if="product.images?.length && !imageFailed"
-          :src="product.images[0]"
+          :src="resolveMediaUrl(product.images[0])"
           :alt="displayName(product)"
           loading="lazy"
           @error="onImageError"
@@ -164,17 +165,26 @@ const formatPrice = (value: number) => value.toLocaleString(locale.value === 'ar
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 9rem;
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  padding: 0.85rem;
   background:
-    radial-gradient(12rem 8rem at 50% 115%, var(--dz-primary-soft) 0%, transparent 70%),
+    radial-gradient(14rem 10rem at 50% 115%, var(--dz-primary-soft) 0%, transparent 70%),
     var(--dz-surface-soft);
+  overflow: hidden;
 }
 
 .product-card__media img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  object-position: center;
   display: block;
+  transition: transform 0.25s ease;
+}
+
+.product-card:hover .product-card__media img {
+  transform: scale(1.04);
 }
 
 .product-card__placeholder {
@@ -218,16 +228,23 @@ const formatPrice = (value: number) => value.toLocaleString(locale.value === 'ar
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2.1rem;
-  height: 2.1rem;
+  width: 2.35rem;
+  height: 2.35rem;
   border-radius: var(--dz-radius-full);
-  background: rgb(255 255 255 / 0.85);
+  background: rgb(255 255 255 / 0.9);
   color: var(--dz-ink-soft);
   box-shadow: var(--dz-shadow-sm);
   transition:
     background-color 0.2s,
     color 0.2s,
     transform 0.15s;
+}
+
+.product-card__details:focus-visible,
+.product-card__favorite:focus-visible,
+.product-card__cart:focus-visible {
+  outline: 2px solid var(--dz-primary);
+  outline-offset: 1px;
 }
 
 .product-card__favorite,
@@ -387,7 +404,7 @@ const formatPrice = (value: number) => value.toLocaleString(locale.value === 'ar
 
 @media (max-width: 560px) {
   .product-card__media {
-    height: 7.8rem;
+    padding: 0.65rem;
   }
 
   .product-card__body {
@@ -427,7 +444,7 @@ const formatPrice = (value: number) => value.toLocaleString(locale.value === 'ar
 
 @media (max-width: 360px) {
   .product-card__media {
-    height: 7rem;
+    padding: 0.5rem;
   }
 
   .product-card__body {

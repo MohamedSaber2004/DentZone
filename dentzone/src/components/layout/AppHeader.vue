@@ -42,10 +42,22 @@ const loadNotifCount = async () => {
   }
   try {
     const list = await notificationRepository.getUserNotifications(user.value.id)
-    unreadNotifCount.value = list.filter((n) => n.status === 0).length
+    const lastViewed = parseInt(localStorage.getItem('dz_last_notif_view') || '0', 10)
+    unreadNotifCount.value = list.filter((n) => {
+      if (n.status !== 0) return false
+      if (lastViewed > 0 && n.createdAt) {
+        const notifTime = new Date(n.createdAt).getTime()
+        if (notifTime <= lastViewed) return false
+      }
+      return true
+    }).length
   } catch {
     unreadNotifCount.value = 0
   }
+}
+
+const onNotificationsViewed = () => {
+  unreadNotifCount.value = 0
 }
 
 const userImage = computed(() => resolveMediaUrl(user.value?.profileImage))
@@ -118,6 +130,7 @@ watch(
 onMounted(() => {
   document.addEventListener('click', onClickOutside)
   document.addEventListener('keydown', onEscape)
+  window.addEventListener('dz_notifications_viewed', onNotificationsViewed)
   if (isAuthenticated.value) {
     void loadNotifCount()
   }
@@ -137,6 +150,7 @@ watch(
 onUnmounted(() => {
   document.removeEventListener('click', onClickOutside)
   document.removeEventListener('keydown', onEscape)
+  window.removeEventListener('dz_notifications_viewed', onNotificationsViewed)
 })
 
 const logout = () => {

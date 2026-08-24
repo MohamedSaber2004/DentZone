@@ -189,7 +189,7 @@ onMounted(load)
 }
 
 .wishlist__skeleton-media {
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 1 / 1;
   border-radius: var(--dz-radius);
   background: var(--dz-surface-soft);
   animation: wishlist-pulse 1.4s ease-in-out infinite;

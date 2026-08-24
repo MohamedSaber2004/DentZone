@@ -179,26 +179,33 @@ html[dir='rtl'] h4 {
 }
 
 .page {
-  padding: 2.5rem var(--dz-gutter) 4rem;
+  padding-block: var(--dz-page-py) var(--dz-page-pb);
+  min-height: calc(100vh - var(--dz-header-height) - 180px);
 }
 
-@media (max-width: 640px) {
-  .page {
-    padding: 1.5rem var(--dz-gutter) 3rem;
-  }
+.page:not(.container) {
+  padding-inline: var(--dz-gutter);
+}
+
+.touch-target {
+  min-width: var(--dz-touch-target);
+  min-height: var(--dz-touch-target);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 @media (prefers-reduced-motion: reduce) {
   html {
-    scroll-behavior: auto;
+    scroll-behavior: auto !important;
   }
 
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
+    animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
 }

@@ -195,7 +195,7 @@ onMounted(load)
 <style scoped>
 .orders-page {
   min-height: 70vh;
-  padding: 3rem var(--dz-gutter) 4rem;
+  padding-block: var(--dz-page-py) var(--dz-page-pb);
   background: var(--dz-paper);
 }
 
@@ -493,10 +493,6 @@ onMounted(load)
 }
 
 @media (max-width: 560px) {
-  .orders-page {
-    padding: 1.75rem var(--dz-gutter) 3rem;
-  }
-
   .orders-page__header {
     margin-bottom: 1.25rem;
   }

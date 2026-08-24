@@ -184,14 +184,15 @@ onBeforeUnmount(stopTimer)
   width: 100%;
   height: 100%;
   object-fit: cover;
-  aspect-ratio: 21 / 9;
+  object-position: center;
+  aspect-ratio: 16 / 7;
   user-select: none;
 }
 
 .offer-slider__skeleton {
   width: 100%;
   margin-inline: auto;
-  aspect-ratio: 21 / 9;
+  aspect-ratio: 16 / 7;
   border-radius: var(--dz-radius-lg);
   background: linear-gradient(
     100deg,

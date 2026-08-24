@@ -14,13 +14,27 @@ const props = withDefaults(
 
 const imageFailed = ref(false)
 
-const displayName = () => (locale.value === 'ar' ? props.category.arabicName : props.category.pref || props.category.name)
-const secondary = () =>
+const displayName = () =>
   locale.value === 'ar'
-    ? props.category.name !== props.category.arabicName
-      ? props.category.name
-      : props.category.description
-    : props.category.description
+    ? props.category.arabicName || props.category.pref || props.category.name
+    : props.category.pref || props.category.name
+
+const secondary = () => {
+  const primary = displayName()
+  if (locale.value === 'ar') {
+    if (props.category.name && props.category.name.trim() !== primary.trim()) {
+      return props.category.name.trim()
+    }
+    if (props.category.description && props.category.description.trim() !== primary.trim()) {
+      return props.category.description.trim()
+    }
+    return ''
+  }
+  if (props.category.description && props.category.description.trim() !== primary.trim()) {
+    return props.category.description.trim()
+  }
+  return ''
+}
 
 const onImageError = () => {
   imageFailed.value = true
@@ -84,15 +98,27 @@ const onImageError = () => {
 
 .category-card__media {
   position: relative;
-  height: 9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 4 / 3;
+  width: 100%;
+  padding: 0.85rem;
   background: var(--dz-surface-soft);
+  overflow: hidden;
 }
 
 .category-card__media img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  object-position: center;
   display: block;
+  transition: transform 0.25s ease;
+}
+
+.category-card--link:hover .category-card__media img {
+  transform: scale(1.05);
 }
 
 .category-card__placeholder {
@@ -150,7 +176,7 @@ html[dir='rtl'] .category-card__arrow svg {
 
 @media (max-width: 560px) {
   .category-card__media {
-    height: 7.5rem;
+    padding: 0.65rem;
   }
 
   .category-card__body {

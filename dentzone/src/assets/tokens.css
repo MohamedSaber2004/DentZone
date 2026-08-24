@@ -63,15 +63,22 @@
   --dz-font-mono:
     'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', monospace;
 
-  --dz-max-width: 1200px;
+  --dz-max-width: 1240px;
   --dz-header-height: 78px;
   --dz-gutter: 1.5rem;
+  --dz-page-py: 2.5rem;
+  --dz-page-pb: 4.5rem;
+  --dz-section-gap: 3.5rem;
+  --dz-touch-target: 44px;
 }
 
 @media (max-width: 960px) {
   :root {
     --dz-gutter: 1.25rem;
     --dz-header-height: 72px;
+    --dz-page-py: 2rem;
+    --dz-page-pb: 3.5rem;
+    --dz-section-gap: 2.75rem;
   }
 }
 
@@ -79,20 +86,29 @@
   :root {
     --dz-gutter: 1rem;
     --dz-header-height: 66px;
+    --dz-page-py: 1.75rem;
+    --dz-page-pb: 3rem;
+    --dz-section-gap: 2.25rem;
   }
 }
 
 @media (max-width: 480px) {
   :root {
-    --dz-gutter: 0.75rem;
-    --dz-header-height: 60px;
+    --dz-gutter: 0.85rem;
+    --dz-header-height: 62px;
+    --dz-page-py: 1.25rem;
+    --dz-page-pb: 2.5rem;
+    --dz-section-gap: 1.75rem;
   }
 }
 
 @media (max-width: 360px) {
   :root {
-    --dz-gutter: 0.5rem;
-    --dz-header-height: 56px;
+    --dz-gutter: 0.65rem;
+    --dz-header-height: 58px;
+    --dz-page-py: 1rem;
+    --dz-page-pb: 2rem;
+    --dz-section-gap: 1.5rem;
   }
 }
 

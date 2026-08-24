@@ -61,6 +61,21 @@ function extractProductItems(raw: unknown): SearchProductItemDto[] {
   return []
 }
 
+function extractImages(raw: Record<string, unknown>): string[] {
+  if (Array.isArray(raw.images) && raw.images.length > 0) {
+    return raw.images.filter((img): img is string => typeof img === 'string' && img.trim().length > 0)
+  }
+  if (typeof raw.images === 'string' && raw.images.trim()) {
+    return raw.images.split(',').map((s) => s.trim()).filter(Boolean)
+  }
+  for (const key of ['image', 'imagePath', 'imageFile', 'profileImage']) {
+    if (typeof raw[key] === 'string' && (raw[key] as string).trim()) {
+      return [(raw[key] as string).trim()]
+    }
+  }
+  return []
+}
+
 export class ApiProductRepository implements ProductRepository {
   constructor(private readonly http: HttpClient) {}
 
@@ -266,7 +281,7 @@ export class ApiProductRepository implements ProductRepository {
       maxQuantity: 0,
       productCode: String(p.productCode),
       revenuePercentage: 0,
-      images: p.images ?? [],
+      images: extractImages(raw),
       isFavorite: p.isFavorite,
     }
   }

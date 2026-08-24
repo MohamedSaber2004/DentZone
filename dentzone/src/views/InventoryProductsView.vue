@@ -34,9 +34,9 @@ const hasQuery = computed(() => search.value.trim().length > 0)
 function normalizeText(text: string): string {
   return text
     .toLowerCase()
-    .replace(/[Ø£Ø¥Ø¢]/g, 'Ø§')
-    .replace(/Ø©/g, 'Ù‡')
-    .replace(/Ù‰/g, 'ÙŠ')
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/ى/g, 'ي')
     .trim()
 }
 
@@ -76,10 +76,27 @@ const toggleFavorite = (product: ProviderProductDto) => {
   })
 }
 
+const detailsTo = (product: ProviderProductDto) => ({
+  name: 'product-details',
+  params: { inventoryUserId: inventoryId() || product.inventoryUserId || 'default', productId: product.productId },
+  query: {
+    supplier: supplierName() || product.inventoryUserName || undefined,
+    cat: route.query.cat,
+    name: route.query.name,
+    page: currentPage.value > 1 ? String(currentPage.value) : undefined,
+    search: search.value.trim() || undefined,
+  },
+})
+
 const addToCart = (product: ProviderProductDto) => {
+  const invId = inventoryId() || product.inventoryUserId
+  if (!invId || invId === 'default') {
+    void router.push(detailsTo(product))
+    return
+  }
   void cartService.add({
     productId: product.productId,
-    inventoryId: product.inventoryUserId,
+    inventoryId: invId,
     quantity: 1,
     name: product.productName,
     stockQuantity: product.stockQuantity,
@@ -167,6 +184,10 @@ const selectCategory = (id: string) => {
 }
 
 onMounted(() => {
+  if (typeof route.query.page === 'string') {
+    const p = parseInt(route.query.page, 10)
+    if (!isNaN(p) && p >= 1) currentPage.value = p
+  }
   selectedCategory.value = typeof route.query.cat === 'string' ? route.query.cat : ''
   void loadCategories()
   void load()
@@ -289,11 +310,7 @@ watch(
         :product="product"
         :favorite="wishlistService.isFavorite(product.productId, product.productPriceId)"
         :favorite-busy="wishlistService.busyIds.value.has(product.productId)"
-        :details-to="{
-          name: 'product-details',
-          params: { inventoryUserId: inventoryId(), productId: product.productId },
-          query: { supplier: supplierName(), cat: route.query.cat, name: route.query.name },
-        }"
+        :details-to="detailsTo(product)"
         @toggle-favorite="toggleFavorite"
         @add-to-cart="addToCart"
       />
@@ -541,7 +558,8 @@ html[dir='rtl'] .page__back svg {
 }
 
 .skeleton-card__media {
-  height: 9rem;
+  aspect-ratio: 1 / 1;
+  width: 100%;
   border-radius: 0;
 }
 

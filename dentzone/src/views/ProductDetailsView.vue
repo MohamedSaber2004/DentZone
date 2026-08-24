@@ -5,9 +5,13 @@ import { useRoute, useRouter } from 'vue-router'
 import { locale, t } from '../i18n'
 import { API_LANG } from '../config/api.config'
 import { ApiError } from '../infrastructure/http/api-error'
+import { resolveMediaUrl } from '../utils/media'
 import AppButton from '../components/ui/AppButton.vue'
 import AppIcon from '../components/ui/AppIcon.vue'
-import type { ProductDetailDto, ProductPriceDto } from '../domain/models/product'
+import ImageLightboxModal from '../components/ui/ImageLightboxModal.vue'
+import ProviderSelectorModal from '../components/products/ProviderSelectorModal.vue'
+import ProductCard from '../components/products/ProductCard.vue'
+import type { ProductDetailDto, ProductPriceDto, ProviderProductDto } from '../domain/models/product'
 
 const route = useRoute()
 const router = useRouter()
@@ -24,6 +28,94 @@ const loading = ref(true)
 const error = ref(false)
 const activeImage = ref(0)
 const imageFailed = ref(false)
+const showLightbox = ref(false)
+const showProviderModal = ref(false)
+const selectedInventoryUserId = ref<string>('')
+const relatedProducts = ref<ProviderProductDto[]>([])
+const relatedLoading = ref(false)
+
+const openLightbox = (index?: number) => {
+  if (typeof index === 'number') {
+    activeImage.value = index
+  }
+  showLightbox.value = true
+}
+
+export interface StoreOption {
+  inventoryUserId: string
+  inventoryUserName: string
+  salesPrice: number
+  effectiveSalesPrice: number
+  stockQuantity: number
+  isFlashSaleActive: boolean
+  priceBeforeFlashSale: number | null
+  discountRate: number
+  priceId: string
+}
+
+const availableStores = computed<StoreOption[]>(() => {
+  const d = detail.value
+  if (!d) return []
+  const list: StoreOption[] = []
+  const seenIds = new Set<string>()
+
+  for (const p of d.prices || []) {
+    if (!p.inventoryUserId || seenIds.has(p.inventoryUserId)) continue
+    seenIds.add(p.inventoryUserId)
+    list.push({
+      inventoryUserId: p.inventoryUserId,
+      inventoryUserName: p.inventoryUserName || t('home.singleProvider'),
+      salesPrice: p.salesPrice,
+      effectiveSalesPrice: p.effectiveSalesPrice > 0 ? p.effectiveSalesPrice : p.salesPrice,
+      stockQuantity: p.stockQuantity,
+      isFlashSaleActive: !!p.isFlashSaleActive,
+      priceBeforeFlashSale: p.priceBeforeFlashSale,
+      discountRate: p.discountRate,
+      priceId: p.id,
+    })
+  }
+
+  for (const inv of d.inventories || []) {
+    if (!inv.inventoryUserId || seenIds.has(inv.inventoryUserId)) continue
+    seenIds.add(inv.inventoryUserId)
+    list.push({
+      inventoryUserId: inv.inventoryUserId,
+      inventoryUserName: inv.inventoryName || t('home.singleProvider'),
+      salesPrice: inv.salesPrice,
+      effectiveSalesPrice: inv.effectiveSalesPrice > 0 ? inv.effectiveSalesPrice : inv.salesPrice,
+      stockQuantity: inv.stockQuantity,
+      isFlashSaleActive: !!inv.isFlashSaleActive,
+      priceBeforeFlashSale: inv.priceBeforeFlashSale,
+      discountRate: inv.discountRate,
+      priceId: '',
+    })
+  }
+
+  return list
+})
+
+const bestPriceStoreId = computed(() => {
+  const inStock = availableStores.value.filter((s) => s.stockQuantity > 0 && s.effectiveSalesPrice > 0)
+  if (!inStock.length) return ''
+  const sorted = [...inStock].sort((a, b) => a.effectiveSalesPrice - b.effectiveSalesPrice)
+  return sorted[0]?.inventoryUserId || ''
+})
+
+const displayedStores = computed(() => {
+  const all = availableStores.value
+  if (all.length <= 3) return all
+  const top = all.slice(0, 3)
+  if (selectedInventoryUserId.value && !top.some((s) => s.inventoryUserId === selectedInventoryUserId.value)) {
+    const selected = all.find((s) => s.inventoryUserId === selectedInventoryUserId.value)
+    if (selected) return [selected, top[0], top[1]].filter(Boolean) as StoreOption[]
+  }
+  return top
+})
+
+const currentStoreName = computed(() => {
+  const store = availableStores.value.find((s) => s.inventoryUserId === selectedInventoryUserId.value)
+  return store?.inventoryUserName || detail.value?.prices[0]?.inventoryUserName || ''
+})
 
 const backToProducts = () => {
   if (window.history.length > 1) {
@@ -40,6 +132,23 @@ const backToProducts = () => {
   })
 }
 
+const loadRelated = async (categoryId?: string) => {
+  if (!categoryId) return
+  relatedLoading.value = true
+  try {
+    const list = await productRepository.searchProducts({ catId: categoryId })
+    relatedProducts.value = list.filter((p) => p.productId !== productId()).slice(0, 5)
+    if (relatedProducts.value.length === 0) {
+      const popular = await productRepository.getPopularProducts()
+      relatedProducts.value = popular.filter((p) => p.productId !== productId()).slice(0, 5)
+    }
+  } catch {
+    relatedProducts.value = []
+  } finally {
+    relatedLoading.value = false
+  }
+}
+
 const load = async () => {
   loading.value = true
   error.value = false
@@ -48,7 +157,21 @@ const load = async () => {
   imageFailed.value = false
   quantity.value = 1
   try {
-    detail.value = await productRepository.getProductById(productId(), lang.value)
+    const data = await productRepository.getProductById(productId(), lang.value)
+    detail.value = data
+
+    const paramId = inventoryUserId()
+    if (paramId && paramId !== 'default' && (data.prices || []).some((p) => p.inventoryUserId === paramId)) {
+      selectedInventoryUserId.value = paramId
+    } else {
+      const inStock = (data.prices || []).find((p) => p.stockQuantity > 0)
+      selectedInventoryUserId.value =
+        inStock?.inventoryUserId || data.prices[0]?.inventoryUserId || data.inventoryUserId || ''
+    }
+
+    if (data.categoryId) {
+      void loadRelated(data.categoryId)
+    }
   } catch (e) {
     if (e instanceof ApiError && e.status === 401) {
       void router.push({ name: 'login', query: { redirect: route.fullPath } })
@@ -81,9 +204,14 @@ const displayCategory = computed(() => {
 
 const currentPrice = computed<ProductPriceDto | null>(() => {
   const d = detail.value
-  if (!d) return null
+  if (!d || !d.prices || d.prices.length === 0) return null
+  const chosenId = selectedInventoryUserId.value || inventoryUserId()
+  if (chosenId && chosenId !== 'default') {
+    const match = d.prices.find((p) => p.inventoryUserId === chosenId)
+    if (match) return match
+  }
   return (
-    d.prices.find((p) => p.inventoryUserId === inventoryUserId()) ??
+    d.prices.find((p) => p.stockQuantity > 0) ??
     d.prices.find((p) => p.effectiveSalesPrice > 0) ??
     d.prices[0] ??
     null
@@ -137,12 +265,13 @@ const incrementQty = () => {
 const addToCart = () => {
   const d = detail.value
   const price = currentPrice.value
-  if (!d || !price || price.stockQuantity <= 0) return
+  const invId = selectedInventoryUserId.value || price?.inventoryUserId || d?.inventoryUserId
+  if (!d || !price || !invId || invId === 'default' || price.stockQuantity <= 0) return
   void cartService.add({
-    productId: price.productId,
-    inventoryId: price.inventoryUserId,
+    productId: price.productId || d.productId,
+    inventoryId: invId,
     quantity: quantity.value,
-    name: d.productName,
+    name: displayName.value || d.productName,
     stockQuantity: price.stockQuantity,
     maxQuantity: price.maxQuantity,
   })
@@ -156,6 +285,34 @@ const toggleFavorite = () => {
     productPriceId: price.id,
     inventoryUserId: detail.value?.inventoryUserId || price.inventoryUserId,
     name: displayName.value || detail.value?.productName || '',
+  })
+}
+
+const addRelatedToCart = (product: ProviderProductDto) => {
+  if (!product.inventoryUserId || product.inventoryUserId === 'default') {
+    void router.push({
+      name: 'product-details',
+      params: { inventoryUserId: product.inventoryUserId || 'default', productId: product.productId },
+      query: { supplier: product.inventoryUserName || undefined },
+    })
+    return
+  }
+  void cartService.add({
+    productId: product.productId,
+    inventoryId: product.inventoryUserId,
+    quantity: 1,
+    name: product.productName,
+    stockQuantity: product.stockQuantity,
+    maxQuantity: product.maxQuantity,
+  })
+}
+
+const toggleRelatedFavorite = (product: ProviderProductDto) => {
+  void wishlistService.toggle({
+    productId: product.productId,
+    productPriceId: product.productPriceId,
+    inventoryUserId: product.inventoryUserId,
+    name: product.productName,
   })
 }
 
@@ -230,16 +387,32 @@ watch(() => route.params.productId, () => {
     <template v-else-if="detail">
       <div class="detail">
         <div class="detail__media">
-          <img
-            v-if="detail.images.length && !imageFailed"
-            :src="detail.images[activeImage]"
-            :alt="displayName"
-            class="detail__main"
-            @error="onImageError"
-          />
-          <span v-else class="detail__placeholder">
-            <AppIcon name="package" :size="44" />
-          </span>
+          <div
+            class="detail__main-wrap"
+            :class="{ 'detail__main-wrap--clickable': detail.images.length && !imageFailed }"
+            @click="openLightbox()"
+          >
+            <img
+              v-if="detail.images.length && !imageFailed"
+              :src="resolveMediaUrl(detail.images[activeImage])"
+              :alt="displayName"
+              class="detail__main"
+              @error="onImageError"
+            />
+            <span v-else class="detail__placeholder">
+              <AppIcon name="package" :size="44" />
+            </span>
+            <button
+              v-if="detail.images.length && !imageFailed"
+              type="button"
+              class="detail__zoom-btn"
+              :aria-label="t('products.viewImage', { n: activeImage + 1 })"
+              :title="t('products.viewImage', { n: activeImage + 1 })"
+              @click.stop="openLightbox()"
+            >
+              <AppIcon name="zoom-in" :size="16" />
+            </button>
+          </div>
           <div v-if="detail.images.length > 1" class="detail__thumbs">
             <button
               v-for="(image, index) in detail.images"
@@ -251,7 +424,7 @@ watch(() => route.params.productId, () => {
               :aria-current="activeImage === index && !imageFailed ? 'true' : undefined"
               @click="activeImage = index; imageFailed = false"
             >
-              <img :src="image" :alt="''" @error="onThumbnailError(index)" />
+              <img :src="resolveMediaUrl(image)" :alt="''" @error="onThumbnailError(index)" />
             </button>
           </div>
         </div>
@@ -262,6 +435,95 @@ watch(() => route.params.productId, () => {
           <p class="detail__code">
             {{ t('products.code') }}: {{ detail.productCode }}
           </p>
+
+          <!-- Available Stores / Providers Selector -->
+          <div v-if="availableStores.length > 1" class="detail__stores">
+            <div class="detail__stores-head">
+              <div class="detail__stores-head-title">
+                <AppIcon name="store" :size="15" />
+                <span class="detail__stores-title">{{ t('home.availableFromProviders', { count: availableStores.length }) }}</span>
+              </div>
+              <button
+                v-if="availableStores.length > 3"
+                type="button"
+                class="detail__stores-all-btn"
+                :aria-label="locale === 'ar' ? `مقارنة كل العروض (${availableStores.length})` : `Compare all (${availableStores.length}) offers`"
+                @click="showProviderModal = true"
+              >
+                <AppIcon name="sparkles" :size="13" />
+                <span>{{ locale === 'ar' ? `مقارنة الكل (${availableStores.length})` : `Compare All (${availableStores.length})` }}</span>
+              </button>
+            </div>
+
+            <div class="detail__stores-grid">
+              <button
+                v-for="store in displayedStores"
+                :key="store.inventoryUserId"
+                type="button"
+                class="detail__store-card"
+                :class="{
+                  'detail__store-card--active': store.inventoryUserId === selectedInventoryUserId,
+                  'detail__store-card--best': store.inventoryUserId === bestPriceStoreId,
+                }"
+                @click="selectedInventoryUserId = store.inventoryUserId"
+              >
+                <div class="detail__store-top">
+                  <span class="detail__store-radio" />
+                  <strong class="detail__store-name">{{ store.inventoryUserName }}</strong>
+                  <span
+                    v-if="store.inventoryUserId === bestPriceStoreId"
+                    class="detail__store-tag-best"
+                  >
+                    {{ locale === 'ar' ? 'أفضل سعر' : 'Best Price' }}
+                  </span>
+                </div>
+                <div class="detail__store-bottom">
+                  <div class="detail__store-pricing">
+                    <span v-if="store.isFlashSaleActive && store.priceBeforeFlashSale" class="detail__store-old">
+                      {{ formatPrice(store.priceBeforeFlashSale) }}
+                    </span>
+                    <span class="detail__store-price">{{ formatPrice(store.effectiveSalesPrice) }} {{ t('products.currency') }}</span>
+                  </div>
+                  <span
+                    class="detail__store-badge"
+                    :class="store.stockQuantity > 0 ? 'detail__store-badge--in' : 'detail__store-badge--out'"
+                  >
+                    {{ store.stockQuantity > 0 ? t('products.inStock', { count: store.stockQuantity }) : t('products.outOfStock') }}
+                  </span>
+                </div>
+              </button>
+            </div>
+
+            <!-- "Explore more providers" banner when > 3 stores -->
+            <button
+              v-if="availableStores.length > 3"
+              type="button"
+              class="detail__stores-explore"
+              @click="showProviderModal = true"
+            >
+              <div class="detail__stores-explore-left">
+                <span class="detail__stores-explore-icon">
+                  <AppIcon name="store" :size="16" />
+                </span>
+                <div class="detail__stores-explore-text">
+                  <strong class="detail__stores-explore-title">
+                    {{ locale === 'ar' ? `يوجد +${availableStores.length - 3} عروض وموردين آخرين لهذا المنتج` : `+${availableStores.length - 3} more sellers & offers available` }}
+                  </strong>
+                  <p class="detail__stores-explore-desc">
+                    {{ locale === 'ar' ? 'قارن الأسعار وتوفر المخزون واختر العرض الأنسب لك' : 'Compare lowest prices, stock and choose best offer' }}
+                  </p>
+                </div>
+              </div>
+              <span class="detail__stores-explore-action">
+                <span>{{ locale === 'ar' ? 'عرض ومقارنة الكل' : 'Compare All' }}</span>
+                <AppIcon name="chevron-left" :size="14" />
+              </span>
+            </button>
+          </div>
+          <div v-else-if="currentStoreName" class="detail__single-store">
+            <AppIcon name="store" :size="14" />
+            <span>{{ currentStoreName }}</span>
+          </div>
 
           <div class="detail__price-row">
             <span v-if="currentPrice?.isFlashSaleActive && currentPrice.priceBeforeFlashSale" class="detail__price-old">
@@ -408,7 +670,51 @@ watch(() => route.params.productId, () => {
           />
         </div>
       </div>
+
+      <!-- Similar / Related Products Section -->
+      <section v-if="relatedProducts.length > 0" class="detail__related">
+        <div class="detail__related-head">
+          <h2 class="detail__related-title">{{ t('product.relatedTitle') }}</h2>
+          <p class="detail__related-subtitle">{{ t('product.relatedSubtitle') }}</p>
+        </div>
+        <div class="detail__related-grid">
+          <ProductCard
+            v-for="rel in relatedProducts"
+            :key="rel.productPriceId || rel.productId"
+            :product="rel"
+            :favorite="wishlistService.isFavorite(rel.productId, rel.productPriceId)"
+            :favorite-busy="wishlistService.busyIds.value.has(rel.productId)"
+            :details-to="{
+              name: 'product-details',
+              params: { inventoryUserId: rel.inventoryUserId || 'default', productId: rel.productId },
+              query: { supplier: rel.inventoryUserName || undefined },
+            }"
+            @toggle-favorite="toggleRelatedFavorite"
+            @add-to-cart="addRelatedToCart"
+          />
+        </div>
+      </section>
     </template>
+
+    <!-- Fullscreen Image Lightbox Modal -->
+    <ImageLightboxModal
+      v-if="detail && detail.images.length"
+      v-model="showLightbox"
+      :images="detail.images"
+      :initial-index="activeImage"
+      :title="displayName"
+      @change="activeImage = $event"
+    />
+
+    <!-- Multi-Provider Comparison & Selection Modal -->
+    <ProviderSelectorModal
+      v-if="availableStores.length > 1"
+      v-model="showProviderModal"
+      :stores="availableStores"
+      :selected-id="selectedInventoryUserId"
+      :product-name="displayName"
+      @select="selectedInventoryUserId = $event"
+    />
   </div>
 </template>
 
@@ -537,12 +843,60 @@ html[dir='rtl'] .page__back svg {
   border: 1px solid var(--dz-border);
   border-radius: var(--dz-radius-lg);
   overflow: hidden;
+  padding: 0.75rem 0.75rem 0;
+}
+
+.detail__main-wrap {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.detail__main-wrap--clickable {
+  cursor: zoom-in;
+}
+
+.detail__zoom-btn {
+  position: absolute;
+  top: 0.6rem;
+  inset-inline-end: 0.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: var(--dz-radius-full);
+  border: 1px solid var(--dz-border);
+  background: rgb(255 255 255 / 0.9);
+  backdrop-filter: blur(4px);
+  color: var(--dz-ink);
+  box-shadow: var(--dz-shadow-sm);
+  cursor: pointer;
+  z-index: 3;
+  transition:
+    transform 0.15s,
+    background-color 0.2s,
+    color 0.2s;
+}
+
+.detail__zoom-btn:hover {
+  transform: scale(1.08);
+  background: var(--dz-primary);
+  color: var(--dz-on-primary);
+}
+
+.detail__zoom-btn:focus-visible {
+  outline: 3px solid var(--dz-primary);
+  outline-offset: 2px;
 }
 
 .detail__main {
   width: 100%;
   aspect-ratio: 1;
   object-fit: contain;
+  object-position: center;
   display: block;
 }
 
@@ -558,14 +912,18 @@ html[dir='rtl'] .page__back svg {
   display: flex;
   gap: 0.5rem;
   padding: 0.6rem;
+  margin-inline: -0.75rem;
   border-top: 1px solid var(--dz-border);
   background: var(--dz-surface);
 }
 
 .detail__thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 3.4rem;
   height: 3.4rem;
-  padding: 0;
+  padding: 0.2rem;
   border: 1px solid var(--dz-border);
   border-radius: var(--dz-radius);
   background: var(--dz-surface-soft);
@@ -579,7 +937,8 @@ html[dir='rtl'] .page__back svg {
 .detail__thumb img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  object-position: center;
   display: block;
 }
 
@@ -980,9 +1339,318 @@ html[dir='rtl'] .page__back svg {
   }
 }
 
+/* --- Stores / Providers Selector --- */
+.detail__stores {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.9rem;
+  border-radius: var(--dz-radius-lg);
+  background: var(--dz-surface-soft);
+  border: 1px solid var(--dz-border);
+}
+
+.detail__stores-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.detail__stores-head-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--dz-ink);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.detail__stores-all-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--dz-radius-full);
+  border: 1px solid var(--dz-primary);
+  background: var(--dz-surface);
+  color: var(--dz-primary-strong);
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s, transform 0.15s;
+}
+
+.detail__stores-all-btn:hover {
+  background: var(--dz-primary);
+  color: var(--dz-on-primary);
+  transform: translateY(-1px);
+}
+
+.detail__stores-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.detail__store-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  background: var(--dz-surface);
+  border: 1.5px solid var(--dz-border);
+  border-radius: var(--dz-radius);
+  cursor: pointer;
+  text-align: start;
+  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s, transform 0.15s;
+  width: 100%;
+}
+
+.detail__store-card:hover {
+  border-color: var(--dz-primary);
+  background: var(--dz-surface);
+  transform: translateY(-1px);
+}
+
+.detail__store-card--active {
+  border-color: var(--dz-primary);
+  background: var(--dz-primary-soft);
+  box-shadow: var(--dz-shadow-sm);
+}
+
+.detail__store-card--best {
+  border-color: var(--dz-gold);
+}
+
+.detail__store-tag-best {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.1rem 0.45rem;
+  border-radius: var(--dz-radius-full);
+  background: var(--dz-gold-soft);
+  color: var(--dz-gold-strong);
+  flex-shrink: 0;
+}
+
+/* Explore More Providers Banner */
+.detail__stores-explore {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0.95rem;
+  border-radius: var(--dz-radius);
+  border: 1px dashed var(--dz-primary);
+  background: var(--dz-primary-faint);
+  cursor: pointer;
+  text-align: start;
+  transition: background-color 0.2s, border-color 0.2s, transform 0.15s;
+  width: 100%;
+}
+
+.detail__stores-explore:hover {
+  background: var(--dz-primary-soft);
+  border-color: var(--dz-primary-strong);
+  transform: translateY(-1px);
+}
+
+.detail__stores-explore-left {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.detail__stores-explore-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--dz-radius-full);
+  background: var(--dz-surface);
+  color: var(--dz-primary);
+  flex-shrink: 0;
+  box-shadow: var(--dz-shadow-sm);
+}
+
+.detail__stores-explore-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.detail__stores-explore-title {
+  font-size: 0.84rem;
+  color: var(--dz-primary-strong);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.detail__stores-explore-desc {
+  font-size: 0.74rem;
+  color: var(--dz-muted);
+  margin-top: 0.15rem;
+}
+
+.detail__stores-explore-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--dz-primary);
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+html[dir='rtl'] .detail__stores-explore-action svg {
+  transform: scaleX(-1);
+}
+
+.detail__store-top {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.detail__store-radio {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border-radius: var(--dz-radius-full);
+  border: 2px solid var(--dz-border-strong);
+  flex-shrink: 0;
+  position: relative;
+  transition: border-color 0.2s;
+}
+
+.detail__store-card--active .detail__store-radio {
+  border-color: var(--dz-primary);
+  background: var(--dz-primary);
+  box-shadow: inset 0 0 0 2.5px var(--dz-surface);
+}
+
+.detail__store-name {
+  font-size: 0.88rem;
+  color: var(--dz-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.detail__store-bottom {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.detail__store-pricing {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.detail__store-old {
+  font-size: 0.75rem;
+  color: var(--dz-muted);
+  text-decoration: line-through;
+}
+
+.detail__store-price {
+  font-size: 0.95rem;
+  color: var(--dz-primary);
+  font-weight: 700;
+}
+
+.detail__store-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--dz-radius-full);
+}
+
+.detail__store-badge--in {
+  background: var(--dz-success-soft);
+  color: var(--dz-success);
+}
+
+.detail__store-badge--out {
+  background: var(--dz-danger-soft);
+  color: var(--dz-danger);
+}
+
+.detail__single-store {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--dz-ink-soft);
+  padding: 0.35rem 0.75rem;
+  background: var(--dz-surface-soft);
+  border-radius: var(--dz-radius);
+  align-self: flex-start;
+}
+
+/* --- Similar / Related Products Section --- */
+.detail__related {
+  margin-top: 3.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--dz-border);
+}
+
+.detail__related-head {
+  margin-bottom: 1.5rem;
+}
+
+.detail__related-title {
+  font-family: var(--dz-font-display);
+  font-size: clamp(1.3rem, 2.5vw, 1.6rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--dz-ink);
+}
+
+.detail__related-subtitle {
+  margin-top: 0.25rem;
+  font-size: 0.88rem;
+  color: var(--dz-muted);
+}
+
+.detail__related-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 1.15rem;
+}
+
+@media (min-width: 1150px) {
+  .detail__related-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 720px) {
   .detail,
   .page__loading {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .detail__related-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .detail__related-grid {
     grid-template-columns: 1fr;
   }
 }

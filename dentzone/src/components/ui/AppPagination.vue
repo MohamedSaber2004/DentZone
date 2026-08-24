@@ -191,14 +191,14 @@ const setPage = (page: number | string) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 2.35rem;
-  height: 2.35rem;
-  padding: 0 0.4rem;
-  border-radius: var(--dz-radius-md);
+  min-width: 2.75rem;
+  height: 2.75rem;
+  padding: 0 0.5rem;
+  border-radius: var(--dz-radius);
   border: 1px solid var(--dz-border);
   background: var(--dz-surface);
   color: var(--dz-ink);
-  font-size: 0.88rem;
+  font-size: 0.92rem;
   font-weight: 600;
   cursor: pointer;
   transition:
@@ -215,6 +215,12 @@ const setPage = (page: number | string) => {
   transform: translateY(-1px);
 }
 
+.app-pagination__page-btn:focus-visible,
+.app-pagination__btn:focus-visible {
+  outline: 3px solid var(--dz-primary);
+  outline-offset: 2px;
+}
+
 .app-pagination__page-btn--active {
   border-color: var(--dz-primary);
   background: var(--dz-primary);
@@ -227,8 +233,8 @@ const setPage = (page: number | string) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 1.5rem;
-  height: 2.35rem;
+  min-width: 1.75rem;
+  height: 2.75rem;
   color: var(--dz-muted);
   font-weight: 700;
   letter-spacing: 0.1em;
@@ -258,8 +264,15 @@ html[dir='rtl'] .app-pagination__btn svg {
 
   .app-pagination__btn {
     padding: 0.55rem;
-    min-width: 2.35rem;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
     justify-content: center;
+  }
+
+  .app-pagination__page-btn {
+    min-width: 2.35rem;
+    height: 2.35rem;
+    font-size: 0.85rem;
   }
 }
 </style>

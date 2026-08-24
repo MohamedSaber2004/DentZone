@@ -55,17 +55,25 @@ withDefaults(
   cursor: not-allowed;
 }
 
+.app-button:focus-visible {
+  outline: 3px solid var(--dz-primary);
+  outline-offset: 2px;
+}
+
 .app-button--sm {
-  padding: 0.45rem 0.85rem;
+  min-height: 2.35rem;
+  padding: 0.45rem 0.95rem;
   font-size: 0.825rem;
 }
 
 .app-button--md {
+  min-height: 2.75rem;
   padding: 0.65rem 1.25rem;
   font-size: 0.9rem;
 }
 
 .app-button--lg {
+  min-height: 3.15rem;
   padding: 0.85rem 1.75rem;
   font-size: 1rem;
 }
