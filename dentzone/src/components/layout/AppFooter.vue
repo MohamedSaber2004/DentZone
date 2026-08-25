@@ -23,11 +23,9 @@ const routeLinks = computed(() => companyLinks.value.filter((link): link is Comp
 const externalLinks = computed(() => companyLinks.value.filter((link): link is CompanyLink & { href: string } => link.type === 'external'))
 
 const socialLinks = [
-  { name: 'Facebook', icon: 'facebook' as const, href: 'https://facebook.com/dentzone' },
-  { name: 'Instagram', icon: 'instagram' as const, href: 'https://instagram.com/dentzone' },
-  { name: 'X', icon: 'twitter' as const, href: 'https://x.com/dentzone' },
-  { name: 'YouTube', icon: 'youtube' as const, href: 'https://youtube.com/@dentzone' },
-  { name: 'TikTok', icon: 'tiktok' as const, href: 'https://tiktok.com/@dentzone' },
+  { name: 'Facebook', icon: 'facebook' as const, href: 'https://www.facebook.com/profile.php?id=61573252657293' },
+  { name: 'Instagram', icon: 'instagram' as const, href: 'https://www.instagram.com/dentzonee/' },
+  { name: 'TikTok', icon: 'tiktok' as const, href: 'https://www.tiktok.com/@dentzonee' },
 ]
 </script>
 
