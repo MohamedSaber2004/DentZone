@@ -12,6 +12,7 @@ export const ar: Messages = {
     skipToMain: 'تخطَّ إلى المحتوى الرئيسي',
     dismissNotification: 'إغلاق الإشعار',
     back: 'رجوع',
+    scrollToTop: 'العودة للأعلى',
   },
   nav: {
     home: 'الرئيسية',

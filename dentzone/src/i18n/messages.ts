@@ -10,6 +10,7 @@ export type Messages = {
     skipToMain: string
     dismissNotification: string
     back: string
+    scrollToTop: string
   }
   nav: {
     home: string

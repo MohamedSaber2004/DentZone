@@ -12,7 +12,6 @@ interface CompanyLink {
 }
 
 const companyLinks = computed<CompanyLink[]>(() => [
-  { label: t('footer.companyAbout'), type: 'route', to: '/' },
   { label: t('footer.companyContact'), type: 'external', href: WHATSAPP_LINK },
   { label: t('footer.companyShipping'), type: 'route', to: '/refund-policy' },
   { label: t('footer.companyPrivacy'), type: 'route', to: '/privacy-policy' },

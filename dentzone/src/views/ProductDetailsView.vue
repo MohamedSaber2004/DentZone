@@ -929,12 +929,13 @@ html[dir='rtl'] .page__back svg {
   border: 1px solid var(--dz-border);
   border-radius: var(--dz-radius-lg);
   overflow: hidden;
-  padding: 0.75rem 0.75rem 0;
+  padding: 0.75rem;
 }
 
 .detail__main-wrap {
   position: relative;
   width: 100%;
+  aspect-ratio: 1 / 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -980,7 +981,8 @@ html[dir='rtl'] .page__back svg {
 
 .detail__main {
   width: 100%;
-  aspect-ratio: 1;
+  height: 100%;
+  aspect-ratio: 1 / 1;
   object-fit: contain;
   object-position: center;
   display: block;
@@ -990,7 +992,9 @@ html[dir='rtl'] .page__back svg {
   display: flex;
   align-items: center;
   justify-content: center;
-  aspect-ratio: 1;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 1 / 1;
   color: var(--dz-border-strong);
 }
 
@@ -998,7 +1002,7 @@ html[dir='rtl'] .page__back svg {
   display: flex;
   gap: 0.5rem;
   padding: 0.6rem;
-  margin-inline: -0.75rem;
+  margin: 0.75rem -0.75rem -0.75rem;
   border-top: 1px solid var(--dz-border);
   background: var(--dz-surface);
 }

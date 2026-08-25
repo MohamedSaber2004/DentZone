@@ -12,6 +12,7 @@ export const en: Messages = {
     skipToMain: 'Skip to main content',
     dismissNotification: 'Dismiss notification',
     back: 'Back',
+    scrollToTop: 'Scroll to top',
   },
   nav: {
     home: 'Home',
