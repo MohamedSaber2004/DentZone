@@ -100,6 +100,10 @@ const addToCart = (product: ProviderProductDto) => {
     inventoryId: invId,
     quantity: 1,
     name: product.productName,
+    arabicName: product.productArabicName,
+    image: product.images?.[0],
+    supplier: supplierName() || product.inventoryUserName,
+    salesPrice: product.effectiveSalesPrice,
     stockQuantity: product.stockQuantity,
     maxQuantity: product.maxQuantity,
   })

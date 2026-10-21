@@ -7,7 +7,7 @@ import { authService } from '../../di/container'
 import { resolveMediaUrl } from '../../utils/media'
 import { productRoute } from '../../utils/route-crypto'
 
-import type { RouteLocationRaw } from 'vue-router'
+import { type RouteLocationRaw, useRouter } from 'vue-router'
 
 const props = defineProps<{
   product: ProviderProductDto
@@ -21,6 +21,16 @@ const emit = defineEmits<{
   (e: 'toggle-favorite', product: ProviderProductDto): void
   (e: 'add-to-cart', product: ProviderProductDto): void
 }>()
+
+const router = useRouter()
+
+const onFavoriteClick = () => {
+  if (!authService.isAuthenticated) {
+    void router.push({ name: 'login' })
+    return
+  }
+  emit('toggle-favorite', props.product)
+}
 
 const resolvedDetailsTo = computed<RouteLocationRaw | undefined>(() => {
   if (props.detailsTo) return props.detailsTo
@@ -83,12 +93,11 @@ const formatPrice = (value: number) => value.toLocaleString(locale.value === 'ar
           :aria-label="favorite ? t('product.removeFromWishlist') : t('product.addToWishlist')"
           :aria-pressed="favorite"
           :disabled="favoriteBusy"
-          @click.stop="emit('toggle-favorite', product)"
+          @click.stop="onFavoriteClick"
         >
           <AppIcon name="heart" :size="16" />
         </button>
         <button
-          v-if="authService.isAuthenticated"
           type="button"
           class="product-card__cart"
           :aria-label="`${t('product.addToCart')}: ${displayName(product)}`"
