@@ -13,7 +13,7 @@ import ProviderSelectorModal from '../components/products/ProviderSelectorModal.
 import ProductCard from '../components/products/ProductCard.vue'
 import type { ProductDetailDto, ProductPriceDto, ProviderProductDto } from '../domain/models/product'
 
-import { decryptId, inventoryRoute, productRoute } from '../utils/route-crypto'
+import { decryptId, productRoute } from '../utils/route-crypto'
 
 const route = useRoute()
 const router = useRouter()
