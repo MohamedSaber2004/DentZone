@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { locale, t } from '../i18n'
-import { cartService } from '../di/container'
+import { authService, cartService } from '../di/container'
 import { resolveMediaUrl } from '../utils/media'
 import { inventoryRoute, productRoute } from '../utils/route-crypto'
 import AppIcon from '../components/ui/AppIcon.vue'
@@ -167,6 +168,16 @@ const load = async () => {
     loadError.value = true
   } finally {
     loading.value = false
+  }
+}
+
+const router = useRouter()
+
+const onProceedToCheckout = () => {
+  if (authService.isAuthenticated) {
+    void router.push('/checkout')
+  } else {
+    void router.push({ name: 'login', query: { redirect: '/checkout' } })
   }
 }
 
@@ -340,12 +351,12 @@ onMounted(load)
           <span>{{ t('summary.total') }}</span>
           <strong>{{ formatPrice(Math.ceil(total)) }} {{ t('products.currency') }}</strong>
         </div>
-        <RouterLink to="/checkout" class="cart__checkout-link">
-          <AppButton variant="primary" class="cart__checkout">
+        <div class="cart__checkout-link">
+          <AppButton variant="primary" class="cart__checkout" @click="onProceedToCheckout">
             {{ t('cart.proceedToCheckout') }}
             <AppIcon name="arrow-right" :size="15" />
           </AppButton>
-        </RouterLink>
+        </div>
         <RouterLink to="/categories" class="cart__continue">
           <AppIcon name="arrow-left" :size="15" />
           {{ t('cart.continueShopping') }}

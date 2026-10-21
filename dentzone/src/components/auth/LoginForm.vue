@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { services } from '../../di/container'
 import { ref } from 'vue'
-const { authService } = services
+const { authService, cartService } = services
 import { useRoute, useRouter } from 'vue-router'
 import { t } from '../../i18n'
 import { toastService } from '../../infrastructure/feedback/toast.service'
@@ -47,10 +47,17 @@ const submit = async () => {
   if (!validate()) return
   submitting.value = true
   const result = await authService.login(email.value.trim(), password.value)
-  submitting.value = false
   if (!result.ok) {
+    submitting.value = false
     error.value = result.error
     return
+  }
+  try {
+    await cartService.syncGuestCartToServer()
+  } catch {
+    // Continue navigation even if sync fails partially
+  } finally {
+    submitting.value = false
   }
   const user = authService.user.value
   if (user?.firstName) toastService.success(t('auth.helloAgain', { name: user.firstName }))
