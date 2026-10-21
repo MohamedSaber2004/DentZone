@@ -248,7 +248,6 @@ const logout = () => {
         </RouterLink>
 
         <RouterLink
-          v-if="isAuthenticated"
           to="/cart"
           class="app-header__cart"
           :aria-label="cartCount > 0 ? `${t('cart.title')} (${cartCount})` : t('cart.title')"
@@ -418,7 +417,6 @@ const logout = () => {
           {{ t('nav.notifications') }}
         </RouterLink>
         <RouterLink
-          v-if="isAuthenticated"
           to="/cart"
           class="app-header__panel-link"
           active-class="app-header__nav-link--active"

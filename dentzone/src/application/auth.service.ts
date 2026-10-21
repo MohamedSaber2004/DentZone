@@ -279,6 +279,7 @@ export class AuthService {
     this.expireSession()
     if (hadSession) toastService.info(t('auth.errSessionExpired'))
     const current = router.currentRoute.value
+    if (!current.meta.requiresAuth) return
     if (current.name === 'login' || this.redirectingToLogin) return
     this.redirectingToLogin = true
     void router

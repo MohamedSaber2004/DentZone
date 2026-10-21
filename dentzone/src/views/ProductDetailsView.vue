@@ -244,11 +244,7 @@ const load = async () => {
     if (data.categoryId) {
       void loadRelated(data.categoryId)
     }
-  } catch (e) {
-    if (e instanceof ApiError && e.status === 401) {
-      void router.push({ name: 'login', query: { redirect: route.fullPath } })
-      return
-    }
+  } catch {
     error.value = true
   } finally {
     loading.value = false
