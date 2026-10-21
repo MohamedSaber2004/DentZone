@@ -76,7 +76,7 @@ const router = createRouter({
       path: '/categories/inventory/:inventoryUserId/product/:productId',
       name: 'product-details',
       component: () => import('../views/ProductDetailsView.vue'),
-      meta: { requiresAuth: true, titleKey: 'product.viewProduct' },
+      meta: { titleKey: 'product.viewProduct' },
     },
     {
       path: '/privacy-policy',
@@ -106,7 +106,7 @@ const router = createRouter({
       path: '/cart',
       name: 'cart',
       component: () => import('../views/CartView.vue'),
-      meta: { requiresAuth: true, titleKey: 'cart.title' },
+      meta: { titleKey: 'cart.title' },
     },
     {
       path: '/checkout',
