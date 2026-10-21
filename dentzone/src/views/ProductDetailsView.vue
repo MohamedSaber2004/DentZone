@@ -17,7 +17,7 @@ import { decryptId, inventoryRoute, productRoute } from '../utils/route-crypto'
 
 const route = useRoute()
 const router = useRouter()
-const { productRepository, policyRepository, cartService, wishlistService, homeRepository } = services
+const { productRepository, policyRepository, cartService, wishlistService, homeRepository, authService } = services
 
 const rawProductId = () => (typeof route.params.productId === 'string' ? route.params.productId : '')
 const rawInventoryUserId = () =>
@@ -344,12 +344,20 @@ const addToCart = () => {
     inventoryId: invId,
     quantity: quantity.value,
     name: displayName.value || d.productName,
+    arabicName: d.productArabicName,
+    image: d.images?.[0],
+    supplier: currentStoreName.value,
+    salesPrice: price.effectiveSalesPrice > 0 ? price.effectiveSalesPrice : price.salesPrice,
     stockQuantity: price.stockQuantity,
     maxQuantity: price.maxQuantity,
   })
 }
 
 const toggleFavorite = () => {
+  if (!authService.isAuthenticated) {
+    void router.push({ name: 'login' })
+    return
+  }
   const price = currentPrice.value
   if (!price) return
   void wishlistService.toggle({
@@ -374,12 +382,20 @@ const addRelatedToCart = (product: ProviderProductDto) => {
     inventoryId: product.inventoryUserId,
     quantity: 1,
     name: product.productName,
+    arabicName: product.productArabicName,
+    image: product.images?.[0],
+    supplier: product.inventoryUserName,
+    salesPrice: product.effectiveSalesPrice,
     stockQuantity: product.stockQuantity,
     maxQuantity: product.maxQuantity,
   })
 }
 
 const toggleRelatedFavorite = (product: ProviderProductDto) => {
+  if (!authService.isAuthenticated) {
+    void router.push({ name: 'login' })
+    return
+  }
   void wishlistService.toggle({
     productId: product.productId,
     productPriceId: product.productPriceId,
