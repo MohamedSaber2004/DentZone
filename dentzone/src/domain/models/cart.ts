@@ -82,4 +82,21 @@ export interface AddToCartInput {
   name: string
   stockQuantity: number
   maxQuantity: number
+  arabicName?: string
+  image?: string
+  supplier?: string
+  salesPrice?: number
+}
+
+export interface GuestCartItem {
+  productId: string
+  inventoryId: string
+  quantity: number
+  name: string
+  arabicName?: string
+  image?: string
+  supplier?: string
+  salesPrice: number
+  stockQuantity: number
+  maxQuantity: number
 }
