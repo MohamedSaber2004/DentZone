@@ -165,7 +165,7 @@ const logout = () => {
     <div class="container app-header__inner">
       <RouterLink to="/" class="app-header__brand">
         <img src="/denta-logo.png" alt="DentZone" class="app-header__logo-img" />
-        <span class="app-header__wordmark">Dent<span>Zone</span></span>
+        <span class="app-header__wordmark dz-wordmark" dir="ltr">Dent<span>Zone</span></span>
       </RouterLink>
 
       <nav class="app-header__nav" :aria-label="t('nav.navigation')">
@@ -526,6 +526,10 @@ const logout = () => {
 }
 
 .app-header__wordmark {
+  display: inline-flex;
+  align-items: baseline;
+  direction: ltr;
+  unicode-bidi: isolate;
   font-family: var(--dz-font-display);
   font-size: 1.52rem;
   font-weight: 700;

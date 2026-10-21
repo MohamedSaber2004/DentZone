@@ -69,6 +69,9 @@ export type Messages = {
     specialOffersSubtitle: string
     moreOffersTitle: string
     moreOffersSubtitle: string
+    noOffers: string
+    noOffersDesc: string
+    offersError: string
     flashSalesTitle: string
     flashSalesSubtitle: string
     viewAllProducts: string
@@ -196,6 +199,8 @@ export type Messages = {
       back: string
       notFound: string
       notFoundDescription: string
+      loginRequired: string
+      loginRequiredDesc: string
       category: string
       brand: string
       availability: string

@@ -209,3 +209,16 @@ html[dir='rtl'] h4 {
     scroll-behavior: auto !important;
   }
 }
+
+/* Brand wordmarks: always rendered Left-to-Right (Dent followed by Zone) regardless of document direction */
+.dz-wordmark,
+.app-header__wordmark,
+.app-footer__wordmark,
+.hero__wordmark,
+.loading-overlay__wordmark,
+.auth-layout__wordmark {
+  display: inline-flex !important;
+  align-items: baseline;
+  direction: ltr !important;
+  unicode-bidi: isolate !important;
+}

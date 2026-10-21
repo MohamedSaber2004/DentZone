@@ -119,7 +119,7 @@ export class CartService {
 
   readonly count = computed(() => this.cart.value?.items.reduce((acc, item) => acc + item.quantity, 0) ?? 0)
 
-  readonly total = computed(() => this.cart.value?.totalAmountCart ?? 0)
+  readonly total = computed(() => Math.ceil(this.cart.value?.totalAmountCart ?? 0))
 
   async init(): Promise<void> {
     if (this.authService.isAuthenticated) {
@@ -188,8 +188,43 @@ export class CartService {
       await this.refresh()
       return true
     } catch {
-      toastService.error(t('cart.errorToast'))
-      return false
+      // Fallback: If server rejects (e.g. 401 session expired / auth issue), persist to guest cart
+      const items = readGuestCart()
+      const existingIndex = items.findIndex(
+        (i) => i.productId === input.productId && i.inventoryId === input.inventoryId,
+      )
+      if (existingIndex >= 0) {
+        const item = items[existingIndex]!
+        const nextQty = clampQuantity(item.quantity + clampedQty, input.stockQuantity, input.maxQuantity)
+        items[existingIndex] = {
+          ...item,
+          quantity: nextQty,
+          name: input.name || item.name,
+          arabicName: input.arabicName || item.arabicName,
+          image: input.image || item.image,
+          supplier: input.supplier || item.supplier,
+          salesPrice: input.salesPrice ?? item.salesPrice,
+        }
+      } else {
+        items.push({
+          productId: input.productId,
+          inventoryId: input.inventoryId,
+          quantity: clampedQty,
+          name: input.name,
+          arabicName: input.arabicName,
+          image: input.image,
+          supplier: input.supplier,
+          salesPrice: input.salesPrice ?? 0,
+          stockQuantity: input.stockQuantity,
+          maxQuantity: input.maxQuantity,
+        })
+      }
+      writeGuestCart(items)
+      this.cart.value = createSyntheticCart(items)
+      toastService.success(t('product.addToast', { name: input.name }), {
+        action: { label: t('cart.viewCart'), onClick: () => void router.push({ name: 'cart' }) },
+      })
+      return true
     }
   }
 

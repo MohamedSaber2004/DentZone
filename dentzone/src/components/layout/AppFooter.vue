@@ -34,7 +34,7 @@ const socialLinks = [
       <div class="app-footer__brand">
         <RouterLink to="/" class="app-footer__logo">
           <img src="/denta-logo.png" alt="DentZone" class="app-footer__logo-img" />
-          Dent<span>Zone</span>
+          <span class="app-footer__wordmark dz-wordmark" dir="ltr">Dent<span>Zone</span></span>
         </RouterLink>
         <p class="app-footer__tagline">
           {{ t('footer.tagline') }}
@@ -160,7 +160,14 @@ const socialLinks = [
   color: var(--dz-ink);
 }
 
-.app-footer__logo span {
+.app-footer__wordmark {
+  display: inline-flex;
+  align-items: baseline;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.app-footer__wordmark span {
   color: var(--dz-gold-strong);
 }
 

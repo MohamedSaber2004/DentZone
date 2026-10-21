@@ -194,6 +194,9 @@ export class ApiHomeRepository implements HomeRepository {
   constructor(private readonly http: HttpClient) {}
 
   async getTopProviders(lang?: number): Promise<HomeProviderDto[]> {
+    if (!this.http.hasToken) {
+      return this.fetchProvidersFallback(lang ?? 1)
+    }
     try {
       const raw = await this.http.get<unknown>(USER_ROUTES.getTopProviders, { showFeedback: false })
       const arr = extractArray(raw)
@@ -208,6 +211,19 @@ export class ApiHomeRepository implements HomeRepository {
   }
 
   async getHome(lang: number): Promise<HomeDto> {
+    if (!this.http.hasToken) {
+      return {
+        banners: [],
+        categories: [],
+        products: [],
+        providers: [],
+        brands: [],
+        specialOffersone: [],
+        specialOfferstwo: [],
+        flashSales: [],
+        fullName: null,
+      }
+    }
     try {
       const payload = await this.http.get<RawHomePayload>(HOME_ROUTES.getHome(lang), { showFeedback: false })
       const rawProviders = extractArray(payload?.providers)
@@ -241,6 +257,9 @@ export class ApiHomeRepository implements HomeRepository {
 
   async getAllProviders(lang?: number): Promise<HomeProviderDto[]> {
     const langCode = lang ?? 1
+    if (!this.http.hasToken) {
+      return this.fetchProvidersFallback(langCode)
+    }
     const providerMap = new Map<string, HomeProviderDto>()
 
     // 1. Fetch from getHome which contains the full registered provider list

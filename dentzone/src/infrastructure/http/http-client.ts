@@ -74,6 +74,10 @@ export class HttpClient {
     this.feedback = dependencies.feedback
   }
 
+  get hasToken(): boolean {
+    return Boolean(this.tokenStore.getAccessToken())
+  }
+
   get<T>(path: string, options?: RequestOptions): Promise<T> {
     return this.request<T>(path, 'GET', undefined, options)
   }

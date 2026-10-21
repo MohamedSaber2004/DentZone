@@ -156,7 +156,7 @@ const remove = async (line: CartLine) => {
 }
 
 const formatPrice = (value: number) =>
-  value.toLocaleString(locale.value === 'ar' ? 'ar-EG' : 'en-US', { maximumFractionDigits: 2 })
+  Math.ceil(value).toLocaleString(locale.value === 'ar' ? 'ar-EG' : 'en-US', { maximumFractionDigits: 0 })
 
 const load = async () => {
   if (!cartService.cart.value) loading.value = true

@@ -122,13 +122,9 @@ const onHeroSearch = () => {
 }
 
 const addToCart = (product: ProviderProductDto) => {
-  if (!product.inventoryUserId || product.inventoryUserId === 'default' || getProductProviderCount(product) > 1) {
-    void router.push(detailsTo(product))
-    return
-  }
   void cartService.add({
     productId: product.productId,
-    inventoryId: product.inventoryUserId,
+    inventoryId: product.inventoryUserId || 'default',
     quantity: 1,
     name: product.productName,
     arabicName: product.productArabicName,
@@ -158,6 +154,11 @@ const loadCategories = async () => {
 }
 
 const loadPopularProducts = async () => {
+  if (!isAuthenticated.value) {
+    popularLoading.value = false
+    popularProducts.value = []
+    return
+  }
   popularLoading.value = true
   popularError.value = false
   try {
@@ -172,6 +173,11 @@ const loadPopularProducts = async () => {
 }
 
 const loadHome = async () => {
+  if (!isAuthenticated.value) {
+    homeLoading.value = false
+    home.value = null
+    return
+  }
   homeLoading.value = true
   homeError.value = false
   try {
@@ -186,12 +192,15 @@ const loadHome = async () => {
     homeError.value = true
   } finally {
     homeLoading.value = false
-    void loadTopProviders()
-    void loadCatalogProducts()
   }
 }
 
 const loadTopProviders = async () => {
+  if (!isAuthenticated.value) {
+    topProvidersLoading.value = false
+    topProviders.value = []
+    return
+  }
   topProvidersLoading.value = true
   topProvidersError.value = false
   try {
@@ -224,11 +233,17 @@ const loadCatalogProducts = async () => {
 
 onMounted(() => {
   void loadCategories()
-  void loadPopularProducts()
-  void loadHome()
-  void loadTopProviders()
   void loadCatalogProducts()
-  void wishlistService.refresh()
+  if (isAuthenticated.value) {
+    void loadPopularProducts()
+    void loadHome()
+    void loadTopProviders()
+    void wishlistService.refresh()
+  } else {
+    homeLoading.value = false
+    popularLoading.value = false
+    topProvidersLoading.value = false
+  }
 })
 
 watch(isAuthenticated, (authed) => {
@@ -238,6 +253,13 @@ watch(isAuthenticated, (authed) => {
     void loadTopProviders()
     void loadCatalogProducts()
     void wishlistService.refresh(true)
+  } else {
+    home.value = null
+    popularProducts.value = []
+    topProviders.value = []
+    homeLoading.value = false
+    popularLoading.value = false
+    topProvidersLoading.value = false
   }
 })
 </script>
@@ -305,7 +327,7 @@ watch(isAuthenticated, (authed) => {
         <span class="hero__orbit hero__orbit--two"><AppIcon name="tube" :size="20" /></span>
         <span class="hero__orbit hero__orbit--three"><AppIcon name="droplet" :size="20" /></span>
 
-        <span class="hero__wordmark">Dent<span>Zone</span></span>
+        <span class="hero__wordmark dz-wordmark" dir="ltr">Dent<span>Zone</span></span>
       </div>
     </section>
   </div>
@@ -359,7 +381,7 @@ watch(isAuthenticated, (authed) => {
     </section>
 
     <!-- SECTION 1: Top Providers (Independent Section) -->
-    <section class="providers providers--top" :aria-label="t('home.topProvidersTitle')">
+    <section v-if="topProvidersLoading || displayedTopProviders.length > 0" class="providers providers--top" :aria-label="t('home.topProvidersTitle')">
       <div class="container">
         <div class="providers__head">
           <div>
@@ -881,6 +903,10 @@ html[dir='rtl'] .hero__search {
 }
 
 .hero__wordmark {
+  display: inline-flex;
+  align-items: baseline;
+  direction: ltr;
+  unicode-bidi: isolate;
   position: absolute;
   bottom: 0;
   font-family: var(--dz-font-display);

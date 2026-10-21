@@ -50,15 +50,20 @@ const orderNumber = ref<string | null>(null)
 const cart = computed(() => cartService.cart.value)
 const itemsCount = computed(() => cart.value?.items.reduce((acc, item) => acc + item.quantity, 0) ?? 0)
 const productsCost = computed(() => Math.ceil(cart.value?.totalAmountCart ?? 0))
-const discount = computed(() => couponApplied.value?.discount ?? 0)
-const total = computed(() => Math.max(0, productsCost.value - discount.value) + (shippingFee.value ?? 0))
+const discount = computed(() => Math.ceil(couponApplied.value?.discount ?? 0))
+const total = computed(() =>
+  Math.ceil(
+    Math.max(0, productsCost.value - discount.value) +
+      (shippingFee.value !== null ? Math.ceil(shippingFee.value) : 0),
+  ),
+)
 
 const canConfirm = computed(
   () => !!selectedAddressId.value && !!deliveryDay.value && !!selectedSlotId.value && !placing.value,
 )
 
 const formatPrice = (value: number) =>
-  value.toLocaleString(locale.value === 'ar' ? 'ar-EG' : 'en-US', { maximumFractionDigits: 2 })
+  Math.ceil(value).toLocaleString(locale.value === 'ar' ? 'ar-EG' : 'en-US', { maximumFractionDigits: 0 })
 
 const dateLabel = (offsetDays: number) => {
   const d = new Date()

@@ -14,8 +14,10 @@ const props = withDefaults(
     showStates?: boolean
     loading?: boolean
     error?: boolean
+    emptyTitle?: string
+    emptyDescription?: string
   }>(),
-  { showStates: false, loading: false, error: false, ariaLabel: '' },
+  { showStates: false, loading: false, error: false, ariaLabel: '', emptyTitle: '', emptyDescription: '' },
 )
 
 const emit = defineEmits<{ (e: 'retry'): void }>()
@@ -91,7 +93,7 @@ onBeforeUnmount(stopTimer)
 
       <div v-else-if="showStates && error" class="offer-slider__error" role="alert">
         <AppIcon name="alert-circle" :size="17" />
-        <span>{{ t('categories.errorDescription') }}</span>
+        <span>{{ t('home.offersError') }}</span>
         <button type="button" class="offer-slider__retry" @click="emit('retry')">
           <AppIcon name="refresh" :size="14" />
           {{ t('categories.retry') }}
@@ -100,8 +102,8 @@ onBeforeUnmount(stopTimer)
 
       <div v-else-if="showStates && offers.length === 0" class="offer-slider__empty">
         <span class="offer-slider__empty-icon"><AppIcon name="sparkles" :size="24" /></span>
-        <strong>{{ t('categories.emptyTitle') }}</strong>
-        <span>{{ t('categories.emptyDescription') }}</span>
+        <strong>{{ emptyTitle || t('home.noOffers') }}</strong>
+        <span>{{ emptyDescription || t('home.noOffersDesc') }}</span>
       </div>
 
       <div v-else-if="offers.length" ref="sliderRef" class="offer-slider__slider" :aria-label="resolvedLabel">

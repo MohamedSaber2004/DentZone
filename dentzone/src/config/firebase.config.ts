@@ -1,5 +1,9 @@
+export const SUSPENDED_FIREBASE_KEYS = new Set([
+  'AIzaSyDCf36SJuLtHiXQm6ZoFG-Ob2B35DQcWd4',
+])
+
 export const FIREBASE_CONFIG = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyDCf36SJuLtHiXQm6ZoFG-Ob2B35DQcWd4',
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'dent-zone-ac097.firebaseapp.com',
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'dent-zone-ac097',
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'dent-zone-ac097.firebasestorage.app',
@@ -9,3 +13,12 @@ export const FIREBASE_CONFIG = {
 } as const
 
 export const FIREBASE_VAPID_KEY = (import.meta.env.VITE_FIREBASE_VAPID_KEY as string | undefined) || undefined
+
+/**
+ * Checks whether Firebase is properly configured with an active, non-suspended API key.
+ */
+export const isFirebaseConfigured = (): boolean => {
+  const key = (FIREBASE_CONFIG.apiKey || '').trim()
+  return Boolean(key && !SUSPENDED_FIREBASE_KEYS.has(key))
+}
+

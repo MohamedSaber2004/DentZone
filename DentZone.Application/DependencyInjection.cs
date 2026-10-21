@@ -2,7 +2,6 @@
 using DentZone.Application.Common.Services;
 using DentZone.Application.Localization;
 using FluentValidation;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Localization;

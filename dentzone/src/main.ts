@@ -11,4 +11,27 @@ initI18n()
 void cartService.init()
 void firebaseMessagingService.init()
 
-createApp(App).use(router).mount('#app')
+const app = createApp(App)
+app.use(router)
+
+// Graceful Vue error handler to prevent unhandled render errors from polluting console
+app.config.errorHandler = () => {
+  // Handled silently
+}
+
+// Suppress unhandled promise rejections from operational errors (e.g. guest 401s, aborted fetches)
+if (typeof window !== 'undefined') {
+  window.addEventListener('unhandledrejection', (event) => {
+    const reason = event.reason as { name?: string; status?: number; isOperational?: boolean } | null | undefined
+    if (
+      reason?.status === 401 ||
+      reason?.name === 'ApiError' ||
+      reason?.name === 'AbortError' ||
+      reason?.isOperational
+    ) {
+      event.preventDefault()
+    }
+  })
+}
+
+app.mount('#app')

@@ -76,7 +76,7 @@ const router = createRouter({
       path: '/categories/inventory/:inventoryUserId/product/:productId',
       name: 'product-details',
       component: () => import('../views/ProductDetailsView.vue'),
-      meta: { titleKey: 'product.viewProduct' },
+      meta: { titleKey: 'product.viewProduct', requiresAuth: true },
     },
     {
       path: '/privacy-policy',

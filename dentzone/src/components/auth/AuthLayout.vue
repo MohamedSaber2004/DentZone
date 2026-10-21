@@ -17,7 +17,7 @@ withDefaults(
       <div class="auth-layout__card">
         <RouterLink to="/" class="auth-layout__brand">
           <img src="/denta-logo.png" alt="DentZone" class="auth-layout__logo-img" />
-          <span class="auth-layout__wordmark">Dent<span>Zone</span></span>
+          <span class="auth-layout__wordmark dz-wordmark" dir="ltr">Dent<span>Zone</span></span>
         </RouterLink>
 
         <div class="auth-layout__heading">
@@ -129,6 +129,10 @@ html[dir='rtl'] .auth-layout__glow {
 }
 
 .auth-layout__wordmark {
+  display: inline-flex;
+  align-items: baseline;
+  direction: ltr;
+  unicode-bidi: isolate;
   font-family: var(--dz-font-display);
   font-size: 1.6rem;
   font-weight: 700;

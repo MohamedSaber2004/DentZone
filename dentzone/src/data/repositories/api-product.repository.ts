@@ -577,6 +577,7 @@ export class ApiProductRepository implements ProductRepository {
   }
 
   async getMyFavorites(): Promise<ProviderProductDto[]> {
+    if (!this.http.hasToken) return []
     const favorites = await this.http.get<FavoriteProductDto[]>(PRODUCT_ROUTES.myFavorites, {
       showFeedback: false,
     })
@@ -584,6 +585,7 @@ export class ApiProductRepository implements ProductRepository {
   }
 
   async getPopularProducts(): Promise<ProviderProductDto[]> {
+    if (!this.http.hasToken) return []
     try {
       const items = await this.http.get<PopularProductDto[]>(PRODUCT_ROUTES.popularProducts, {
         showFeedback: false,

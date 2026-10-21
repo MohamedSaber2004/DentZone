@@ -90,11 +90,7 @@ const detailsTo = (product: ProviderProductDto) =>
   })
 
 const addToCart = (product: ProviderProductDto) => {
-  const invId = inventoryId() || product.inventoryUserId
-  if (!invId || invId === 'default') {
-    void router.push(detailsTo(product))
-    return
-  }
+  const invId = inventoryId() || product.inventoryUserId || 'default'
   void cartService.add({
     productId: product.productId,
     inventoryId: invId,

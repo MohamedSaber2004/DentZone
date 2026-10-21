@@ -9,7 +9,7 @@ import {
   type Messaging,
   type MessagePayload,
 } from 'firebase/messaging'
-import { FIREBASE_CONFIG, FIREBASE_VAPID_KEY } from '../../config/firebase.config'
+import { FIREBASE_CONFIG, FIREBASE_VAPID_KEY, isFirebaseConfigured } from '../../config/firebase.config'
 import { toastService } from '../feedback/toast.service'
 
 export type PushNotificationCallback = (payload: MessagePayload) => void
@@ -41,9 +41,26 @@ export class FirebaseMessagingService {
     if (this.initialized || typeof window === 'undefined') return
     this.initialized = true
 
+    // If Firebase credentials are not valid/configured or key is suspended,
+    // safely unregister any old background service worker and avoid calling Firebase endpoints.
+    if (!isFirebaseConfigured()) {
+      this.isSupported.value = false
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker
+          .getRegistrations()
+          .then((registrations) => {
+            for (const reg of registrations) {
+              if (reg.active?.scriptURL.includes('firebase-messaging-sw.js')) {
+                void reg.unregister()
+              }
+            }
+          })
+          .catch(() => undefined)
+      }
+      return
+    }
+
     try {
-      // Purge any token cached by older builds — the token must never be
-      // persisted or shown to the user; it only lives in memory.
       localStorage.removeItem(LEGACY_FCM_TOKEN_KEY)
 
       // 1. Initialize Firebase App
@@ -56,7 +73,11 @@ export class FirebaseMessagingService {
       // 2. Initialize Analytics conditionally
       const analyticsSupported = await isAnalyticsSupported().catch(() => false)
       if (analyticsSupported && this.app) {
-        this.analytics = getAnalytics(this.app)
+        try {
+          this.analytics = getAnalytics(this.app)
+        } catch {
+          // Analytics may fail if API key is invalid or blocked
+        }
       }
 
       // 3. Check if Firebase Messaging & Service Workers are supported
@@ -80,11 +101,10 @@ export class FirebaseMessagingService {
 
       // 6. If user already granted permission earlier, automatically retrieve/refresh token
       if (Notification.permission === 'granted') {
-        void this.retrieveToken()
+        void this.retrieveToken().catch(() => undefined)
       }
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : String(err)
-      console.warn('[FirebaseMessagingService] Initialization error:', errorMsg)
       this.error.value = errorMsg
     }
   }
@@ -93,7 +113,7 @@ export class FirebaseMessagingService {
    * Registers the Firebase service worker file.
    */
   private async registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
-    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return null
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !isFirebaseConfigured()) return null
 
     try {
       const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
@@ -101,8 +121,7 @@ export class FirebaseMessagingService {
       })
       this.swRegistration = registration
       return registration
-    } catch (err) {
-      console.warn('[FirebaseMessagingService] Service worker registration failed:', err)
+    } catch {
       return null
     }
   }
@@ -116,11 +135,15 @@ export class FirebaseMessagingService {
       return null
     }
 
+    if (!isFirebaseConfigured()) {
+      this.error.value = 'Push notifications service is currently unavailable.'
+      return null
+    }
+
     this.isLoading.value = true
     this.error.value = null
 
     try {
-      // Ensure initialized
       if (!this.initialized) {
         await this.init()
       }
@@ -155,7 +178,7 @@ export class FirebaseMessagingService {
    * Retrieves the FCM Device Token.
    */
   async retrieveToken(): Promise<string | null> {
-    if (!this.messaging) return null
+    if (!isFirebaseConfigured() || !this.messaging) return null
 
     try {
       if (!this.swRegistration) {
@@ -177,18 +200,16 @@ export class FirebaseMessagingService {
         this.tokenListeners.forEach((cb) => {
           try {
             cb(currentToken)
-          } catch (err) {
-            console.error('[FirebaseMessagingService] Token listener error:', err)
+          } catch {
+            // Silently handle callback errors
           }
         })
         return currentToken
       } else {
-        console.warn('[FirebaseMessagingService] No registration token available.')
         return null
       }
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : String(err)
-      console.warn('[FirebaseMessagingService] Error retrieving token:', errorMsg)
       this.error.value = errorMsg
       return null
     }
@@ -201,8 +222,6 @@ export class FirebaseMessagingService {
     if (!this.messaging) return
 
     onMessage(this.messaging, (payload: MessagePayload) => {
-      console.log('[FirebaseMessagingService] Foreground message received:', payload)
-
       const title = payload.notification?.title || payload.data?.title || 'DentZone Notification'
       const body = payload.notification?.body || payload.data?.body || payload.data?.message || ''
 
@@ -214,8 +233,8 @@ export class FirebaseMessagingService {
       this.listeners.forEach((callback) => {
         try {
           callback(payload)
-        } catch (err) {
-          console.error('[FirebaseMessagingService] Listener error:', err)
+        } catch {
+          // Silently handle listener errors
         }
       })
     })
@@ -230,8 +249,8 @@ export class FirebaseMessagingService {
     if (this.token.value) {
       try {
         callback(this.token.value)
-      } catch (err) {
-        console.error('[FirebaseMessagingService] Initial token listener error:', err)
+      } catch {
+        // Silently handle callback errors
       }
     }
     return () => {

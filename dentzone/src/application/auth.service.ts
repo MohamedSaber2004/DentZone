@@ -114,6 +114,10 @@ export class AuthService {
     try {
       const session = JSON.parse(raw) as StoredSession
       if (session?.accessToken && session?.user) {
+        if (decodeJwtExp(session.accessToken) <= Date.now()) {
+          this.expireSession()
+          return
+        }
         this.session = session
         this.user.value = session.user
         this.tokenStore.setTokens(session)
@@ -153,8 +157,8 @@ export class AuthService {
     if (!fcmToken && this.firebaseMessagingService) {
       try {
         fcmToken = await this.firebaseMessagingService.retrieveToken()
-      } catch (err) {
-        console.warn('[AuthService] Error retrieving FCM token:', err)
+      } catch {
+        // Silently skip if FCM is unavailable
       }
     }
 
@@ -166,8 +170,8 @@ export class AuthService {
     try {
       await this.authRepository.saveFcmToken({ userId, fcmToken })
       this.lastSyncedFcmKey = syncKey
-    } catch (err) {
-      console.warn('[AuthService] Failed to save FCM token to backend:', err)
+    } catch {
+      // Non-blocking background sync
     }
   }
 
@@ -185,8 +189,8 @@ export class AuthService {
         if (profile) {
           this.refreshUser(profile)
         }
-      } catch (profileErr) {
-        console.warn('[AuthService] Fetching profile after login failed:', profileErr)
+      } catch {
+        // Non-blocking profile enrichment
       }
 
       return { ok: true }
@@ -279,7 +283,6 @@ export class AuthService {
     this.expireSession()
     if (hadSession) toastService.info(t('auth.errSessionExpired'))
     const current = router.currentRoute.value
-    if (!current.meta.requiresAuth) return
     if (current.name === 'login' || this.redirectingToLogin) return
     this.redirectingToLogin = true
     void router

@@ -206,7 +206,7 @@ const loadRelated = async (categoryId?: string) => {
 }
 
 const loadProviderNames = async () => {
-  if (providerNameMap.value.size > 0) return
+  if (!authService.isAuthenticated || providerNameMap.value.size > 0) return
   try {
     const providers = await homeRepository.getTopProviders(lang.value)
     for (const p of providers) {
@@ -220,13 +220,23 @@ const loadProviderNames = async () => {
   }
 }
 
+const isAuthRequired = ref(false)
+
 const load = async () => {
   loading.value = true
   error.value = false
+  isAuthRequired.value = false
   detail.value = null
   activeImage.value = 0
   imageFailed.value = false
   quantity.value = 1
+
+  if (!authService.isAuthenticated) {
+    isAuthRequired.value = true
+    loading.value = false
+    return
+  }
+
   void loadProviderNames()
   try {
     const data = await productRepository.getProductById(productId(), lang.value)
@@ -244,13 +254,29 @@ const load = async () => {
     if (data.categoryId) {
       void loadRelated(data.categoryId)
     }
-  } catch {
-    error.value = true
+  } catch (err: unknown) {
+    if (err instanceof ApiError && err.status === 401) {
+      isAuthRequired.value = true
+    } else {
+      error.value = true
+    }
   } finally {
     loading.value = false
   }
   void wishlistService.refresh()
 }
+
+watch(
+  () => authService.isAuthenticated,
+  (authed) => {
+    if (authed) {
+      void load()
+    } else {
+      isAuthRequired.value = true
+      detail.value = null
+    }
+  },
+)
 
 const displayName = computed(() => {
   const d = detail.value
@@ -455,6 +481,21 @@ watch(() => route.params.productId, () => {
         <span class="skeleton skeleton-detail__line" />
         <span class="skeleton skeleton-detail__line skeleton-detail__line--short" />
         <span class="skeleton skeleton-detail__line skeleton-detail__line--wide" />
+      </div>
+    </div>
+
+    <div v-else-if="isAuthRequired" class="page__state" role="alert">
+      <span class="page__state-icon"><AppIcon name="lock" :size="30" /></span>
+      <h2 class="page__state-title">{{ t('products.details.loginRequired') }}</h2>
+      <p class="page__state-desc">{{ t('products.details.loginRequiredDesc') }}</p>
+      <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; margin-top: 0.5rem;">
+        <AppButton variant="primary" @click="router.push({ name: 'login', query: { redirect: route.fullPath } })">
+          <AppIcon name="arrow-right" :size="15" />
+          {{ t('auth.login') }}
+        </AppButton>
+        <AppButton variant="secondary" @click="backToProducts">
+          {{ t('common.back') }}
+        </AppButton>
       </div>
     </div>
 

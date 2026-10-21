@@ -109,13 +109,9 @@ const detailsTo = (product: ProviderProductDto) =>
   })
 
 const addToCart = (product: ProviderProductDto) => {
-  if (!product.inventoryUserId || product.inventoryUserId === 'default') {
-    void router.push(detailsTo(product))
-    return
-  }
   void cartService.add({
     productId: product.productId,
-    inventoryId: product.inventoryUserId,
+    inventoryId: product.inventoryUserId || 'default',
     quantity: 1,
     name: product.productName,
     arabicName: product.productArabicName,

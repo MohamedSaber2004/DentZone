@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { services } from '../di/container'
-import { t } from '../i18n'
+import { t, locale } from '../i18n'
 import { OrderStatus } from '../domain/models/order'
 import type { GroupedOrderDto } from '../domain/models/order'
 import AppIcon from '../components/ui/AppIcon.vue'
@@ -69,7 +69,9 @@ const statusVariant = (status: OrderStatus): string => {
 }
 
 const formatCurrency = (amount: number) =>
-  new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount)
+  Math.ceil(amount).toLocaleString(locale.value === 'ar' ? 'ar-EG' : 'en-US', {
+    maximumFractionDigits: 0,
+  }) + ` ${t('products.currency')}`
 
 onMounted(load)
 </script>

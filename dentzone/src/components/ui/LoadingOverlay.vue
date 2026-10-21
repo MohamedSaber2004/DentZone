@@ -34,7 +34,7 @@ watch(
           <img src="/denta-logo.png" alt="DentZone" class="loading-overlay__logo" />
           <span class="loading-overlay__ring" />
         </div>
-        <span class="loading-overlay__wordmark">Dent<span>Zone</span></span>
+        <span class="loading-overlay__wordmark dz-wordmark" dir="ltr">Dent<span>Zone</span></span>
       </div>
     </div>
   </Transition>
@@ -97,6 +97,10 @@ watch(
 }
 
 .loading-overlay__wordmark {
+  display: inline-flex;
+  align-items: baseline;
+  direction: ltr;
+  unicode-bidi: isolate;
   font-family: var(--dz-font-display);
   font-size: 1.15rem;
   font-weight: 700;
