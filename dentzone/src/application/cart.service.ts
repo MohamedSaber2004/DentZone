@@ -1,14 +1,97 @@
 import { computed, ref, watch } from 'vue'
 import type { AuthService } from './auth.service'
 import type { CartRepository } from '../domain/ports/cart-repository'
-import type { AddToCartInput, CartDto } from '../domain/models/cart'
+import type { AddToCartInput, CartDto, GuestCartItem } from '../domain/models/cart'
 import { toastService } from '../infrastructure/feedback/toast.service'
 import { t } from '../i18n'
 import router from '../router'
 
+const GUEST_CART_KEY = 'dentzone_guest_cart'
+
 const clampQuantity = (quantity: number, stockQuantity: number, maxQuantity: number): number => {
-  const upper = Math.min(stockQuantity > 0 ? stockQuantity : Number.POSITIVE_INFINITY, maxQuantity > 0 ? maxQuantity : Number.POSITIVE_INFINITY)
+  const upper = Math.min(
+    stockQuantity > 0 ? stockQuantity : Number.POSITIVE_INFINITY,
+    maxQuantity > 0 ? maxQuantity : Number.POSITIVE_INFINITY,
+  )
   return Math.min(Math.max(1, quantity), Number.isFinite(upper) ? upper : quantity)
+}
+
+const readGuestCart = (): GuestCartItem[] => {
+  if (typeof window === 'undefined' || !window.localStorage) return []
+  try {
+    const raw = window.localStorage.getItem(GUEST_CART_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
+const writeGuestCart = (items: GuestCartItem[]): void => {
+  if (typeof window === 'undefined' || !window.localStorage) return
+  try {
+    if (items.length === 0) {
+      window.localStorage.removeItem(GUEST_CART_KEY)
+    } else {
+      window.localStorage.setItem(GUEST_CART_KEY, JSON.stringify(items))
+    }
+  } catch {
+    // Ignore storage errors in private browsing or quota limits
+  }
+}
+
+const createSyntheticCart = (items: GuestCartItem[]): CartDto => {
+  const totalAmountCart = items.reduce((sum, item) => sum + (item.salesPrice * item.quantity), 0)
+  return {
+    id: 0,
+    userId: 'guest',
+    totalAmountCart,
+    isAvailableNow: true,
+    isFlashSale: false,
+    items: items.map((item, index) => ({
+      id: index + 1,
+      productId: item.productId,
+      quantity: item.quantity,
+      totalAmount: item.salesPrice * item.quantity,
+      productPriceId: '',
+      status: 1,
+      inventoryUserId: item.inventoryId,
+      isAvailableNow: true,
+      product: {
+        id: item.productId,
+        name: item.name,
+        arabicName: item.arabicName || item.name,
+        preef: '',
+        description: '',
+        productImage: item.image || '',
+      },
+      productPrice: {
+        id: '',
+        productId: item.productId,
+        purchasePrice: item.salesPrice,
+        salesPrice: item.salesPrice,
+        flashSaleFromDate: null,
+        flashSaleToDate: null,
+        priceBeforeFlashSale: item.salesPrice,
+        priceAfterFlashSale: null,
+        isFlashSaleActive: false,
+        effectiveSalesPrice: item.salesPrice,
+        creationDate: '',
+        inventoryUserId: item.inventoryId,
+        stockQuantity: item.stockQuantity,
+        maxQuantity: item.maxQuantity,
+      },
+      inventoryUser: {
+        id: item.inventoryId,
+        fullName: item.supplier || '',
+        userName: item.supplier || '',
+        photo: null,
+        isActive: true,
+        minOrder: null,
+      },
+    })),
+  }
 }
 
 export class CartService {
@@ -25,9 +108,10 @@ export class CartService {
       () => this.authService.user.value,
       async (user, previous) => {
         if (user && !previous) {
+          await this.syncGuestCartToServer()
           await this.refresh()
         } else if (!user && previous) {
-          this.cart.value = null
+          this.cart.value = createSyntheticCart(readGuestCart())
         }
       },
     )
@@ -38,19 +122,65 @@ export class CartService {
   readonly total = computed(() => this.cart.value?.totalAmountCart ?? 0)
 
   async init(): Promise<void> {
-    if (!this.authService.isAuthenticated) return
-    await this.refresh()
+    if (this.authService.isAuthenticated) {
+      await this.syncGuestCartToServer()
+      await this.refresh()
+    } else {
+      this.cart.value = createSyntheticCart(readGuestCart())
+    }
   }
 
   async add(input: AddToCartInput): Promise<boolean> {
     const user = this.authService.user.value
-    if (!user) return false
+    const clampedQty = clampQuantity(input.quantity, input.stockQuantity, input.maxQuantity)
+
+    if (!user) {
+      const items = readGuestCart()
+      const existingIndex = items.findIndex(
+        (i) => i.productId === input.productId && i.inventoryId === input.inventoryId,
+      )
+      if (existingIndex >= 0) {
+        const item = items[existingIndex]!
+        const nextQty = clampQuantity(item.quantity + clampedQty, input.stockQuantity, input.maxQuantity)
+        items[existingIndex] = {
+          ...item,
+          quantity: nextQty,
+          name: input.name || item.name,
+          arabicName: input.arabicName || item.arabicName,
+          image: input.image || item.image,
+          supplier: input.supplier || item.supplier,
+          salesPrice: input.salesPrice ?? item.salesPrice,
+          stockQuantity: input.stockQuantity,
+          maxQuantity: input.maxQuantity,
+        }
+      } else {
+        items.push({
+          productId: input.productId,
+          inventoryId: input.inventoryId,
+          quantity: clampedQty,
+          name: input.name,
+          arabicName: input.arabicName,
+          image: input.image,
+          supplier: input.supplier,
+          salesPrice: input.salesPrice ?? 0,
+          stockQuantity: input.stockQuantity,
+          maxQuantity: input.maxQuantity,
+        })
+      }
+      writeGuestCart(items)
+      this.cart.value = createSyntheticCart(items)
+      toastService.success(t('product.addToast', { name: input.name }), {
+        action: { label: t('cart.viewCart'), onClick: () => void router.push({ name: 'cart' }) },
+      })
+      return true
+    }
+
     try {
       await this.cartRepository.addToCart({
         userId: user.id,
         inventoryId: input.inventoryId,
         productId: input.productId,
-        quantity: clampQuantity(input.quantity, input.stockQuantity, input.maxQuantity),
+        quantity: clampedQty,
       })
       toastService.success(t('product.addToast', { name: input.name }), {
         action: { label: t('cart.viewCart'), onClick: () => void router.push({ name: 'cart' }) },
@@ -65,7 +195,18 @@ export class CartService {
 
   async updateQuantity(input: { productId: string; inventoryId: string; quantity: number; name: string }): Promise<boolean> {
     const user = this.authService.user.value
-    if (!user) return false
+    if (!user) {
+      const items = readGuestCart()
+      const existing = items.find((i) => i.productId === input.productId && i.inventoryId === input.inventoryId)
+      if (existing) {
+        existing.quantity = clampQuantity(input.quantity, existing.stockQuantity, existing.maxQuantity)
+        writeGuestCart(items)
+        this.cart.value = createSyntheticCart(items)
+        return true
+      }
+      return false
+    }
+
     try {
       await this.cartRepository.updateQuantity({
         userId: user.id,
@@ -83,7 +224,15 @@ export class CartService {
 
   async remove(input: { productId: string; inventoryId: string; name: string }): Promise<boolean> {
     const user = this.authService.user.value
-    if (!user) return false
+    if (!user) {
+      let items = readGuestCart()
+      items = items.filter((i) => !(i.productId === input.productId && i.inventoryId === input.inventoryId))
+      writeGuestCart(items)
+      this.cart.value = createSyntheticCart(items)
+      toastService.success(t('cart.removedToast', { name: input.name }))
+      return true
+    }
+
     try {
       await this.cartRepository.removeFromCart({ userId: user.id, productId: input.productId })
       toastService.success(t('cart.removedToast', { name: input.name }))
@@ -97,7 +246,10 @@ export class CartService {
 
   async refresh(): Promise<boolean> {
     const user = this.authService.user.value
-    if (!user) return false
+    if (!user) {
+      this.cart.value = createSyntheticCart(readGuestCart())
+      return true
+    }
     try {
       this.cart.value = await this.cartRepository.getCart(user.id)
       return true
@@ -107,7 +259,36 @@ export class CartService {
     }
   }
 
+  async syncGuestCartToServer(): Promise<void> {
+    const user = this.authService.user.value
+    if (!user) return
+    const guestItems = readGuestCart()
+    if (!guestItems.length) return
+
+    this.syncing.value = true
+    try {
+      const remaining: GuestCartItem[] = []
+      for (const item of guestItems) {
+        try {
+          await this.cartRepository.addToCart({
+            userId: user.id,
+            inventoryId: item.inventoryId,
+            productId: item.productId,
+            quantity: clampQuantity(item.quantity, item.stockQuantity, item.maxQuantity),
+          })
+        } catch {
+          remaining.push(item)
+        }
+      }
+      writeGuestCart(remaining)
+      await this.refresh()
+    } finally {
+      this.syncing.value = false
+    }
+  }
+
   clear(): void {
+    writeGuestCart([])
     this.cart.value = null
   }
 }
