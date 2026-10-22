@@ -24,8 +24,19 @@ export interface SaveFcmTokenPayload {
   fcmToken: string
 }
 
+export interface RegisterPayload {
+  fullName: string
+  email: string
+  password: string
+  phoneNumber: string
+  roleId?: string
+  areaId?: number
+  addressLines?: string[]
+}
+
 export interface AuthRepository {
   login(credentials: LoginCredentials): Promise<LoginResponseDto>
+  register(payload: RegisterPayload): Promise<void>
   getUserProfile(userId: string): Promise<UserProfileDto>
   updateUserProfile(userId: string, payload: UpdateUserProfilePayload): Promise<UserProfileDto>
   saveFcmToken(payload: SaveFcmTokenPayload): Promise<void>

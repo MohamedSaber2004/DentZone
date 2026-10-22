@@ -6,6 +6,7 @@ import { addressRepository, cartService, orderRepository, authService } from '..
 import AppIcon from '../components/ui/AppIcon.vue'
 import AppButton from '../components/ui/AppButton.vue'
 import AppInput from '../components/ui/AppInput.vue'
+import CheckoutAuthModal from '../components/checkout/CheckoutAuthModal.vue'
 import type { AddressDto, AreaDto } from '../domain/models/auth'
 import type { DeliveryTimeSlotDto } from '../domain/models/order'
 
@@ -15,7 +16,7 @@ const loadError = ref(false)
 const pageLoading = ref(true)
 const addresses = ref<AddressDto[]>([])
 const areas = ref<AreaDto[]>([])
-const addressesLoading = ref(true)
+const addressesLoading = ref(authService.isAuthenticated)
 const addressesError = ref(false)
 
 const selectedAddressId = ref('')
@@ -58,9 +59,32 @@ const total = computed(() =>
   ),
 )
 
-const canConfirm = computed(
-  () => !!selectedAddressId.value && !!deliveryDay.value && !!selectedSlotId.value && !placing.value,
+const showAuthModal = ref(false)
+const isAuth = computed(() => authService.isAuthenticated)
+
+const isGuestAddressValid = computed(
+  () => !!addressLine.value.trim() && !!areaId.value,
 )
+
+const canConfirm = computed(() => {
+  if (placing.value) return false
+  if (!deliveryDay.value || !selectedSlotId.value) return false
+  if (isAuth.value) {
+    return !!selectedAddressId.value
+  }
+  return isGuestAddressValid.value
+})
+
+watch(areaId, (id) => {
+  if (!isAuth.value) {
+    if (!id) {
+      shippingFee.value = null
+      return
+    }
+    const area = areas.value.find((a) => a.id === Number(id))
+    shippingFee.value = area ? area.shippingCosts : 0
+  }
+})
 
 const formatPrice = (value: number) =>
   Math.ceil(value).toLocaleString(locale.value === 'ar' ? 'ar-EG' : 'en-US', { maximumFractionDigits: 0 })
@@ -206,10 +230,65 @@ watch(deliveryDay, (day) => {
 
 const confirmOrder = async () => {
   if (!canConfirm.value) return
+  if (!isAuth.value) {
+    showAuthModal.value = true
+    return
+  }
+  await executeOrderPlacement(selectedAddressId.value)
+}
+
+const onAuthModalSuccess = async () => {
+  showAuthModal.value = false
+  placing.value = true
+  try {
+    // 1. Sync guest cart to server
+    await cartService.syncGuestCartToServer()
+    await cartService.refresh()
+
+    // 2. Save the guest address to user account if needed
+    const user = authService.user.value
+    await loadAddresses()
+    let targetAddressId = selectedAddressId.value
+
+    if (!targetAddressId && addressLine.value.trim()) {
+      const existingMatch = addresses.value.find(
+        (a) => a.addressLine.trim().toLowerCase() === addressLine.value.trim().toLowerCase(),
+      )
+      if (existingMatch) {
+        targetAddressId = existingMatch.id
+      } else {
+        await addressRepository.insertAddress({
+          userId: user?.id ?? '',
+          addressLine: addressLine.value.trim(),
+          areaId: areaId.value ? Number(areaId.value) : null,
+          floorNum: floorNum.value.trim() === '' ? null : Number(floorNum.value),
+          apartmentNum: apartmentNum.value.trim() === '' ? null : Number(apartmentNum.value),
+        })
+        await loadAddresses()
+        const added = addresses.value[addresses.value.length - 1]
+        if (added) targetAddressId = added.id
+      }
+    }
+
+    if (!targetAddressId && addresses.value.length > 0) {
+      targetAddressId = addresses.value[0]?.id ?? ''
+    }
+
+    if (!targetAddressId) {
+      throw new Error('Failed to create or resolve address')
+    }
+
+    await executeOrderPlacement(targetAddressId)
+  } catch {
+    placing.value = false
+  }
+}
+
+const executeOrderPlacement = async (targetAddressId: string) => {
   placing.value = true
   try {
     const response = await orderRepository.createOrder({
-      addresssId: selectedAddressId.value,
+      addresssId: targetAddressId,
       deliveryDate: deliveryDay.value as number,
       orderNote: note.value.trim() || undefined,
       deliveryTimeSlotId: selectedSlotId.value,
@@ -247,10 +326,16 @@ const load = async () => {
       void router.replace({ name: 'cart' })
       return
     }
-    await Promise.all([
-      loadAddresses(),
-      addressRepository.getAllAreas().then((items: AreaDto[]) => (areas.value = items)).catch(() => undefined),
-    ])
+    const areaPromise = addressRepository.getAllAreas()
+      .then((items: AreaDto[]) => (areas.value = items))
+      .catch(() => undefined)
+
+    if (authService.isAuthenticated) {
+      await Promise.all([loadAddresses(), areaPromise])
+    } else {
+      addressesLoading.value = false
+      await areaPromise
+    }
   } catch {
     loadError.value = true
   } finally {
@@ -317,24 +402,42 @@ onMounted(load)
           <section class="checkout__step">
             <h2 class="checkout__step-title">
               <span class="checkout__step-num">1</span>
-              {{ t('checkout.stepAddress') }}
+              {{ isAuth ? t('checkout.stepAddress') : t('checkout.guestAddressTitle') }}
             </h2>
 
-            <div v-if="addressesLoading" class="checkout__state-row">
-              <AppIcon name="refresh" :size="17" class="checkout__spinner" />
-              <span>{{ t('common.loading') }}</span>
+            <!-- GUEST ADDRESS FORM -->
+            <div v-if="!isAuth" class="checkout__guest-address-form">
+              <AppInput v-model="addressLine" :label="t('profile.addressLine')" required />
+              <div class="checkout__field">
+                <label class="app-input__label">{{ t('profile.area') }}</label>
+                <select v-model="areaId" class="checkout__select">
+                  <option value="">{{ t('profile.selectArea') }}</option>
+                  <option v-for="area in areas" :key="area.id" :value="area.id">{{ area.name }}</option>
+                </select>
+              </div>
+              <div class="checkout__address-form-row">
+                <AppInput v-model="floorNum" :label="t('profile.floor')" type="text" inputmode="numeric" />
+                <AppInput v-model="apartmentNum" :label="t('profile.apartment')" type="text" inputmode="numeric" />
+              </div>
             </div>
 
-            <div v-else-if="addressesError" class="checkout__state-row" role="alert">
-              <AppIcon name="alert-circle" :size="16" />
-              <span>{{ t('checkout.addressesError') }}</span>
-              <button type="button" class="checkout__retry" @click="loadAddresses">
-                <AppIcon name="refresh" :size="13" />
-                {{ t('categories.retry') }}
-              </button>
-            </div>
-
+            <!-- AUTHENTICATED USER ADDRESSES -->
             <template v-else>
+              <div v-if="addressesLoading" class="checkout__state-row">
+                <AppIcon name="refresh" :size="17" class="checkout__spinner" />
+                <span>{{ t('common.loading') }}</span>
+              </div>
+
+              <div v-else-if="addressesError" class="checkout__state-row" role="alert">
+                <AppIcon name="alert-circle" :size="16" />
+                <span>{{ t('checkout.addressesError') }}</span>
+                <button type="button" class="checkout__retry" @click="loadAddresses">
+                  <AppIcon name="refresh" :size="13" />
+                  {{ t('categories.retry') }}
+                </button>
+              </div>
+
+              <template v-else>
               <p v-if="addresses.length === 0" class="checkout__empty">
                 {{ t('checkout.noAddresses') }}
               </p>
@@ -402,7 +505,8 @@ onMounted(load)
                 </div>
               </form>
             </template>
-          </section>
+          </template>
+        </section>
 
           <section class="checkout__step">
             <h2 class="checkout__step-title">
@@ -560,10 +664,23 @@ onMounted(load)
         </aside>
       </div>
     </template>
+
+    <CheckoutAuthModal
+      :is-open="showAuthModal"
+      :area-id="areaId ? Number(areaId) : undefined"
+      :address-line="addressLine.trim() || undefined"
+      @close="showAuthModal = false"
+      @success="onAuthModalSuccess"
+    />
   </div>
 </template>
 
 <style scoped>
+.checkout__guest-address-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
 .page__head {
   display: flex;
   align-items: center;

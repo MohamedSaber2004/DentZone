@@ -174,11 +174,7 @@ const load = async () => {
 const router = useRouter()
 
 const onProceedToCheckout = () => {
-  if (authService.isAuthenticated) {
-    void router.push('/checkout')
-  } else {
-    void router.push({ name: 'login', query: { redirect: '/checkout' } })
-  }
+  void router.push('/checkout')
 }
 
 onMounted(load)

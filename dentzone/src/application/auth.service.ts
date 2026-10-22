@@ -3,7 +3,7 @@ import type { MessageKey } from '../i18n'
 import { t } from '../i18n'
 import type { User } from '../domain/models/user'
 import type { LoginResponseDto, UserProfileDto } from '../domain/models/auth'
-import type { AuthRepository, UpdateUserProfilePayload } from '../domain/ports/auth-repository'
+import type { AuthRepository, RegisterPayload, UpdateUserProfilePayload } from '../domain/ports/auth-repository'
 import { toastService } from '../infrastructure/feedback/toast.service'
 import { ApiError } from '../infrastructure/http/api-error'
 import type { TokenStore } from '../infrastructure/http/token-store'
@@ -196,6 +196,15 @@ export class AuthService {
       return { ok: true }
     } catch (err) {
       return { ok: false, error: toErrorMessage(err, 'auth.errInvalidCredentials') }
+    }
+  }
+
+  async register(payload: RegisterPayload): Promise<AuthResult> {
+    try {
+      await this.authRepository.register(payload)
+      return await this.login(payload.email, payload.password)
+    } catch (err) {
+      return { ok: false, error: toErrorMessage(err, 'auth.registerError') }
     }
   }
 

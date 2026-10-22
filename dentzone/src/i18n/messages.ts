@@ -223,6 +223,7 @@ export type Messages = {
     noAccount: string
     register: string
     registerSoon: string
+    registerError: string
     errInvalidCredentials: string
     errEmailRequired: string
     errEmailInvalid: string
@@ -471,6 +472,18 @@ export type Messages = {
     backHome: string
     continueShopping: string
     loadError: string
+    authModalTitle: string
+    authModalSubtitle: string
+    tabLogin: string
+    tabRegister: string
+    loginAndContinue: string
+    registerAndContinue: string
+    phone: string
+    phonePlaceholder: string
+    namePlaceholder: string
+    errPhoneRequired: string
+    errNameRequired: string
+    guestAddressTitle: string
   }
   footer: {
     newsletterTitle: string

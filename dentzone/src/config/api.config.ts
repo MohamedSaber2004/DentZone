@@ -10,6 +10,7 @@ const base = '/api'
 export const AUTH_ROUTES = {
   login: `${base}/Users/login`,
   loginGuest: `${base}/Users/login-guest`,
+  register: `${base}/Users/register`,
 } as const
 
 export const PASSWORD_ROUTES = {

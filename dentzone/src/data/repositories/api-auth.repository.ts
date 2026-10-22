@@ -1,6 +1,7 @@
 import type {
   AuthRepository,
   LoginCredentials,
+  RegisterPayload,
   SaveFcmTokenPayload,
   UpdateUserProfilePayload,
   VerifyOtpResult,
@@ -92,6 +93,22 @@ export class ApiAuthRepository implements AuthRepository {
       { usernameOrEmail: credentials.usernameOrEmail, password: credentials.password },
       { headers: { 'X-Attempt-Email': credentials.usernameOrEmail }, showFeedback: false },
     )
+  }
+
+  register(payload: RegisterPayload): Promise<void> {
+    const formData = new FormData()
+    formData.append('FullName', payload.fullName)
+    formData.append('Email', payload.email)
+    formData.append('Password', payload.password)
+    formData.append('PhoneNumber', payload.phoneNumber)
+    formData.append('IsActive', 'true')
+    if (payload.areaId) formData.append('AreaId', String(payload.areaId))
+    if (payload.addressLines && payload.addressLines.length > 0) {
+      for (const line of payload.addressLines) {
+        formData.append('AddressLines', line)
+      }
+    }
+    return this.http.post<void>(AUTH_ROUTES.register, formData, { showFeedback: false })
   }
 
   saveFcmToken(payload: SaveFcmTokenPayload): Promise<void> {

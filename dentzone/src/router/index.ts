@@ -115,7 +115,7 @@ const router = createRouter({
       path: '/checkout',
       name: 'checkout',
       component: () => import('../views/CheckoutView.vue'),
-      meta: { requiresAuth: true, titleKey: 'checkout.title' },
+      meta: { titleKey: 'checkout.title' },
     },
     {
       path: '/orders',
@@ -144,12 +144,15 @@ const router = createRouter({
 })
 
 router.beforeEach((to) => {
-  const authService = services.authService
+  const { authService, cartService } = services
   if (to.meta.guestOnly && authService.isAuthenticated) {
     return { name: 'home' }
   }
   if (to.meta.requiresAuth && !authService.isAuthenticated) {
     return { name: 'login', query: { redirect: to.fullPath } }
+  }
+  if (to.name === 'checkout' && cartService.count.value === 0) {
+    return { name: 'cart' }
   }
   return true
 })

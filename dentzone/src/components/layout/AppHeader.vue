@@ -501,8 +501,9 @@ const logout = () => {
   display: flex;
   align-items: center;
   gap: 0.65rem;
-  flex-shrink: 1;
-  min-width: 0;
+  flex: 0 0 auto;
+  min-width: max-content;
+  text-decoration: none;
   transition: opacity 0.15s ease;
 }
 
@@ -536,9 +537,7 @@ const logout = () => {
   letter-spacing: -0.02em;
   color: var(--dz-ink);
   white-space: nowrap;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  flex-shrink: 0;
 }
 
 .app-header__wordmark span {
@@ -627,8 +626,8 @@ const logout = () => {
   border: 1px solid var(--dz-border);
   border-radius: var(--dz-radius-full);
   min-width: 140px;
-  max-width: 220px;
-  flex: 1 1 auto;
+  max-width: 240px;
+  flex: 0 1 240px;
   transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
 }
 
@@ -1034,7 +1033,8 @@ const logout = () => {
 
   .app-header__search {
     min-width: 110px;
-    max-width: 180px;
+    max-width: 170px;
+    flex: 0 1 170px;
   }
 }
 
@@ -1049,17 +1049,59 @@ const logout = () => {
   }
 }
 
-/* ── Tablets (≤ 900px): search takes remaining topbar space ──────── */
-@media (max-width: 900px) {
+/* ── Tablets (≤ 1024px): compact actions, maintain brand & search balance ── */
+@media (max-width: 1024px) {
+  .app-header__login-text {
+    display: none;
+  }
+
+  .app-header__login {
+    width: 2.65rem;
+    height: 2.65rem;
+    padding: 0;
+    border-radius: var(--dz-radius);
+    justify-content: center;
+  }
+
+  .app-header__brand {
+    gap: 0.55rem;
+    flex: 0 0 auto;
+    min-width: max-content;
+  }
+
+  .app-header__logo-img {
+    width: 2.85rem;
+    height: 2.85rem;
+  }
+
+  .app-header__wordmark {
+    font-size: 1.35rem;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
   .app-header__search {
-    display: flex;
-    min-width: 100px;
-    max-width: none;
+    flex: 0 1 240px;
+    min-width: 130px;
+    max-width: 260px;
+  }
+}
+
+/* ── Small tablets (≤ 900px): hide redundant topbar switches ─────── */
+@media (max-width: 900px) {
+  .app-header__actions .app-header__theme {
+    display: none;
+  }
+
+  .app-header__search {
+    flex: 0 1 220px;
+    min-width: 120px;
+    max-width: 240px;
     padding: 0.35rem 0.75rem;
   }
 }
 
-/* ── Mobile (≤ 768px): clean topbar, hide redundant switches ──────── */
+/* ── Mobile (≤ 768px): clean topbar with protected brand ─────────── */
 @media (max-width: 768px) {
   .app-header__inner {
     gap: 0.5rem;
@@ -1069,7 +1111,6 @@ const logout = () => {
     gap: 0.35rem;
   }
 
-  /* Lang and theme toggles are in the mobile panel drawer */
   .app-header__actions .app-header__theme {
     display: none;
   }
@@ -1094,21 +1135,28 @@ const logout = () => {
   }
 
   .app-header__brand {
-    gap: 0.55rem;
+    gap: 0.45rem;
+    flex: 0 0 auto;
+    min-width: max-content;
   }
 
   .app-header__logo-img {
-    width: 2.85rem;
-    height: 2.85rem;
+    width: 2.45rem;
+    height: 2.45rem;
   }
 
   .app-header__wordmark {
-    font-size: 1.35rem;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    white-space: nowrap;
+    display: inline-flex;
   }
 
   .app-header__search {
-    min-width: 90px;
-    padding: 0.3rem 0.6rem;
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 210px;
+    padding: 0.32rem 0.65rem;
     gap: 0.35rem;
   }
 
@@ -1140,21 +1188,33 @@ const logout = () => {
   }
 
   .app-header__brand {
-    gap: 0.45rem;
+    gap: 0.35rem;
+    flex: 0 0 auto;
+    min-width: max-content;
   }
 
   .app-header__logo-img {
-    width: 2.5rem;
-    height: 2.5rem;
+    width: 2.15rem;
+    height: 2.15rem;
   }
 
   .app-header__wordmark {
     font-size: 1.05rem;
+    flex-shrink: 0;
+    white-space: nowrap;
+    display: inline-flex;
   }
 
   .app-header__search {
-    min-width: 76px;
-    padding: 0.28rem 0.55rem;
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 160px;
+    padding: 0.28rem 0.5rem;
+    gap: 0.28rem;
+  }
+
+  .app-header__search-input {
+    font-size: 0.76rem;
   }
 
   .app-header__cart-badge {
@@ -1166,7 +1226,7 @@ const logout = () => {
   }
 }
 
-/* ── Extra-small phones / Redmi (≤ 360px) ─────────────────────────── */
+/* ── Extra-small phones / Galaxy A / Redmi (≤ 360px) ──────────────── */
 @media (max-width: 360px) {
   .app-header__inner {
     gap: 0.3rem;
@@ -1177,12 +1237,14 @@ const logout = () => {
   }
 
   .app-header__brand {
-    gap: 0.35rem;
+    gap: 0.28rem;
+    flex: 0 0 auto;
+    min-width: max-content;
   }
 
   .app-header__logo-img {
-    width: 2.2rem;
-    height: 2.2rem;
+    width: 1.95rem;
+    height: 1.95rem;
   }
 
   .app-header__cart,
@@ -1194,13 +1256,22 @@ const logout = () => {
   }
 
   .app-header__wordmark {
-    display: none;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+    white-space: nowrap;
+    display: inline-flex;
   }
 
   .app-header__search {
-    min-width: 60px;
-    padding: 0.25rem 0.45rem;
-    gap: 0.25rem;
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 125px;
+    padding: 0.22rem 0.42rem;
+    gap: 0.22rem;
+  }
+
+  .app-header__search-input {
+    font-size: 0.72rem;
   }
 
   .app-header__dropdown {
