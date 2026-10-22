@@ -196,11 +196,6 @@ const loadHome = async () => {
 }
 
 const loadTopProviders = async () => {
-  if (!isAuthenticated.value) {
-    topProvidersLoading.value = false
-    topProviders.value = []
-    return
-  }
   topProvidersLoading.value = true
   topProvidersError.value = false
   try {
@@ -234,15 +229,14 @@ const loadCatalogProducts = async () => {
 onMounted(() => {
   void loadCategories()
   void loadCatalogProducts()
+  void loadTopProviders()
   if (isAuthenticated.value) {
     void loadPopularProducts()
     void loadHome()
-    void loadTopProviders()
     void wishlistService.refresh()
   } else {
     homeLoading.value = false
     popularLoading.value = false
-    topProvidersLoading.value = false
   }
 })
 
@@ -256,10 +250,9 @@ watch(isAuthenticated, (authed) => {
   } else {
     home.value = null
     popularProducts.value = []
-    topProviders.value = []
     homeLoading.value = false
     popularLoading.value = false
-    topProvidersLoading.value = false
+    void loadTopProviders()
   }
 })
 </script>

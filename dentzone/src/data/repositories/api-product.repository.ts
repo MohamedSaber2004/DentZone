@@ -10,6 +10,7 @@ import type {
 } from '../../domain/models/product'
 import { PRODUCT_ROUTES } from '../../config/api.config'
 import type { HttpClient } from '../../infrastructure/http/http-client'
+import { decryptId } from '../../utils/route-crypto'
 
 export interface SearchProductItemDto {
   productId: string
@@ -358,19 +359,36 @@ export class ApiProductRepository implements ProductRepository {
 
   async searchProducts(params: SearchProductsParams = {}): Promise<ProviderProductDto[]> {
     const query = params.search?.trim()
-    const isVendorOrCategoryScoped = Boolean(params.inventoryId || params.catId)
+    const rawInv = params.inventoryId?.trim()
+    const rawCat = params.catId?.trim()
+
+    // Ensure IDs are decrypted if encrypted route tokens were passed
+    const cleanInv = rawInv ? decryptId(rawInv) : ''
+    const cleanCat = rawCat ? decryptId(rawCat) : ''
+
+    const inventoryId = cleanInv && cleanInv !== 'all' && cleanInv !== 'default' ? cleanInv : undefined
+    const catId = cleanCat && cleanCat !== 'all' && cleanCat !== 'default' ? cleanCat : undefined
+
+    const scopedParams: SearchProductsParams = {
+      ...params,
+      inventoryId,
+      catId,
+      search: query || undefined,
+    }
+
+    const isVendorOrCategoryScoped = Boolean(inventoryId || catId)
 
     if (isVendorOrCategoryScoped) {
       // 1. Try search-product-category with vendor/cat filters
       try {
-        const raw = await this.http.get<unknown>(PRODUCT_ROUTES.searchProductCategory(params), {
+        const raw = await this.http.get<unknown>(PRODUCT_ROUTES.searchProductCategory(scopedParams), {
           showFeedback: false,
         })
         const items = extractProductItems(raw)
         if (items.length > 0) {
           let mapped = items.map((p) => this.toProviderProduct(p))
-          if (params.inventoryId) {
-            mapped = mapped.filter((p) => !p.inventoryUserId || p.inventoryUserId === params.inventoryId)
+          if (inventoryId) {
+            mapped = mapped.filter((p) => !p.inventoryUserId || p.inventoryUserId === inventoryId)
           }
           return query ? this.filterLocally(mapped, query) : mapped
         }
@@ -382,14 +400,14 @@ export class ApiProductRepository implements ProductRepository {
       if (query) {
         try {
           const allRaw = await this.http.get<unknown>(
-            PRODUCT_ROUTES.searchProductCategory({ ...params, search: undefined }),
+            PRODUCT_ROUTES.searchProductCategory({ ...scopedParams, search: undefined }),
             { showFeedback: false },
           )
           const items = extractProductItems(allRaw)
           if (items.length > 0) {
             let mapped = items.map((p) => this.toProviderProduct(p))
-            if (params.inventoryId) {
-              mapped = mapped.filter((p) => !p.inventoryUserId || p.inventoryUserId === params.inventoryId)
+            if (inventoryId) {
+              mapped = mapped.filter((p) => !p.inventoryUserId || p.inventoryUserId === inventoryId)
             }
             return this.filterLocally(mapped, query)
           }
@@ -398,8 +416,9 @@ export class ApiProductRepository implements ProductRepository {
         }
       }
 
-      // 3. Fallback: fetch general products and filter by vendor inventoryId
-      if (params.inventoryId) {
+      // 3. Fallback: only fetch general products if catId was NOT specified!
+      // If a specific category was requested (catId), we MUST NEVER fall back to showing the entire vendor store.
+      if (inventoryId && !catId) {
         try {
           const allRaw = await this.http.get<unknown>(
             PRODUCT_ROUTES.searchProduct({ search: undefined }),
@@ -408,7 +427,7 @@ export class ApiProductRepository implements ProductRepository {
           const items = extractProductItems(allRaw)
           if (items.length > 0) {
             let mapped = items.map((p) => this.toProviderProduct(p))
-            mapped = mapped.filter((p) => p.inventoryUserId === params.inventoryId)
+            mapped = mapped.filter((p) => p.inventoryUserId === inventoryId)
             return query ? this.filterLocally(mapped, query) : mapped
           }
         } catch {
@@ -542,10 +561,98 @@ export class ApiProductRepository implements ProductRepository {
   }
 
   async getProductById(id: string, lang: number): Promise<ProductDetailDto> {
-    const raw = await this.http.get<unknown>(PRODUCT_ROUTES.byId(id, lang), {
-      showFeedback: false,
-    })
-    return normalizeProductDetail(raw)
+    if (this.http.hasToken) {
+      try {
+        const raw = await this.http.get<unknown>(PRODUCT_ROUTES.byId(id, lang), {
+          showFeedback: false,
+        })
+        return normalizeProductDetail(raw)
+      } catch {
+        return this.assemblePublicProductDetail(id, lang)
+      }
+    }
+    return this.assemblePublicProductDetail(id, lang)
+  }
+
+  private async assemblePublicProductDetail(id: string, _lang: number): Promise<ProductDetailDto> {
+    const rawPrices = await this.http
+      .get<unknown[]>(PRODUCT_ROUTES.pricesByProduct(id), { showFeedback: false })
+      .catch(() => [])
+
+    const pricesArray = Array.isArray(rawPrices) ? rawPrices : []
+    const firstPrice = (pricesArray[0] || {}) as Record<string, unknown>
+    const name = String(firstPrice.productName || firstPrice.arabicProductName || '')
+
+    let images: string[] = []
+    let productCode = 0
+    let primaryArabicName = String(firstPrice.arabicProductName || '')
+    let primaryDesc = String(firstPrice.description || '')
+    let primaryArabicDesc = String(firstPrice.arabicDescription || '')
+    let primaryPreef = String(firstPrice.preef || '')
+    let primaryArabicPreef = String(firstPrice.arabicPreef || '')
+
+    if (name) {
+      try {
+        const searchItems = await this.http.get<unknown[]>(
+          PRODUCT_ROUTES.searchProduct({ search: name }),
+          { showFeedback: false },
+        )
+        const items = extractProductItems(searchItems)
+        const match = items.find((i) => i.productId === id) || items[0]
+        if (match) {
+          images = extractImages(match as unknown as Record<string, unknown>)
+          productCode = Number(match.productCode || 0)
+          if (!primaryArabicName && match.arabicName) primaryArabicName = match.arabicName
+          if (!primaryDesc && match.description) primaryDesc = match.description
+          if (!primaryArabicDesc && match.arabicDescription) primaryArabicDesc = match.arabicDescription
+          if (!primaryPreef && match.preef) primaryPreef = match.preef
+          if (!primaryArabicPreef && match.arabicPreef) primaryArabicPreef = match.arabicPreef
+        }
+      } catch {
+        // silent fallback
+      }
+    }
+
+    if (images.length === 0 && firstPrice.imageName) {
+      images = [String(firstPrice.imageName)]
+    }
+
+    const payload = {
+      id,
+      productId: id,
+      categoryId: '',
+      productName: name || 'Product',
+      productArabicName: primaryArabicName || name || 'Product',
+      preef: primaryPreef,
+      arabicPreef: primaryArabicPreef,
+      description: primaryDesc,
+      arabicDescription: primaryArabicDesc,
+      brandName: null,
+      createdAt: '',
+      updatedAt: '',
+      prices: pricesArray,
+      inventories: pricesArray.map((p: any) => ({
+        inventoryUserId: p.inventoryUserId || p.inventoryUser?.id || '',
+        salesPrice: p.salesPrice ?? 0,
+        flashSaleFromDate: p.flashSaleFromDate ?? null,
+        flashSaleToDate: p.flashSaleToDate ?? null,
+        priceBeforeFlashSale: p.priceBeforeFlashSale ?? 0,
+        priceAfterFlashSale: p.priceAfterFlashSale ?? null,
+        isFlashSaleActive: Boolean(p.isFlashSaleActive),
+        effectiveSalesPrice: p.effectiveSalesPrice ?? p.salesPrice ?? 0,
+        discountRate: p.discountRate ?? 0,
+        stockQuantity: p.stockQuantity ?? 0,
+        inventoryName: p.inventoryUser?.fullName || p.inventoryUser?.userName || '',
+      })),
+      images,
+      productCode,
+      isPopular: false,
+      orderNum: null,
+      revenuePercentage: 0,
+      tagName: '',
+    }
+
+    return normalizeProductDetail(payload)
   }
 
   async getPricesByProduct(productId: string): Promise<ProductPriceOptionDto[]> {

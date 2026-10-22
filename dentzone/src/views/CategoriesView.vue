@@ -112,7 +112,7 @@ onMounted(load)
         v-for="category in filteredCategories"
         :key="category.id"
         :category="category"
-        :to="categoryRoute(category.id)"
+        :to="categoryRoute(category.id, { name: category.arabicName || category.name })"
       />
     </div>
   </div>

@@ -15,7 +15,7 @@ const props = withDefaults(
 
 const targetRoute = computed(() => {
   if (props.to) return props.to
-  if (props.category?.id) return categoryRoute(props.category.id)
+  if (props.category?.id) return categoryRoute(props.category.id, { name: displayName() })
   return undefined
 })
 

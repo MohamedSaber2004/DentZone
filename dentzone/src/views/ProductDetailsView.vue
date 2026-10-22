@@ -14,6 +14,7 @@ import ProductCard from '../components/products/ProductCard.vue'
 import type { ProductDetailDto, ProductPriceDto, ProviderProductDto } from '../domain/models/product'
 
 import { decryptId, productRoute } from '../utils/route-crypto'
+import { sanitizePolicyHtml } from '../utils/sanitize-html'
 
 const route = useRoute()
 const router = useRouter()
@@ -231,12 +232,6 @@ const load = async () => {
   imageFailed.value = false
   quantity.value = 1
 
-  if (!authService.isAuthenticated) {
-    isAuthRequired.value = true
-    loading.value = false
-    return
-  }
-
   void loadProviderNames()
   try {
     const data = await productRepository.getProductById(productId(), lang.value)
@@ -254,27 +249,20 @@ const load = async () => {
     if (data.categoryId) {
       void loadRelated(data.categoryId)
     }
-  } catch (err: unknown) {
-    if (err instanceof ApiError && err.status === 401) {
-      isAuthRequired.value = true
-    } else {
-      error.value = true
-    }
+  } catch {
+    error.value = true
   } finally {
     loading.value = false
   }
-  void wishlistService.refresh()
+  if (authService.isAuthenticated) {
+    void wishlistService.refresh()
+  }
 }
 
 watch(
   () => authService.isAuthenticated,
-  (authed) => {
-    if (authed) {
-      void load()
-    } else {
-      isAuthRequired.value = true
-      detail.value = null
-    }
+  () => {
+    void load()
   },
 )
 
@@ -434,11 +422,13 @@ const openRefundTab = async () => {
   refundLoading.value = true
   refundFailed.value = false
   try {
+    let raw = ''
     try {
-      refundHtml.value = await fetchRefundPolicy(locale.value === 'ar' ? API_LANG.ARABIC : API_LANG.ENGLISH)
+      raw = await fetchRefundPolicy(locale.value === 'ar' ? API_LANG.ARABIC : API_LANG.ENGLISH)
     } catch {
-      refundHtml.value = await fetchRefundPolicy(API_LANG.ARABIC)
+      raw = await fetchRefundPolicy(API_LANG.ARABIC)
     }
+    refundHtml.value = sanitizePolicyHtml(raw)
     refundLoadedLocale.value = locale.value
   } catch {
     refundFailed.value = true
@@ -448,12 +438,16 @@ const openRefundTab = async () => {
 }
 
 const resizeRefundFrame = () => {
-  const frame = refundFrameRef.value
-  const doc = frame?.contentDocument
-  if (frame && doc) {
-    const height = Math.max(doc.body?.scrollHeight ?? 0, doc.documentElement?.scrollHeight ?? 0)
-    frame.style.height = `${Math.max(height, 320)}px`
-  }
+  requestAnimationFrame(() => {
+    const frame = refundFrameRef.value
+    const doc = frame?.contentDocument
+    if (frame && doc) {
+      const height = Math.max(doc.body?.scrollHeight ?? 0, doc.documentElement?.scrollHeight ?? 0)
+      if (height > 0) {
+        frame.style.height = `${Math.max(height, 320)}px`
+      }
+    }
+  })
 }
 
 watch(locale, () => {
@@ -806,7 +800,6 @@ watch(() => route.params.productId, () => {
             v-else-if="refundHtml"
             ref="refundFrameRef"
             class="detail__refund-frame"
-            sandbox="allow-same-origin"
             :srcdoc="refundHtml"
             :title="t('products.details.refundPolicy')"
             @load="resizeRefundFrame"

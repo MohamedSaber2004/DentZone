@@ -9,6 +9,7 @@ const base = '/api'
 
 export const AUTH_ROUTES = {
   login: `${base}/Users/login`,
+  loginGuest: `${base}/Users/login-guest`,
 } as const
 
 export const PASSWORD_ROUTES = {

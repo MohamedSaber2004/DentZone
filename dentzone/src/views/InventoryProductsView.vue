@@ -124,9 +124,13 @@ const load = async () => {
   loading.value = true
   error.value = false
   try {
+    const inv = inventoryId()
+    const validInv = inv && inv !== 'all' && inv !== 'default' ? inv : undefined
+    const validCat = selectedCategory.value && selectedCategory.value !== 'all' ? selectedCategory.value : undefined
+
     const result = await productRepository.searchProducts({
-      inventoryId: inventoryId(),
-      catId: selectedCategory.value || undefined,
+      inventoryId: validInv,
+      catId: validCat,
     })
     allProducts.value = result
   } catch {
@@ -175,12 +179,12 @@ const selectCategory = (id: string) => {
   currentPage.value = 1
   const query = { ...route.query }
   if (id) {
-    query.cat = id
-    query.inventoryId = inventoryId()
+    query.cat = encryptId(id)
   } else {
     delete query.cat
-    delete query.inventoryId
   }
+  delete query.inventoryId
+  delete query.page
   void router.replace({ query })
   void load()
 }
@@ -190,17 +194,29 @@ onMounted(() => {
     const p = parseInt(route.query.page, 10)
     if (!isNaN(p) && p >= 1) currentPage.value = p
   }
-  selectedCategory.value = typeof route.query.cat === 'string' ? route.query.cat : ''
+  selectedCategory.value = decryptId(rawCatQuery())
   void loadCategories()
   void load()
   void wishlistService.refresh()
 })
 
 watch(
+  () => route.query.cat,
+  (newCat) => {
+    const decrypted = decryptId(typeof newCat === 'string' ? newCat : '')
+    if (selectedCategory.value !== decrypted) {
+      selectedCategory.value = decrypted
+      currentPage.value = 1
+      void load()
+    }
+  },
+)
+
+watch(
   () => route.params.inventoryUserId,
   () => {
     search.value = ''
-    selectedCategory.value = ''
+    selectedCategory.value = decryptId(rawCatQuery())
     currentPage.value = 1
     void load()
   },

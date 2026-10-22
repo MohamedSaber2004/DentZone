@@ -19,7 +19,7 @@ export interface RequestOptions {
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE'
 
-const NO_FEEDBACK_PATHS = [AUTH_ROUTES.login]
+const NO_FEEDBACK_PATHS = [AUTH_ROUTES.login, AUTH_ROUTES.loginGuest]
 
 const MAX_RATE_LIMIT_WAIT_MS = 10_000
 const MAX_429_RETRIES = 2
@@ -137,11 +137,15 @@ export class HttpClient {
         }
 
         if (response.status === 401 && !silentPath) {
-          this.tokenStore.clear()
-          this.authBridge.onSessionExpired()
+          const activeUserToken = this.tokenStore.getAccessToken()
+          const isUserSession = Boolean(activeUserToken) && headers['Authorization'] === `Bearer ${activeUserToken}`
+          if (isUserSession) {
+            this.tokenStore.clear()
+            this.authBridge.onSessionExpired()
+          }
           throw new ApiError(
             401,
-            headers['Authorization'] !== undefined ? 'Session expired' : 'Authentication required',
+            isUserSession ? 'Session expired' : 'Authentication required',
             {},
             true,
           )

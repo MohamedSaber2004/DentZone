@@ -2,7 +2,7 @@
 import { services } from '../di/container'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { t } from '../i18n'
+import { t, locale } from '../i18n'
 import InventoryCard from '../components/categories/InventoryCard.vue'
 import AppButton from '../components/ui/AppButton.vue'
 import AppIcon from '../components/ui/AppIcon.vue'
@@ -17,6 +17,8 @@ const { categoryRepository } = services
 const rawCatId = () => (typeof route.params.catId === 'string' ? route.params.catId : '')
 const catId = () => decryptId(rawCatId())
 const categoryName = () => (typeof route.query.name === 'string' ? route.query.name : '')
+const loadedCategoryName = ref('')
+const resolvedCategoryName = computed(() => categoryName() || loadedCategoryName.value)
 
 const inventories = ref<InventoryDto[]>([])
 const loading = ref(true)
@@ -69,7 +71,18 @@ const load = async () => {
   loading.value = true
   error.value = false
   try {
-    inventories.value = await categoryRepository.getInventoriesByCategory(catId())
+    const id = catId()
+    const [invs, cats] = await Promise.all([
+      categoryRepository.getInventoriesByCategory(id),
+      categoryName() ? Promise.resolve([]) : categoryRepository.getCategories(locale.value === 'ar' ? 1 : 2),
+    ])
+    inventories.value = invs
+    if (!categoryName() && cats.length > 0) {
+      const match = cats.find((c) => c.id === id)
+      if (match) {
+        loadedCategoryName.value = locale.value === 'ar' ? (match.arabicName || match.name) : match.name
+      }
+    }
   } catch {
     error.value = true
   } finally {
@@ -79,7 +92,7 @@ const load = async () => {
 
 const viewCategoryProducts = (searchQuery?: string) => {
   const query: Record<string, string> = { cat: encryptId(catId()) }
-  if (categoryName()) query.name = categoryName()
+  if (resolvedCategoryName.value) query.name = resolvedCategoryName.value
   if (searchQuery) query.search = searchQuery
   void router.push({ name: 'inventory-products', params: { inventoryUserId: 'all' }, query })
 }
@@ -97,7 +110,7 @@ watch(() => route.params.catId, load)
 
     <div class="page__head">
       <div>
-        <h1 class="page__title">{{ categoryName() || t('categories.inventoriesTitle') }}</h1>
+        <h1 class="page__title">{{ resolvedCategoryName || t('categories.inventoriesTitle') }}</h1>
         <p class="page__subtitle">{{ t('categories.inventoriesSubtitle') }}</p>
       </div>
       <div class="page__head-actions">
@@ -205,7 +218,7 @@ watch(() => route.params.catId, load)
         :key="inventory.inventoryId"
         :inventory="inventory"
         :category-id="catId()"
-        :category-name="categoryName()"
+        :category-name="resolvedCategoryName"
       />
     </div>
   </div>

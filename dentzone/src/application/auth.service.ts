@@ -280,8 +280,9 @@ export class AuthService {
 
   private handleSessionExpired(): void {
     const hadSession = this.user.value !== null
+    if (!hadSession) return
     this.expireSession()
-    if (hadSession) toastService.info(t('auth.errSessionExpired'))
+    toastService.info(t('auth.errSessionExpired'))
     const current = router.currentRoute.value
     if (current.name === 'login' || this.redirectingToLogin) return
     this.redirectingToLogin = true

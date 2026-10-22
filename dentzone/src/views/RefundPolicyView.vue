@@ -7,6 +7,8 @@ import { API_LANG } from '../config/api.config'
 import AppIcon from '../components/ui/AppIcon.vue'
 import AppButton from '../components/ui/AppButton.vue'
 
+import { sanitizePolicyHtml } from '../utils/sanitize-html'
+
 const router = useRouter()
 const { policyRepository } = services
 
@@ -21,11 +23,13 @@ const load = async () => {
   loading.value = true
   failed.value = false
   try {
+    let raw = ''
     try {
-      html.value = await fetchRefundPolicy(locale.value === 'ar' ? API_LANG.ARABIC : API_LANG.ENGLISH)
+      raw = await fetchRefundPolicy(locale.value === 'ar' ? API_LANG.ARABIC : API_LANG.ENGLISH)
     } catch {
-      html.value = await fetchRefundPolicy(API_LANG.ARABIC)
+      raw = await fetchRefundPolicy(API_LANG.ARABIC)
     }
+    html.value = sanitizePolicyHtml(raw)
   } catch {
     failed.value = true
   } finally {
@@ -34,12 +38,16 @@ const load = async () => {
 }
 
 const resizeFrame = () => {
-  const frame = frameRef.value
-  const doc = frame?.contentDocument
-  if (frame && doc) {
-    const height = Math.max(doc.body?.scrollHeight ?? 0, doc.documentElement?.scrollHeight ?? 0)
-    frame.style.height = `${Math.max(height, 320)}px`
-  }
+  requestAnimationFrame(() => {
+    const frame = frameRef.value
+    const doc = frame?.contentDocument
+    if (frame && doc) {
+      const height = Math.max(doc.body?.scrollHeight ?? 0, doc.documentElement?.scrollHeight ?? 0)
+      if (height > 0) {
+        frame.style.height = `${Math.max(height, 320)}px`
+      }
+    }
+  })
 }
 
 onMounted(() => {
@@ -90,7 +98,6 @@ onUnmounted(() => {
         v-else-if="html"
         ref="frameRef"
         class="policy__frame"
-        sandbox="allow-same-origin"
         :srcdoc="html"
         :title="t('refund.title')"
         @load="resizeFrame"
