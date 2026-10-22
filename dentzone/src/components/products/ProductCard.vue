@@ -53,7 +53,10 @@ const displayName = (product: ProviderProductDto) =>
 
 const displayCode = (product: ProviderProductDto) => product.productCode
 
-const formatPrice = (value: number) => value.toLocaleString(locale.value === 'ar' ? 'ar-EG' : 'en-US', { maximumFractionDigits: 2 })
+const formatPrice = (value: number | null | undefined) =>
+  value == null || !Number.isFinite(value)
+    ? ''
+    : Math.ceil(value).toLocaleString(locale.value === 'ar' ? 'ar-EG' : 'en-US', { maximumFractionDigits: 0 })
 </script>
 
 <template>
@@ -319,6 +322,7 @@ const formatPrice = (value: number) => value.toLocaleString(locale.value === 'ar
   color: var(--dz-ink);
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   min-height: 2.5em;

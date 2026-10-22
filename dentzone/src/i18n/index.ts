@@ -69,7 +69,8 @@ export const formatPrice = (value: number): string =>
   new Intl.NumberFormat(locale.value === 'ar' ? 'ar-EG' : 'en-US', {
     style: 'currency',
     currency: 'USD',
-  }).format(value)
+    maximumFractionDigits: 0,
+  }).format(Math.ceil(value))
 
 export const initI18n = () => {
   applyDocument(locale.value)

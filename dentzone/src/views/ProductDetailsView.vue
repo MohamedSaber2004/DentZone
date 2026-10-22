@@ -4,7 +4,6 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { locale, t } from '../i18n'
 import { API_LANG } from '../config/api.config'
-import { ApiError } from '../infrastructure/http/api-error'
 import { resolveMediaUrl } from '../utils/media'
 import AppButton from '../components/ui/AppButton.vue'
 import AppIcon from '../components/ui/AppIcon.vue'
@@ -301,7 +300,9 @@ const currentPrice = computed<ProductPriceDto | null>(() => {
 })
 
 const formatPrice = (value: number | null | undefined) =>
-  value == null ? '' : value.toLocaleString(locale.value === 'ar' ? 'ar-EG' : 'en-US', { maximumFractionDigits: 2 })
+  value == null || !Number.isFinite(value)
+    ? ''
+    : Math.ceil(value).toLocaleString(locale.value === 'ar' ? 'ar-EG' : 'en-US', { maximumFractionDigits: 0 })
 
 const onImageError = () => {
   imageFailed.value = true

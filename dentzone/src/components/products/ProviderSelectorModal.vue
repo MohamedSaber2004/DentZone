@@ -2,7 +2,6 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import { locale, t } from '../../i18n'
 import AppIcon from '../ui/AppIcon.vue'
-import AppButton from '../ui/AppButton.vue'
 import type { StoreOption } from '../../views/ProductDetailsView.vue'
 
 const props = withDefaults(
@@ -112,8 +111,10 @@ const selectStore = (id: string) => {
   close()
 }
 
-const formatPrice = (val: number): string => {
-  return Number.isFinite(val) ? val.toLocaleString(locale.value === 'ar' ? 'ar-EG' : 'en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) : '0'
+const formatPrice = (val: number | null | undefined): string => {
+  return val != null && Number.isFinite(val)
+    ? Math.ceil(val).toLocaleString(locale.value === 'ar' ? 'ar-EG' : 'en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+    : '0'
 }
 
 const onKeydown = (e: KeyboardEvent) => {
