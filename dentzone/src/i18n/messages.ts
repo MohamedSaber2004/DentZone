@@ -32,6 +32,7 @@ export type Messages = {
     darkMode: string
     lightMode: string
     login: string
+    register: string
     profile: string
     myOrders: string
     notifications: string
@@ -213,6 +214,20 @@ export type Messages = {
   auth: {
     loginTitle: string
     loginSubtitle: string
+    registerTitle: string
+    registerSubtitle: string
+    fullName: string
+    phoneNumber: string
+    phonePlaceholder: string
+    namePlaceholder: string
+    createAccount: string
+    creatingAccount: string
+    alreadyHaveAccount: string
+    errNameRequired: string
+    errPhoneRequired: string
+    errPhoneInvalid: string
+    errPasswordTooShort: string
+    registerWelcome: string
     email: string
     password: string
     showPassword: string
@@ -452,10 +467,9 @@ export type Messages = {
     couponError: string
     removeCoupon: string
     stepDeliveryTime: string
-    deliveryDay1: string
-    deliveryDay2: string
     today: string
     tomorrow: string
+    deliveryPolicy: string
     slotsError: string
     noSlots: string
     slotNow: string

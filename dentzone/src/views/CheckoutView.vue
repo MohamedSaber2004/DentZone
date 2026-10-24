@@ -43,6 +43,15 @@ const slotsLoading = ref(false)
 const slotsError = ref(false)
 const selectedSlotId = ref('')
 
+const FRIDAY = 5
+const CLOSING_MINUTES = 18 * 60
+
+const parseTimeToMinutes = (value: string): number | null => {
+  const match = /^(\d{1,2}):(\d{2})/.exec(value ?? '')
+  if (!match) return null
+  return Number(match[1]) * 60 + Number(match[2])
+}
+
 const note = ref('')
 const placing = ref(false)
 const placed = ref(false)
@@ -66,9 +75,28 @@ const isGuestAddressValid = computed(
   () => !!addressLine.value.trim() && !!areaId.value,
 )
 
+const availableSlots = computed(() => {
+  if (!deliveryDay.value) return []
+  const now = new Date()
+  const isToday = deliveryDay.value === 1
+  const nowMinutes = now.getHours() * 60 + now.getMinutes()
+  return slots.value.filter((slot) => {
+    const from = parseTimeToMinutes(slot.from)
+    const to = parseTimeToMinutes(slot.to)
+    if (from === null || to === null || to > CLOSING_MINUTES) return false
+    if (!isToday) return true
+    if (slot.isNow) return to > nowMinutes
+    return from > nowMinutes
+  })
+})
+
+const selectedSlot = computed(
+  () => availableSlots.value.find((slot) => slot.id === selectedSlotId.value) ?? null,
+)
+
 const canConfirm = computed(() => {
   if (placing.value) return false
-  if (!deliveryDay.value || !selectedSlotId.value) return false
+  if (!deliveryDay.value || !selectedSlot.value) return false
   if (isAuth.value) {
     return !!selectedAddressId.value
   }
@@ -99,10 +127,34 @@ const dateLabel = (offsetDays: number) => {
   })
 }
 
-const deliveryDayOptions = computed(() => [
-  { value: 1, label: t('checkout.deliveryDay1'), sub: t('checkout.today') + ' · ' + dateLabel(0) },
-  { value: 2, label: t('checkout.deliveryDay2'), sub: t('checkout.tomorrow') + ' · ' + dateLabel(1) },
-])
+const deliveryDayOptions = computed(() => {
+  const options: { value: number; label: string; sub: string }[] = []
+  for (const offset of [0, 1]) {
+    const date = new Date()
+    date.setDate(date.getDate() + offset)
+    if (date.getDay() === FRIDAY) continue
+    options.push({
+      value: offset + 1,
+      label: offset === 0 ? t('checkout.today') : t('checkout.tomorrow'),
+      sub: dateLabel(offset),
+    })
+  }
+  return options
+})
+
+watch(
+  deliveryDayOptions,
+  (options) => {
+    if (options.length === 0) {
+      deliveryDay.value = null
+      return
+    }
+    if (!deliveryDay.value || !options.some((option) => option.value === deliveryDay.value)) {
+      deliveryDay.value = options[0]?.value ?? null
+    }
+  },
+  { immediate: true },
+)
 
 const loadAddresses = async () => {
   addressesLoading.value = true
@@ -223,10 +275,14 @@ const loadSlots = async (day: number) => {
   }
 }
 
-watch(deliveryDay, (day) => {
-  if (!day) return
-  void loadSlots(day)
-})
+watch(
+  deliveryDay,
+  (day) => {
+    if (!day) return
+    void loadSlots(day)
+  },
+  { immediate: true },
+)
 
 const confirmOrder = async () => {
   if (!canConfirm.value) return
@@ -568,7 +624,10 @@ onMounted(load)
               {{ t('checkout.stepDeliveryTime') }}
             </h2>
 
-            <div class="checkout__days">
+            <div
+              class="checkout__days"
+              :class="{ 'checkout__days--single': deliveryDayOptions.length === 1 }"
+            >
               <button
                 v-for="option in deliveryDayOptions"
                 :key="option.value"
@@ -581,6 +640,11 @@ onMounted(load)
                 <span>{{ option.sub }}</span>
               </button>
             </div>
+
+            <p class="checkout__delivery-policy">
+              <AppIcon name="alert-circle" :size="15" />
+              {{ t('checkout.deliveryPolicy') }}
+            </p>
 
             <div v-if="slotsLoading" class="checkout__state-row">
               <AppIcon name="refresh" :size="17" class="checkout__spinner" />
@@ -596,13 +660,13 @@ onMounted(load)
               </button>
             </div>
 
-            <div v-else-if="deliveryDay && slots.length === 0" class="checkout__empty">
+            <div v-else-if="deliveryDay && availableSlots.length === 0" class="checkout__empty">
               {{ t('checkout.noSlots') }}
             </div>
 
             <div v-else-if="deliveryDay" class="checkout__slots">
               <button
-                v-for="slot in slots"
+                v-for="slot in availableSlots"
                 :key="slot.id"
                 type="button"
                 class="checkout__slot"
@@ -1084,6 +1148,26 @@ onMounted(load)
   grid-template-columns: 1fr 1fr;
   gap: 0.6rem;
   margin-bottom: 0.8rem;
+}
+
+.checkout__days--single {
+  grid-template-columns: 1fr;
+}
+
+.checkout__delivery-policy {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin-bottom: 0.8rem;
+  color: var(--dz-muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.checkout__delivery-policy svg {
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+  color: var(--dz-primary);
 }
 
 .checkout__day {

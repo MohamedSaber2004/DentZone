@@ -256,10 +256,15 @@ const logout = () => {
           <span v-if="cartCount > 0" :key="cartCount" class="app-header__cart-badge">{{ cartCount }}</span>
         </RouterLink>
 
-        <RouterLink v-if="!isAuthenticated" to="/auth/login" class="app-header__login">
-          <AppIcon name="user" :size="16" />
-          <span class="app-header__login-text">{{ t('nav.login') }}</span>
-        </RouterLink>
+        <template v-if="!isAuthenticated">
+          <RouterLink to="/auth/login" class="app-header__login">
+            <AppIcon name="user" :size="16" />
+            <span class="app-header__login-text">{{ t('nav.login') }}</span>
+          </RouterLink>
+          <RouterLink to="/auth/register" class="app-header__register">
+            {{ t('nav.register') }}
+          </RouterLink>
+        </template>
 
         <div v-else ref="userMenuRef" class="app-header__user">
           <button
@@ -444,6 +449,16 @@ const logout = () => {
         >
           <AppIcon name="user" :size="17" />
           {{ t('nav.login') }}
+        </RouterLink>
+        <RouterLink
+          v-if="!isAuthenticated"
+          to="/auth/register"
+          class="app-header__panel-link"
+          active-class="app-header__nav-link--active"
+          @click="closeMobileMenu"
+        >
+          <AppIcon name="user" :size="17" />
+          {{ t('nav.register') }}
         </RouterLink>
 
         <div class="app-header__panel-divider" />
@@ -771,6 +786,32 @@ const logout = () => {
   color: var(--dz-on-primary);
 }
 
+.app-header__register {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.65rem;
+  padding: 0 1rem;
+  border-radius: var(--dz-radius-full);
+  border: 1px solid var(--dz-primary);
+  background: var(--dz-primary);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--dz-on-primary);
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  transition:
+    border-color 0.2s,
+    color 0.2s,
+    background-color 0.2s;
+}
+
+.app-header__register:hover {
+  background: var(--dz-primary-strong);
+  border-color: var(--dz-primary-strong);
+}
+
 .app-header__user {
   position: relative;
   flex-shrink: 0;
@@ -1061,6 +1102,10 @@ const logout = () => {
     padding: 0;
     border-radius: var(--dz-radius);
     justify-content: center;
+  }
+
+  .app-header__register {
+    display: none;
   }
 
   .app-header__brand {

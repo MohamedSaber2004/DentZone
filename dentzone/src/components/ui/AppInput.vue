@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, useId } from 'vue'
 import { t } from '../../i18n'
 import AppIcon from './AppIcon.vue'
-
-let uidCounter = 0
 
 const props = withDefaults(
   defineProps<{
@@ -24,7 +22,7 @@ const emit = defineEmits<{
   'update:modelValue': [value: string]
 }>()
 
-const errorId = `app-input-error-${++uidCounter}`
+const errorId = `app-input-error-${useId()}`
 
 const showPassword = ref(false)
 

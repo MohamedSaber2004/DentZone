@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { services } from '../../di/container'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 const { authService, cartService } = services
 import { useRoute, useRouter } from 'vue-router'
 import { t } from '../../i18n'
@@ -20,6 +20,10 @@ const passwordError = ref('')
 const submitting = ref(false)
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+const redirectQuery = computed(() =>
+  typeof route.query.redirect === 'string' ? { redirect: route.query.redirect } : {},
+)
 
 const validate = (): boolean => {
   emailError.value = ''
@@ -98,6 +102,13 @@ const submit = async () => {
       <AppIcon v-if="submitting" name="refresh" :size="17" class="login-form__spinner" />
       {{ submitting ? t('auth.loggingIn') : t('auth.login') }}
     </AppButton>
+
+    <p class="login-form__alt">
+      {{ t('auth.noAccount') }}
+      <RouterLink :to="{ name: 'register', query: redirectQuery }" class="login-form__alt-link">
+        {{ t('auth.register') }}
+      </RouterLink>
+    </p>
   </form>
 </template>
 
@@ -141,6 +152,32 @@ const submit = async () => {
 
 .login-form__spinner {
   animation: login-spin 0.8s linear infinite;
+}
+
+.login-form__alt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  margin-top: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--dz-muted);
+}
+
+.login-form__alt-link {
+  font-weight: 700;
+  color: var(--dz-primary);
+  text-decoration: none;
+  padding: 0.2rem 0.3rem;
+  border-radius: var(--dz-radius-sm);
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.login-form__alt-link:hover {
+  color: var(--dz-primary-strong);
+  background: var(--dz-primary-faint);
 }
 
 @keyframes login-spin {
