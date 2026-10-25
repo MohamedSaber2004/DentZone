@@ -1,37 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://drugza-frontend-store.vercel.app/</loc>
+    <loc>https://dent-zone-store.vercel.app/</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://drugza-frontend-store.vercel.app/categories</loc>
+    <loc>https://dent-zone-store.vercel.app/categories</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://drugza-frontend-store.vercel.app/products</loc>
+    <loc>https://dent-zone-store.vercel.app/products</loc>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://drugza-frontend-store.vercel.app/vendors</loc>
+    <loc>https://dent-zone-store.vercel.app/vendors</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://drugza-frontend-store.vercel.app/privacy-policy</loc>
+    <loc>https://dent-zone-store.vercel.app/privacy-policy</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://drugza-frontend-store.vercel.app/terms-and-conditions</loc>
+    <loc>https://dent-zone-store.vercel.app/terms-and-conditions</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://drugza-frontend-store.vercel.app/refund-policy</loc>
+    <loc>https://dent-zone-store.vercel.app/refund-policy</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>

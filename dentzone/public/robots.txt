@@ -9,4 +9,4 @@ Disallow: /notifications
 Disallow: /profile
 Disallow: /wishlist
 
-Sitemap: https://drugza-frontend-store.vercel.app/sitemap.xml
+Sitemap: https://dent-zone-store.vercel.app/sitemap.xml
