@@ -227,7 +227,11 @@ export type Messages = {
     errPhoneRequired: string
     errPhoneInvalid: string
     errPasswordTooShort: string
-    registerWelcome: string
+    registerOtpNote: string
+    verifyRegisterTitle: string
+    verifyRegisterSubtitle: string
+    accountVerified: string
+    accountVerifiedLogin: string
     email: string
     password: string
     showPassword: string

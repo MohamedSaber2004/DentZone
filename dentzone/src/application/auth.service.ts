@@ -202,7 +202,7 @@ export class AuthService {
   async register(payload: RegisterPayload): Promise<AuthResult> {
     try {
       await this.authRepository.register(payload)
-      return await this.login(payload.email, payload.password)
+      return { ok: true }
     } catch (err) {
       return { ok: false, error: toErrorMessage(err, 'auth.registerError') }
     }

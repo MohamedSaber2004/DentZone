@@ -12,7 +12,10 @@ import AppIcon from '../ui/AppIcon.vue'
 const router = useRouter()
 const route = useRoute()
 
-const email = ref('')
+const prefilledEmail = typeof route.query.email === 'string' ? route.query.email : ''
+const justVerified = computed(() => route.query.verified === '1')
+
+const email = ref(prefilledEmail)
 const password = ref('')
 const error = ref('')
 const emailError = ref('')
@@ -72,6 +75,11 @@ const submit = async () => {
 
 <template>
   <form class="login-form" novalidate @submit.prevent="submit">
+    <div v-if="justVerified" class="login-form__notice" role="status">
+      <AppIcon name="check-circle" :size="17" />
+      {{ t('auth.accountVerifiedLogin') }}
+    </div>
+
     <div v-if="error" class="login-form__error" role="alert">
       <AppIcon name="alert-circle" :size="17" />
       {{ error }}
@@ -128,6 +136,19 @@ const submit = async () => {
   background: var(--dz-danger-soft);
   border: 1px solid color-mix(in srgb, var(--dz-danger) 25%, var(--dz-border));
   color: var(--dz-danger);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.login-form__notice {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--dz-radius);
+  background: var(--dz-success-soft);
+  border: 1px solid color-mix(in srgb, var(--dz-success) 25%, var(--dz-border));
+  color: var(--dz-success);
   font-size: 0.85rem;
   font-weight: 600;
 }

@@ -10,7 +10,7 @@ import AppIcon from '../ui/AppIcon.vue'
 
 const router = useRouter()
 const route = useRoute()
-const { authService, cartService } = services
+const { authService } = services
 
 const fullName = ref('')
 const phoneNumber = ref('')
@@ -74,31 +74,27 @@ const validate = (): boolean => {
 const submit = async () => {
   if (!validate() || submitting.value) return
   submitting.value = true
+  const registeredEmail = email.value.trim()
   const result = await authService.register({
     fullName: fullName.value.trim(),
     phoneNumber: phoneNumber.value.trim(),
-    email: email.value.trim(),
+    email: registeredEmail,
     password: password.value,
   })
+  submitting.value = false
   if (!result.ok) {
-    submitting.value = false
     error.value = result.error
     return
   }
-  try {
-    await cartService.syncGuestCartToServer()
-  } catch {
-    // Continue navigation even if sync fails partially
-  } finally {
-    submitting.value = false
-  }
-  const user = authService.user.value
-  if (user?.firstName) toastService.success(t('auth.registerWelcome', { name: user.firstName }))
-  const redirect =
-    typeof route.query.redirect === 'string' && route.query.redirect.startsWith('/')
-      ? route.query.redirect
-      : '/'
-  void router.push(redirect)
+  toastService.success(t('auth.codeSent', { email: registeredEmail }))
+  void router.push({
+    name: 'verify-otp',
+    query: {
+      email: registeredEmail,
+      mode: 'register',
+      ...(typeof route.query.redirect === 'string' ? { redirect: route.query.redirect } : {}),
+    },
+  })
 }
 </script>
 
@@ -151,6 +147,11 @@ const submit = async () => {
       {{ submitting ? t('auth.creatingAccount') : t('auth.createAccount') }}
     </AppButton>
 
+    <p class="register-form__note">
+      <AppIcon name="shield-check" :size="14" />
+      {{ t('auth.registerOtpNote') }}
+    </p>
+
     <p class="register-form__alt">
       {{ t('auth.alreadyHaveAccount') }}
       <RouterLink :to="{ name: 'login', query: redirectQuery }" class="register-form__alt-link">
@@ -188,6 +189,24 @@ const submit = async () => {
   margin-top: 0.25rem;
   font-size: 0.85rem;
   color: var(--dz-muted);
+}
+
+.register-form__note {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.35rem;
+  margin-top: -0.3rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--dz-muted);
+  text-align: center;
+}
+
+.register-form__note svg {
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+  color: var(--dz-primary);
 }
 
 .register-form__alt-link {

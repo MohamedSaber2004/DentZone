@@ -14,6 +14,20 @@ const route = useRoute()
 const { authService } = services
 
 const email = computed(() => (typeof route.query.email === 'string' ? route.query.email : ''))
+const isRegistration = computed(() => route.query.mode === 'register')
+const redirect = computed(() => {
+  const value = route.query.redirect
+  return typeof value === 'string' && value.startsWith('/') ? value : ''
+})
+
+const title = computed(() =>
+  isRegistration.value ? t('auth.verifyRegisterTitle') : t('auth.verifyTitle'),
+)
+const subtitle = computed(() =>
+  isRegistration.value
+    ? t('auth.verifyRegisterSubtitle', { email: email.value })
+    : t('auth.verifySubtitle', { email: email.value }),
+)
 
 const digits = ref<string[]>(['', '', '', '', '', ''])
 const boxes = ref<HTMLInputElement[]>([])
@@ -28,6 +42,10 @@ const canResend = computed(() => resendLeft.value <= 0 && !verifying.value)
 const complete = computed(() => digits.value.every((d) => d.length === 1))
 
 const goBack = () => {
+  if (isRegistration.value) {
+    void router.push({ name: 'login', query: { email: email.value } })
+    return
+  }
   void router.push({ name: 'forgot-password' })
 }
 
@@ -86,6 +104,18 @@ const verify = async () => {
     boxes.value[0]?.focus()
     return
   }
+  if (isRegistration.value) {
+    toastService.success(t('auth.accountVerified'))
+    void router.push({
+      name: 'login',
+      query: {
+        email: email.value,
+        verified: '1',
+        ...(redirect.value ? { redirect: redirect.value } : {}),
+      },
+    })
+    return
+  }
   void router.push({ name: 'reset-password', query: { email: email.value } })
 }
 
@@ -114,8 +144,8 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <AuthLayout :title="t('auth.verifyTitle')" :subtitle="t('auth.verifySubtitle', { email })">
-    <PasswordFlowSteps :current="2" />
+  <AuthLayout :title="title" :subtitle="subtitle">
+    <PasswordFlowSteps v-if="!isRegistration" :current="2" />
 
     <form class="otp-form" novalidate @submit.prevent="verify">
       <div v-if="error" class="otp-form__error" role="alert">

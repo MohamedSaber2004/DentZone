@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { nextTick, onUnmounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { services } from '../../di/container'
 import { t } from '../../i18n'
+import { toastService } from '../../infrastructure/feedback/toast.service'
 import AppIcon from '../ui/AppIcon.vue'
 import AppInput from '../ui/AppInput.vue'
 import AppButton from '../ui/AppButton.vue'
@@ -18,6 +20,8 @@ const emit = defineEmits<{
 }>()
 
 const { authService } = services
+const router = useRouter()
+const route = useRoute()
 
 const activeTab = ref<'login' | 'register'>('login')
 const dialogRef = ref<HTMLDivElement | null>(null)
@@ -162,10 +166,11 @@ const submitRegister = async () => {
   if (!validateRegister() || regLoading.value) return
   regLoading.value = true
   regError.value = ''
+  const registeredEmail = regEmail.value.trim()
   try {
     const result = await authService.register({
       fullName: regFullName.value.trim(),
-      email: regEmail.value.trim(),
+      email: registeredEmail,
       phoneNumber: regPhone.value.trim(),
       password: regPassword.value,
       areaId: props.areaId,
@@ -175,7 +180,12 @@ const submitRegister = async () => {
       regError.value = result.error
       return
     }
-    emit('success')
+    emit('close')
+    toastService.success(t('auth.codeSent', { email: registeredEmail }))
+    void router.push({
+      name: 'verify-otp',
+      query: { email: registeredEmail, mode: 'register', redirect: route.fullPath },
+    })
   } catch {
     regError.value = t('auth.registerError')
   } finally {
