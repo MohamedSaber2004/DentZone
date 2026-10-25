@@ -12,7 +12,9 @@ import ProviderSelectorModal from '../components/products/ProviderSelectorModal.
 import ProductCard from '../components/products/ProductCard.vue'
 import type { ProductDetailDto, ProductPriceDto, ProviderProductDto } from '../domain/models/product'
 
-import { decryptId, productRoute } from '../utils/route-crypto'
+import { categoryRoute, decryptId, productRoute } from '../utils/route-crypto'
+import { applySeo, absoluteUrl, breadcrumbJsonLd, type JsonLd } from '../utils/seo'
+import { SITE_CURRENCY } from '../config/site.config'
 import { sanitizePolicyHtml } from '../utils/sanitize-html'
 
 const route = useRoute()
@@ -245,6 +247,8 @@ const load = async () => {
         inStock?.inventoryUserId || data.prices[0]?.inventoryUserId || data.inventoryUserId || ''
     }
 
+    applyProductSeo()
+
     if (data.categoryId) {
       void loadRelated(data.categoryId)
     }
@@ -298,6 +302,99 @@ const currentPrice = computed<ProductPriceDto | null>(() => {
     null
   )
 })
+
+const truncateMeta = (value: string): string => {
+  const plain = value
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+  return plain.length > 158 ? `${plain.slice(0, 155).trimEnd()}…` : plain
+}
+
+const productCanonicalPath = (): string => {
+  try {
+    return router.resolve(productRoute(productId(), inventoryUserId() || undefined)).path
+  } catch {
+    return route.path
+  }
+}
+
+const applyProductSeo = () => {
+  const d = detail.value
+  if (!d) return
+
+  const name = displayName.value || d.productName
+  if (!name) return
+
+  const inStockPrices = availableStores.value
+    .filter((store) => store.stockQuantity > 0 && store.effectiveSalesPrice > 0)
+    .map((store) => store.effectiveSalesPrice)
+  const allPrices = availableStores.value
+    .map((store) => store.effectiveSalesPrice)
+    .filter((price) => price > 0)
+  const offerPrices = inStockPrices.length > 0 ? inStockPrices : allPrices
+  const lowPrice = offerPrices.length > 0 ? Math.min(...offerPrices) : null
+  const highPrice = offerPrices.length > 0 ? Math.max(...offerPrices) : null
+
+  const images = (d.images || [])
+    .map((image) => resolveMediaUrl(image))
+    .filter(Boolean)
+    .map((image) => absoluteUrl(image))
+  const canonical = productCanonicalPath()
+  const description =
+    truncateMeta(displayDescription.value) || `${name} — ${t('seo.productDescription')}`
+
+  const productLd: JsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name,
+    description,
+    ...(images.length > 0 ? { image: images } : {}),
+    ...(d.productCode ? { sku: d.productCode } : {}),
+    ...(d.brandName ? { brand: { '@type': 'Brand', name: d.brandName } } : {}),
+    ...(displayCategory.value ? { category: displayCategory.value } : {}),
+    ...(lowPrice !== null
+      ? {
+          offers: {
+            '@type': 'AggregateOffer',
+            priceCurrency: SITE_CURRENCY,
+            lowPrice,
+            highPrice: highPrice ?? lowPrice,
+            offerCount: offerPrices.length,
+            availability:
+              inStockPrices.length > 0
+                ? 'https://schema.org/InStock'
+                : 'https://schema.org/OutOfStock',
+            url: absoluteUrl(canonical),
+          },
+        }
+      : {}),
+  }
+
+  const crumbs = [
+    { name: t('nav.home'), path: '/' },
+    { name: t('nav.categories'), path: '/categories' },
+  ]
+  if (d.categoryId && displayCategory.value) {
+    crumbs.push({
+      name: displayCategory.value,
+      path: router.resolve(categoryRoute(d.categoryId, { name: displayCategory.value })).path,
+    })
+  }
+  crumbs.push({ name, path: canonical })
+
+  applySeo({
+    title: name,
+    description,
+    canonicalPath: canonical,
+    type: 'product',
+    image: images[0],
+    jsonLd: [productLd, breadcrumbJsonLd(crumbs)],
+    ...(lowPrice !== null
+      ? { productPrice: { amount: lowPrice, currency: SITE_CURRENCY } }
+      : {}),
+  })
+}
 
 const formatPrice = (value: number | null | undefined) =>
   value == null || !Number.isFinite(value)
@@ -453,6 +550,7 @@ const resizeRefundFrame = () => {
 
 watch(locale, () => {
   refundLoadedLocale.value = ''
+  applyProductSeo()
   if (activeTab.value === 'refund') void openRefundTab()
 })
 

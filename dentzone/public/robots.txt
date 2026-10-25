@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+
+Disallow: /auth/
+Disallow: /cart
+Disallow: /checkout
+Disallow: /orders
+Disallow: /notifications
+Disallow: /profile
+Disallow: /wishlist
+
+Sitemap: https://drugza-frontend-store.vercel.app/sitemap.xml

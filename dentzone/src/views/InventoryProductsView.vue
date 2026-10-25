@@ -84,7 +84,7 @@ const detailsTo = (product: ProviderProductDto) =>
   productRoute(product.productId, inventoryId() || product.inventoryUserId, {
     supplier: supplierName() || product.inventoryUserName || undefined,
     cat: selectedCategory.value ? encryptId(selectedCategory.value) : undefined,
-    name: route.query.name,
+    name: typeof route.query.name === 'string' ? route.query.name : undefined,
     page: currentPage.value > 1 ? String(currentPage.value) : undefined,
     search: search.value.trim() || undefined,
   })

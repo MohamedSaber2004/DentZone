@@ -602,5 +602,23 @@ export type Messages = {
     pushPromptTitle: string
     pushPromptDesc: string
   }
+  seo: {
+    homeTitle: string
+    homeDescription: string
+    categoriesTitle: string
+    categoriesDescription: string
+    productsTitle: string
+    productsDescription: string
+    vendorsTitle: string
+    vendorsDescription: string
+    categoryTitle: string
+    categoryDescription: string
+    inventoryTitle: string
+    inventoryDescription: string
+    productDescription: string
+    privacyDescription: string
+    termsDescription: string
+    refundDescription: string
+  }
 }
 

@@ -58,6 +58,18 @@ function computeChecksum(bytes: Uint8Array): number {
   return sum
 }
 
+// Stable salt keeps canonical product/category URLs identical between renders.
+// decryptId reads the salt from the token, so links made with the old random salts still work.
+function stableSalt(value: string): number {
+  const input = `${SECRET_KEY}:${value}`
+  let hash = 0x811c9dc5
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i)
+    hash = Math.imul(hash, 0x01000193) >>> 0
+  }
+  return hash & 0xff
+}
+
 /**
  * Encrypts a sensitive ID into a URL-safe encrypted token.
  * If the input is already encrypted or empty, it handles it safely.
@@ -71,7 +83,7 @@ export function encryptId(id: string | number | null | undefined): string {
 
   try {
     const rawBytes = stringToBytes(strId)
-    const salt = Math.floor(Math.random() * 256)
+    const salt = stableSalt(strId)
     const checksum = computeChecksum(rawBytes)
     const keystream = generateKeystream(SECRET_KEY, salt, rawBytes.length)
 
@@ -129,10 +141,12 @@ export function decryptId(encrypted: string | null | undefined): string {
   }
 }
 
+type RouteQuery = Record<string, string | number | null | undefined>
+
 /**
  * Route URL Builders that automatically encrypt all sensitive IDs
  */
-export function productRoute(productId: string | number, inventoryUserId?: string | null, query?: Record<string, any>) {
+export function productRoute(productId: string | number, inventoryUserId?: string | null, query?: RouteQuery) {
   return {
     name: 'product-details',
     params: {
@@ -146,7 +160,7 @@ export function productRoute(productId: string | number, inventoryUserId?: strin
   }
 }
 
-export function categoryRoute(catId: string | number, query?: Record<string, any>) {
+export function categoryRoute(catId: string | number, query?: RouteQuery) {
   return {
     name: 'category-inventories',
     params: {
@@ -156,7 +170,7 @@ export function categoryRoute(catId: string | number, query?: Record<string, any
   }
 }
 
-export function inventoryRoute(inventoryUserId: string | number, query?: Record<string, any>) {
+export function inventoryRoute(inventoryUserId: string | number, query?: RouteQuery) {
   return {
     name: 'inventory-products',
     params: {

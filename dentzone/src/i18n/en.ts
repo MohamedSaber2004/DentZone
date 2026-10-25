@@ -614,5 +614,32 @@ export const en: Messages = {
     pushPromptTitle: 'Get real-time updates',
     pushPromptDesc: 'Enable browser push notifications to get instant alerts on order updates and flash offers.',
   },
+  seo: {
+    homeTitle: 'Dental supplies for clinics & practices',
+    homeDescription:
+      'Order dental tools, equipment and consumables from trusted suppliers at wholesale prices with fast delivery to your practice.',
+    categoriesTitle: 'Dental supply categories',
+    categoriesDescription:
+      'Browse dental tools, equipment and consumables by category and find what your practice needs from trusted suppliers.',
+    productsTitle: 'All dental products',
+    productsDescription:
+      'Explore the dental supplies catalogue: tools, equipment, consumables and care products at wholesale prices from trusted suppliers.',
+    vendorsTitle: 'Dental supply vendors',
+    vendorsDescription: 'Discover verified dental suppliers and compare their products and prices.',
+    categoryTitle: 'Dental suppliers by category',
+    categoryDescription:
+      'Compare the suppliers available in this category and choose the best price and availability for your practice.',
+    inventoryTitle: 'Supplier dental products',
+    inventoryDescription:
+      'Browse this supplier’s dental tools and supplies and compare prices and stock availability.',
+    productDescription:
+      'Order this product from DentZone at wholesale prices from trusted suppliers with fast delivery to your practice.',
+    privacyDescription:
+      'Learn how DentZone collects, uses and protects your data when you shop for dental supplies.',
+    termsDescription:
+      'Read the terms and conditions for using the DentZone dental supplies store, orders and delivery.',
+    refundDescription:
+      'Learn about the replacement, return and refund policy for DentZone orders.',
+  },
 }
 
