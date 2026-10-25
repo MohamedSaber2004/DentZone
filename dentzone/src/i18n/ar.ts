@@ -268,6 +268,7 @@ export const ar: Messages = {
     resend: 'إعادة إرسال الرمز',
     resendTimer: 'إعادة الإرسال خلال {seconds} ثانية',
     errInvalidOtp: 'الرمز غير صحيح. تحقق منه وحاول مجددًا.',
+    errOtpCooldown: 'تم إرسال رمز حديثًا. يرجى الانتظار قليلًا قبل طلب رمز جديد.',
     errTooManyAttempts: 'محاولات كثيرة جدًا. يرجى الانتظار قليلًا ثم المحاولة مجددًا.',
     errSessionExpired: 'انتهت صلاحية جلستك. يرجى تسجيل الدخول مرة أخرى.',
     helloAgain: 'مرحباً بعودتك، {name}!',

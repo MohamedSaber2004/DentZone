@@ -159,14 +159,30 @@ export class HttpClient {
           continue
         }
 
-        const body = asText
-          ? ((await response.text()) as unknown)
-          : ((await response.json().catch(() => null)) as Record<string, unknown> | null)
+        let body: unknown
+        if (asText) {
+          body = await response.text()
+        } else {
+          const contentType = response.headers.get('Content-Type') ?? ''
+          if (contentType.includes('application/json')) {
+            body = await response.json().catch(() => null)
+          } else {
+            const text = (await response.text().catch(() => '')).trim()
+            body = text === '' ? null : text
+          }
+        }
 
         const isEnvelope = !asText && body !== null && typeof body === 'object' && 'success' in body
+        const textError = !response.ok && typeof body === 'string' ? body : null
         const envelope: ApiEnvelope<T> = isEnvelope
           ? (body as unknown as ApiEnvelope<T>)
-          : { success: response.ok, errors: null, data: body as T, message: null, statusCode: response.status }
+          : {
+              success: response.ok,
+              errors: null,
+              data: body as T,
+              message: textError,
+              statusCode: response.status,
+            }
 
         if (!response.ok || !envelope.success) {
           const error = new ApiError(

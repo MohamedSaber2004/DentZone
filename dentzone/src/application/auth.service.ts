@@ -241,6 +241,9 @@ export class AuthService {
       await this.authRepository.resendOtp(email)
       return { ok: true }
     } catch (err) {
+      if (err instanceof ApiError && /wait before requesting another otp/i.test(err.message)) {
+        return { ok: false, error: t('auth.errOtpCooldown') }
+      }
       return { ok: false, error: toErrorMessage(err, 'auth.errGeneric') }
     }
   }

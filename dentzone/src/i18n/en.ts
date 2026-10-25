@@ -269,6 +269,7 @@ export const en: Messages = {
     resend: 'Resend code',
     resendTimer: 'Resend in {seconds}s',
     errInvalidOtp: 'That code is incorrect. Check it and try again.',
+    errOtpCooldown: 'A code was sent recently. Please wait a moment before requesting another one.',
     errTooManyAttempts: 'Too many attempts. Please wait a moment and try again.',
     errSessionExpired: 'Your session has expired. Please log in again.',
     helloAgain: 'Hello again, {name}!',

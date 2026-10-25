@@ -34,7 +34,7 @@ const boxes = ref<HTMLInputElement[]>([])
 const error = ref('')
 const verifying = ref(false)
 
-const RESEND_SECONDS = 60
+const RESEND_SECONDS = 120
 const resendLeft = ref(RESEND_SECONDS)
 let timer: number | null = null
 
@@ -64,7 +64,6 @@ const onDigitInput = (index: number, event: Event) => {
   }
   const next = boxes.value[index + 1]
   if (next && digits.value[index]) next.focus()
-  if (complete.value) void verify()
 }
 
 const onDigitKeydown = (index: number, event: KeyboardEvent) => {
@@ -90,7 +89,6 @@ const onDigitPaste = (index: number, event: ClipboardEvent) => {
   })
   const target = boxes.value[Math.min(index + pasted.length, 5)]
   target?.focus()
-  if (complete.value) void verify()
 }
 
 const verify = async () => {
@@ -123,11 +121,11 @@ const resend = async () => {
   if (!canResend.value) return
   error.value = ''
   const result = await authService.resendOtp(email.value)
+  resendLeft.value = RESEND_SECONDS
   if (!result.ok) {
     error.value = result.error
     return
   }
-  resendLeft.value = RESEND_SECONDS
   toastService.success(t('auth.codeSent', { email: email.value }))
 }
 
