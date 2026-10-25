@@ -99,6 +99,7 @@ const verify = async () => {
   verifying.value = false
   if (!result.ok) {
     error.value = result.error
+    resendLeft.value = 0
     boxes.value[0]?.focus()
     return
   }
@@ -121,11 +122,12 @@ const resend = async () => {
   if (!canResend.value) return
   error.value = ''
   const result = await authService.resendOtp(email.value)
-  resendLeft.value = RESEND_SECONDS
   if (!result.ok) {
     error.value = result.error
+    resendLeft.value = result.error === t('auth.errOtpCooldown') ? RESEND_SECONDS : 0
     return
   }
+  resendLeft.value = RESEND_SECONDS
   toastService.success(t('auth.codeSent', { email: email.value }))
 }
 

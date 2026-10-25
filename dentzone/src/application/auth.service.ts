@@ -223,6 +223,14 @@ export class AuthService {
       if (!result.isVerified) return { ok: false, error: t('auth.errInvalidOtp') }
       return { ok: true }
     } catch (err) {
+      if (err instanceof ApiError) {
+        if (/invalid or expired otp/i.test(err.message)) {
+          return { ok: false, error: t('auth.errInvalidOtp') }
+        }
+        if (/too many/i.test(err.message)) {
+          return { ok: false, error: t('auth.errTooManyAttempts') }
+        }
+      }
       return { ok: false, error: toErrorMessage(err, 'auth.errInvalidOtp') }
     }
   }

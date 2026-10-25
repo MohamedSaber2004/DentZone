@@ -299,7 +299,7 @@ const logout = () => {
                 />
                 <AppIcon v-else name="user" :size="16" />
               </span>
-              <div>
+              <div class="app-header__dropdown-user">
                 <p class="app-header__dropdown-name">{{ user?.firstName }} {{ user?.lastName }}</p>
                 <p class="app-header__dropdown-email">{{ user?.email }}</p>
               </div>
@@ -855,7 +855,7 @@ const logout = () => {
   position: absolute;
   top: calc(100% + 0.6rem);
   inset-inline-end: 0;
-  width: 250px;
+  width: 280px;
   max-width: calc(100vw - 1.5rem);
   box-sizing: border-box;
   padding: 0.6rem;
@@ -891,14 +891,24 @@ const logout = () => {
   font-weight: 700;
 }
 
+.app-header__dropdown-user {
+  flex: 1;
+  min-width: 0;
+}
+
 .app-header__dropdown-name {
   font-size: 0.9rem;
   font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .app-header__dropdown-email {
   font-size: 0.75rem;
   color: var(--dz-muted);
+  direction: ltr;
+  text-align: left;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
