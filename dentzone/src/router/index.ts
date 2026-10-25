@@ -172,6 +172,14 @@ router.afterEach((to) => {
   const fullTitle = pageTitle ? `${pageTitle} · DentZone` : 'DentZone'
   document.title = fullTitle
 
+  window.dataLayer = window.dataLayer || []
+  window.dataLayer.push({
+    event: 'page_view',
+    page_path: to.fullPath,
+    page_title: fullTitle,
+    page_location: window.location.href,
+  })
+
   if (typeof document === 'undefined') return
   if (!announcer) {
     announcer = document.createElement('div')
