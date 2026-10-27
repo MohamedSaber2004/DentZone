@@ -29,10 +29,27 @@ const currentIcon = computed(() => {
 
 const dialogRef = ref<HTMLDivElement | null>(null)
 let previouslyFocused: HTMLElement | null = null
+const copied = ref(false)
+
+const copyErrorDetails = async () => {
+  const data = modalService.data.value
+  if (!data) return
+  const textToCopy = `DentZone Error [${data.status ?? 'N/A'}]:\n${data.message}\n\nTechnical Details:\n${data.details || 'None'}`
+  try {
+    await navigator.clipboard.writeText(textToCopy)
+    copied.value = true
+    setTimeout(() => {
+      copied.value = false
+    }, 2500)
+  } catch {
+    // Clipboard permission denied fallback
+  }
+}
 
 watch(
   () => modalService.visible.value,
   async (visible) => {
+    copied.value = false
     if (visible) {
       previouslyFocused = document.activeElement as HTMLElement | null
       await nextTick()
@@ -75,6 +92,15 @@ onUnmounted(() => {
           </span>
           <h3 id="result-modal-title" class="result-modal__title">{{ currentTitle }}</h3>
           <p class="result-modal__message">{{ modalService.data.value?.message }}</p>
+          <button
+            v-if="modalService.data.value?.type === 'error' && modalService.data.value?.details"
+            type="button"
+            class="result-modal__copy-btn"
+            @click="copyErrorDetails"
+          >
+            <AppIcon :name="copied ? 'check' : 'copy'" :size="13" />
+            <span>{{ copied ? t('common.errorDetailsCopied') : t('common.copyErrorDetails') }}</span>
+          </button>
           <AppButton class="result-modal__action" @click="modalService.close()">
             {{ t('common.ok') }}
           </AppButton>
@@ -149,6 +175,27 @@ onUnmounted(() => {
   color: var(--dz-muted);
   line-height: 1.6;
   word-break: break-word;
+  white-space: pre-line;
+}
+
+.result-modal__copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.78rem;
+  color: var(--dz-primary);
+  background: var(--dz-surface-soft);
+  border: 1px dashed var(--dz-border);
+  border-radius: var(--dz-radius);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.result-modal__copy-btn:hover {
+  background: var(--dz-surface-hover);
+  color: var(--dz-primary-strong);
+  border-color: var(--dz-primary);
 }
 
 .result-modal__action {

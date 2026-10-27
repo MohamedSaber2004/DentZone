@@ -13,6 +13,8 @@ export const en: Messages = {
     dismissNotification: 'Dismiss notification',
     back: 'Back',
     scrollToTop: 'Scroll to top',
+    copyErrorDetails: 'Copy error details for support',
+    errorDetailsCopied: 'Details copied successfully',
   },
   nav: {
     home: 'Home',

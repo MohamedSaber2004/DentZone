@@ -31,6 +31,7 @@ export class ApiOrderRepository implements OrderRepository {
   createOrder(params: CreateOrderParams): Promise<unknown> {
     const query = new URLSearchParams()
     query.set('addresssId', params.addresssId)
+    query.set('addressId', params.addresssId)
     query.set('deliveryDate', String(params.deliveryDate))
     query.set('deliveryTimeSlotId', params.deliveryTimeSlotId)
     if (params.orderNote) query.set('orderNote', params.orderNote)

@@ -4,17 +4,20 @@ export type Theme = 'light' | 'dark'
 
 const STORAGE_KEY = 'dentzone-theme'
 
-const prefersDark = (): boolean =>
-  typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches
-
 const readStoredTheme = (): Theme => {
+  if (typeof window === 'undefined' || !window.localStorage) return 'light'
   const stored = localStorage.getItem(STORAGE_KEY)
   if (stored === 'dark' || stored === 'light') return stored
-  return prefersDark() ? 'dark' : 'light'
+  return 'light'
 }
 
 const applyTheme = (next: Theme) => {
+  if (typeof document === 'undefined') return
   document.documentElement.dataset.theme = next
+  const themeColorMeta = document.querySelector('meta[name="theme-color"]')
+  if (themeColorMeta) {
+    themeColorMeta.setAttribute('content', next === 'dark' ? '#0d1821' : '#ffffff')
+  }
 }
 
 export const theme = ref<Theme>(readStoredTheme())

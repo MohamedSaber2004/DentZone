@@ -105,7 +105,8 @@ export const applySeo = (input: SeoInput): void => {
 
   setMeta('name', 'description', description)
   setMeta('name', 'robots', robots)
-  setMeta('name', 'theme-color', '#0d1821')
+  const isDark = typeof document !== 'undefined' && document.documentElement.dataset.theme === 'dark'
+  setMeta('name', 'theme-color', isDark ? '#0d1821' : '#ffffff')
   setCanonical(canonical)
 
   setMeta('property', 'og:site_name', SITE_NAME)

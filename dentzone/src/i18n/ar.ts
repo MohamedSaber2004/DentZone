@@ -13,6 +13,8 @@ export const ar: Messages = {
     dismissNotification: 'إغلاق الإشعار',
     back: 'رجوع',
     scrollToTop: 'العودة للأعلى',
+    copyErrorDetails: 'نسخ تفاصيل الخطأ للدعم الفني',
+    errorDetailsCopied: 'تم نسخ التفاصيل بنجاح',
   },
   nav: {
     home: 'الرئيسية',

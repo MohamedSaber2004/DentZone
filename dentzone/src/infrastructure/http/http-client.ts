@@ -5,6 +5,137 @@ import { ApiError, GENERIC_OK_MESSAGES, type ApiEnvelope } from './api-error'
 import type { TokenStore } from './token-store'
 import type { AuthBridge } from './auth-bridge'
 import type { ModalService } from '../feedback/modal.service'
+import { firebaseMessagingService } from '../firebase/firebase-messaging.service'
+
+export interface DiagnosticError {
+  timestamp: string
+  method: string
+  path: string
+  status: number
+  message: string
+  details?: string
+}
+
+const DIAGNOSTIC_KEY = 'dz_last_api_errors'
+const MAX_DIAGNOSTICS = 10
+
+export const getDiagnosticErrors = (): DiagnosticError[] => {
+  if (typeof window === 'undefined' || !window.sessionStorage) return []
+  try {
+    const raw = window.sessionStorage.getItem(DIAGNOSTIC_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
+
+export const recordDiagnosticError = (item: DiagnosticError): void => {
+  if (typeof window === 'undefined' || !window.sessionStorage) return
+  try {
+    const list = getDiagnosticErrors()
+    list.unshift(item)
+    if (list.length > MAX_DIAGNOSTICS) list.length = MAX_DIAGNOSTICS
+    window.sessionStorage.setItem(DIAGNOSTIC_KEY, JSON.stringify(list))
+  } catch {
+    // Ignore quota errors
+  }
+}
+
+if (typeof window !== 'undefined') {
+  ;(window as unknown as { dzGetErrors?: () => DiagnosticError[] }).dzGetErrors = getDiagnosticErrors
+}
+
+export interface ExtractedErrorInfo {
+  message: string
+  details?: string
+  errors: Record<string, string[]>
+}
+
+export function extractErrorInfo(body: unknown, status: number): ExtractedErrorInfo {
+  const result: ExtractedErrorInfo = {
+    message: '',
+    errors: {},
+  }
+
+  if (!body) {
+    result.message = `Request failed with status ${status}`
+    return result
+  }
+
+  let parsed: unknown = body
+  if (typeof body === 'string') {
+    const trimmed = body.trim()
+    if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+      try {
+        parsed = JSON.parse(trimmed)
+      } catch {
+        parsed = trimmed
+      }
+    }
+  }
+
+  if (typeof parsed === 'string') {
+    result.message = parsed
+    result.details = parsed
+    return result
+  }
+
+  if (parsed && typeof parsed === 'object') {
+    const record = parsed as Record<string, unknown>
+
+    const rawErrors = record.errors ?? record.Errors
+    if (rawErrors && typeof rawErrors === 'object' && !Array.isArray(rawErrors)) {
+      const errDict: Record<string, string[]> = {}
+      const messageList: string[] = []
+
+      for (const [key, val] of Object.entries(rawErrors as Record<string, unknown>)) {
+        if (Array.isArray(val)) {
+          const strList = val.map((v) => String(v)).filter(Boolean)
+          errDict[key] = strList
+          messageList.push(...strList)
+        } else if (typeof val === 'string' && val.trim()) {
+          errDict[key] = [val.trim()]
+          messageList.push(val.trim())
+        }
+      }
+
+      result.errors = errDict
+      if (messageList.length > 0) {
+        result.message = messageList.join(' • ')
+      }
+    } else if (Array.isArray(rawErrors)) {
+      result.message = rawErrors.map((e) => String(e)).filter(Boolean).join(' • ')
+    }
+
+    if (!result.message) {
+      const candidateMsg =
+        record.message ??
+        record.Message ??
+        record.error ??
+        record.Error ??
+        record.detail ??
+        record.Detail ??
+        record.title ??
+        record.Title
+
+      if (typeof candidateMsg === 'string' && candidateMsg.trim()) {
+        result.message = candidateMsg.trim()
+      }
+    }
+
+    try {
+      result.details = JSON.stringify(record, null, 2)
+    } catch {
+      // ignore
+    }
+  }
+
+  if (!result.message) {
+    result.message = `Request failed with status ${status}`
+  }
+
+  return result
+}
 
 export interface HttpClientDependencies {
   tokenStore: TokenStore
@@ -163,8 +294,8 @@ export class HttpClient {
         if (asText) {
           body = await response.text()
         } else {
-          const contentType = response.headers.get('Content-Type') ?? ''
-          if (contentType.includes('application/json')) {
+          const contentType = (response.headers.get('Content-Type') ?? '').toLowerCase()
+          if (contentType.includes('json')) {
             body = await response.json().catch(() => null)
           } else {
             const text = (await response.text().catch(() => '')).trim()
@@ -185,12 +316,45 @@ export class HttpClient {
             }
 
         if (!response.ok || !envelope.success) {
+          const errorInfo = extractErrorInfo(body, response.status)
+          const finalMessage = (envelope.message && envelope.message !== textError ? envelope.message : null) || errorInfo.message
+          const finalErrors = envelope.errors || errorInfo.errors
+
           const error = new ApiError(
             response.status,
-            envelope?.message ?? `Request failed with status ${response.status}`,
-            envelope?.errors ?? {},
+            finalMessage,
+            finalErrors,
           )
-          if (wantsFeedback) this.feedback.showError(error.message)
+
+          // 1. Structured console logging for developer debugging
+          console.error(`[API Error] ${method} ${path} (${response.status}):`, {
+            message: finalMessage,
+            errors: finalErrors,
+            details: errorInfo.details,
+            body,
+          })
+
+          // 2. Persist diagnostic record to sessionStorage for support debugging
+          recordDiagnosticError({
+            timestamp: new Date().toISOString(),
+            method,
+            path,
+            status: response.status,
+            message: finalMessage,
+            details: errorInfo.details,
+          })
+
+          // 3. Track error event in Firebase Analytics
+          firebaseMessagingService.trackError('api_error', {
+            method,
+            endpoint: path.split('?')[0] || path,
+            status: response.status,
+            error_message: finalMessage.slice(0, 100),
+          })
+
+          if (wantsFeedback) {
+            this.feedback.showError(error.message, errorInfo.details, response.status)
+          }
           throw error
         }
 

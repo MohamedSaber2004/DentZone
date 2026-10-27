@@ -1,6 +1,6 @@
 import { ref, type Ref } from 'vue'
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app'
-import { getAnalytics, isSupported as isAnalyticsSupported, type Analytics } from 'firebase/analytics'
+import { getAnalytics, isSupported as isAnalyticsSupported, logEvent, type Analytics } from 'firebase/analytics'
 import {
   getMessaging,
   getToken,
@@ -281,6 +281,18 @@ export class FirebaseMessagingService {
    */
   getAnalytics(): Analytics | null {
     return this.analytics
+  }
+
+  /**
+   * Tracks an error or failure event to Firebase Analytics.
+   */
+  trackError(eventName: string, params: Record<string, unknown> = {}): void {
+    if (!this.analytics) return
+    try {
+      logEvent(this.analytics, eventName, params)
+    } catch {
+      // Analytics failure should never break UI
+    }
   }
 }
 

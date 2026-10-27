@@ -5,6 +5,8 @@ export type FeedbackType = 'success' | 'error' | 'info'
 export interface FeedbackData {
   type: FeedbackType
   message: string
+  details?: string
+  status?: number
 }
 
 export class ModalService {
@@ -25,8 +27,8 @@ export class ModalService {
     this.show({ type: 'success', message })
   }
 
-  showError(message: string): void {
-    this.show({ type: 'error', message })
+  showError(message: string, details?: string, status?: number): void {
+    this.show({ type: 'error', message, details, status })
   }
 
   showInfo(message: string): void {

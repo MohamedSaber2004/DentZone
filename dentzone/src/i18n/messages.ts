@@ -11,6 +11,8 @@ export type Messages = {
     dismissNotification: string
     back: string
     scrollToTop: string
+    copyErrorDetails: string
+    errorDetailsCopied: string
   }
   nav: {
     home: string
