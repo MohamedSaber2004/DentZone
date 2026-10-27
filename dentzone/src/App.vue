@@ -5,7 +5,6 @@ import AppFooter from './components/layout/AppFooter.vue'
 import ToastContainer from './components/ui/ToastContainer.vue'
 import ResultModal from './components/ui/ResultModal.vue'
 import LoadingBar from './components/ui/LoadingBar.vue'
-import LoadingOverlay from './components/ui/LoadingOverlay.vue'
 import AppIcon from './components/ui/AppIcon.vue'
 import { WHATSAPP_LINK } from './config/contact.config'
 import { t } from './i18n'
@@ -78,7 +77,6 @@ onUnmounted(() => {
   <div class="app-shell">
     <a class="skip-link" href="#main-content">{{ t('common.skipToMain') }}</a>
     <LoadingBar />
-    <LoadingOverlay />
     <AppHeader />
     <ToastContainer />
     <ResultModal />

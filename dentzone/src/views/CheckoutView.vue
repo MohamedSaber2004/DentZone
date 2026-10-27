@@ -438,9 +438,39 @@ onMounted(load)
         </RouterLink>
       </div>
 
-      <div v-if="pageLoading" class="page__loading" role="status" :aria-label="t('common.loading')">
-        <AppIcon name="refresh" :size="24" class="page__spinner" />
-        <span>{{ t('common.loading') }}</span>
+      <div v-if="pageLoading" class="checkout__layout" role="status" :aria-label="t('common.loading')">
+        <div class="checkout__steps">
+          <section v-for="s in 3" :key="s" class="checkout__step checkout__step--skeleton">
+            <div class="checkout__step-title">
+              <span class="skeleton checkout__skeleton-num" />
+              <span class="skeleton checkout__skeleton-line checkout__skeleton-line--title" />
+            </div>
+            <div class="checkout__skeleton-step-body">
+              <span class="skeleton checkout__skeleton-input" />
+              <div class="checkout__skeleton-row">
+                <span class="skeleton checkout__skeleton-input" />
+                <span class="skeleton checkout__skeleton-input" />
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <aside class="checkout__summary checkout__summary--skeleton">
+          <span class="skeleton checkout__skeleton-line checkout__skeleton-line--sum-title" />
+          <div class="checkout__skeleton-row-between">
+            <span class="skeleton checkout__skeleton-line checkout__skeleton-line--sub" />
+            <span class="skeleton checkout__skeleton-line checkout__skeleton-line--val" />
+          </div>
+          <div class="checkout__skeleton-row-between">
+            <span class="skeleton checkout__skeleton-line checkout__skeleton-line--sub" />
+            <span class="skeleton checkout__skeleton-line checkout__skeleton-line--val" />
+          </div>
+          <div class="checkout__skeleton-row-between">
+            <span class="skeleton checkout__skeleton-line checkout__skeleton-line--sub" />
+            <span class="skeleton checkout__skeleton-line checkout__skeleton-line--val" />
+          </div>
+          <span class="skeleton checkout__skeleton-btn" />
+        </aside>
       </div>
 
       <div v-else-if="loadError" class="page__state" role="alert">
@@ -705,7 +735,7 @@ onMounted(load)
           </div>
           <div class="checkout__summary-row">
             <span>{{ t('checkout.deliveryFees') }}</span>
-            <strong v-if="feesLoading"><AppIcon name="refresh" :size="13" class="checkout__spinner" /></strong>
+            <strong v-if="feesLoading"><span class="skeleton checkout__fees-skeleton" /></strong>
             <strong v-else-if="shippingFee !== null">{{ formatPrice(shippingFee) }} {{ t('products.currency') }}</strong>
             <strong v-else class="checkout__summary-muted">{{ t('checkout.selectAddressForFees') }}</strong>
           </div>
@@ -780,25 +810,92 @@ onMounted(load)
   color: var(--dz-primary-strong);
 }
 
-.page__loading {
+.skeleton {
+  background: var(--dz-surface-soft);
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+  border-radius: var(--dz-radius);
+  display: block;
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.checkout__skeleton-num {
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: var(--dz-radius-full);
+  flex-shrink: 0;
+}
+
+.checkout__skeleton-step-body {
   display: flex;
   flex-direction: column;
+  gap: 0.85rem;
+  margin-top: 1rem;
+}
+
+.checkout__skeleton-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+.checkout__skeleton-input {
+  height: 2.6rem;
+  width: 100%;
+  border-radius: var(--dz-radius-md);
+}
+
+.checkout__skeleton-row-between {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 0.6rem;
-  padding: 4rem 1rem;
-  text-align: center;
-  color: var(--dz-muted);
+  gap: 1rem;
 }
 
-.page__spinner {
-  animation: page-spin 0.8s linear infinite;
-  color: var(--dz-primary);
+.checkout__skeleton-btn {
+  height: 2.85rem;
+  width: 100%;
+  border-radius: var(--dz-radius-full);
+  margin-top: 0.75rem;
 }
 
-@keyframes page-spin {
-  to {
-    transform: rotate(360deg);
-  }
+.checkout__skeleton-line {
+  height: 0.85rem;
+}
+
+.checkout__skeleton-line--title {
+  width: 35%;
+  height: 1.1rem;
+}
+
+.checkout__skeleton-line--sum-title {
+  width: 45%;
+  height: 1.2rem;
+  margin-bottom: 0.5rem;
+}
+
+.checkout__skeleton-line--sub {
+  width: 35%;
+  height: 0.8rem;
+}
+
+.checkout__skeleton-line--val {
+  width: 25%;
+  height: 0.85rem;
+}
+
+.checkout__fees-skeleton {
+  display: inline-block;
+  width: 3.5rem;
+  height: 0.95rem;
+  vertical-align: middle;
 }
 
 .page__state {

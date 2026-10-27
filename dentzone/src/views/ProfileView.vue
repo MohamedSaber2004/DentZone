@@ -353,9 +353,16 @@ const onDeleteAccount = async () => {
           </div>
         </div>
 
-        <div v-if="loading" class="profile__loading">
-          <AppIcon name="refresh" :size="22" class="profile__spinner" />
-          <span>{{ t('common.loading') }}</span>
+        <div v-if="loading" class="profile__skeleton" role="status" :aria-label="t('common.loading')">
+          <div class="profile__skeleton-avatar-wrap">
+            <span class="skeleton profile__skeleton-avatar" />
+          </div>
+          <div class="profile__skeleton-grid">
+            <div v-for="i in 4" :key="i" class="profile__skeleton-field">
+              <span class="skeleton profile__skeleton-label" />
+              <span class="skeleton profile__skeleton-input" />
+            </div>
+          </div>
         </div>
 
         <div v-else-if="!user" class="profile__state" role="alert">
@@ -417,9 +424,14 @@ const onDeleteAccount = async () => {
               </button>
             </div>
 
-            <div v-if="addressesLoading" class="profile__addresses-loading">
-              <AppIcon name="refresh" :size="17" class="profile__spinner" />
-              <span>{{ t('common.loading') }}</span>
+            <div v-if="addressesLoading" class="profile__skeleton-addresses" role="status" :aria-label="t('common.loading')">
+              <div v-for="i in 2" :key="i" class="profile__skeleton-address-card">
+                <span class="skeleton profile__skeleton-address-pin" />
+                <div class="profile__skeleton-address-body">
+                  <span class="skeleton profile__skeleton-line profile__skeleton-line--addr-title" />
+                  <span class="skeleton profile__skeleton-line profile__skeleton-line--addr-sub" />
+                </div>
+              </div>
             </div>
 
             <div v-else-if="addressesError" class="profile__error" role="alert">
@@ -637,13 +649,61 @@ const onDeleteAccount = async () => {
     margin-bottom: 0.5rem;
   }
 
-  .profile__loading {
+  .skeleton {
+    background: var(--dz-surface-soft);
+    animation: skeleton-pulse 1.4s ease-in-out infinite;
+    border-radius: var(--dz-radius);
+    display: block;
+  }
+
+  @keyframes skeleton-pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.45;
+    }
+  }
+
+  .profile__skeleton {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    gap: 1.5rem;
+    padding: 1rem 0 2rem;
+  }
+
+  .profile__skeleton-avatar-wrap {
+    display: flex;
+    justify-content: flex-start;
+  }
+
+  .profile__skeleton-avatar {
+    width: 5rem;
+    height: 5rem;
+    border-radius: var(--dz-radius-full);
+  }
+
+  .profile__skeleton-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.25rem;
+  }
+
+  .profile__skeleton-field {
+    display: flex;
+    flex-direction: column;
     gap: 0.5rem;
-    padding: 3rem 0;
-    color: var(--dz-muted);
+  }
+
+  .profile__skeleton-label {
+    width: 30%;
+    height: 0.85rem;
+  }
+
+  .profile__skeleton-input {
+    width: 100%;
+    height: 2.75rem;
+    border-radius: var(--dz-radius-md);
   }
 
   .profile__state {
@@ -965,13 +1025,48 @@ const onDeleteAccount = async () => {
       color: var(--dz-on-primary);
     }
 
-  .profile__addresses-loading {
+  .profile__skeleton-addresses {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    padding: 0.5rem 0;
+  }
+
+  .profile__skeleton-address-card {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 1.4rem 0;
-    font-size: 0.85rem;
-    color: var(--dz-muted);
+    gap: 0.85rem;
+    padding: 0.95rem 1rem;
+    border: 1px solid var(--dz-border);
+    border-radius: var(--dz-radius-lg);
+  }
+
+  .profile__skeleton-address-pin {
+    width: 2rem;
+    height: 2rem;
+    border-radius: var(--dz-radius-sm);
+    flex-shrink: 0;
+  }
+
+  .profile__skeleton-address-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .profile__skeleton-line {
+    height: 0.85rem;
+  }
+
+  .profile__skeleton-line--addr-title {
+    width: 45%;
+    height: 0.95rem;
+  }
+
+  .profile__skeleton-line--addr-sub {
+    width: 70%;
+    height: 0.75rem;
   }
 
   .profile__addresses-empty {

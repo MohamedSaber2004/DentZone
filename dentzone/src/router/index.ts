@@ -3,6 +3,7 @@ import HomeView from '../views/HomeView.vue'
 import { services } from '../di/container'
 import { onLocaleChange, t, type MessageKey } from '../i18n'
 import { applySeo, homeJsonLd } from '../utils/seo'
+import { requestTracker } from '../application/request.tracker'
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -156,14 +157,18 @@ const router = createRouter({
 })
 
 router.beforeEach((to) => {
+  requestTracker.begin()
   const { authService, cartService } = services
   if (to.meta.guestOnly && authService.isAuthenticated) {
+    requestTracker.settle()
     return { name: 'home' }
   }
   if (to.meta.requiresAuth && !authService.isAuthenticated) {
+    requestTracker.settle()
     return { name: 'login', query: { redirect: to.fullPath } }
   }
   if (to.name === 'checkout' && cartService.count.value === 0) {
+    requestTracker.settle()
     return { name: 'cart' }
   }
   return true
@@ -202,6 +207,7 @@ let announcer: HTMLElement | null = null
 // Screen readers don't announce SPA route changes on their own —
 // keep document.title in sync and announce the new page politely.
 router.afterEach((to) => {
+  requestTracker.settle()
   applyRouteSeo(to)
 
   const pageTitle = pageTitleFor(to)
@@ -227,6 +233,10 @@ router.afterEach((to) => {
   window.setTimeout(() => {
     if (announcer) announcer.textContent = fullTitle
   }, 100)
+})
+
+router.onError(() => {
+  requestTracker.settle()
 })
 
 export default router

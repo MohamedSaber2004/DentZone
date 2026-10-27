@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { locale, t } from '../i18n'
-import { authService, cartService } from '../di/container'
+import {  cartService } from '../di/container'
 import { resolveMediaUrl } from '../utils/media'
 import { inventoryRoute, productRoute } from '../utils/route-crypto'
 import AppIcon from '../components/ui/AppIcon.vue'
@@ -191,9 +191,50 @@ onMounted(load)
       </div>
     </div>
 
-    <div v-if="loading" class="page__loading" role="status" :aria-label="t('common.loading')">
-      <AppIcon name="refresh" :size="24" class="page__spinner" />
-      <span>{{ t('common.loading') }}</span>
+    <div v-if="loading" class="cart__layout" role="status" :aria-label="t('common.loading')">
+      <div class="cart__groups">
+        <div v-for="g in 2" :key="g" class="cart__group cart__group--skeleton">
+          <div class="cart__group-header">
+            <div class="cart__group-provider">
+              <span class="skeleton cart__skeleton-icon" />
+              <div class="cart__skeleton-col">
+                <span class="skeleton cart__skeleton-line cart__skeleton-line--title" />
+                <span class="skeleton cart__skeleton-line cart__skeleton-line--sub" />
+              </div>
+            </div>
+          </div>
+
+          <ul class="cart__list">
+            <li v-for="i in 2" :key="i" class="cart__item cart__item--skeleton">
+              <span class="skeleton cart__skeleton-thumb" />
+              <div class="cart__info">
+                <span class="skeleton cart__skeleton-line cart__skeleton-line--name" />
+                <span class="skeleton cart__skeleton-line cart__skeleton-line--sub" />
+                <span class="skeleton cart__skeleton-line cart__skeleton-line--price" />
+              </div>
+              <span class="skeleton cart__skeleton-stepper" />
+              <span class="skeleton cart__skeleton-total" />
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <aside class="cart__summary cart__summary--skeleton">
+        <span class="skeleton cart__skeleton-line cart__skeleton-line--sum-title" />
+        <div class="cart__skeleton-summary-row">
+          <span class="skeleton cart__skeleton-line cart__skeleton-line--sub" />
+          <span class="skeleton cart__skeleton-line cart__skeleton-line--val" />
+        </div>
+        <div class="cart__skeleton-summary-row">
+          <span class="skeleton cart__skeleton-line cart__skeleton-line--sub" />
+          <span class="skeleton cart__skeleton-line cart__skeleton-line--val" />
+        </div>
+        <div class="cart__skeleton-summary-row">
+          <span class="skeleton cart__skeleton-line cart__skeleton-line--sub" />
+          <span class="skeleton cart__skeleton-line cart__skeleton-line--val" />
+        </div>
+        <span class="skeleton cart__skeleton-btn" />
+      </aside>
     </div>
 
     <div v-else-if="loadError" class="page__state" role="alert">
@@ -384,25 +425,111 @@ onMounted(load)
   color: var(--dz-muted);
 }
 
-.page__loading {
+.skeleton {
+  background: var(--dz-surface-soft);
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+  border-radius: var(--dz-radius);
+  display: block;
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.cart__skeleton-icon {
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: var(--dz-radius-md);
+  flex-shrink: 0;
+}
+
+.cart__skeleton-col {
   display: flex;
   flex-direction: column;
+  gap: 0.35rem;
+  width: 140px;
+}
+
+.cart__skeleton-thumb {
+  width: 5.5rem;
+  height: 5.5rem;
+  border-radius: var(--dz-radius-md);
+  flex-shrink: 0;
+}
+
+.cart__item--skeleton {
+  display: flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 4rem 1rem;
-  text-align: center;
-  color: var(--dz-muted);
+  gap: 1.1rem;
 }
 
-.page__spinner {
-  animation: page-spin 0.8s linear infinite;
-  color: var(--dz-primary);
+.cart__skeleton-stepper {
+  width: 6.5rem;
+  height: 2.2rem;
+  border-radius: var(--dz-radius-full);
+  flex-shrink: 0;
 }
 
-@keyframes page-spin {
-  to {
-    transform: rotate(360deg);
-  }
+.cart__skeleton-total {
+  width: 4rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+}
+
+.cart__skeleton-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.cart__skeleton-btn {
+  height: 2.85rem;
+  width: 100%;
+  border-radius: var(--dz-radius-full);
+  margin-top: 0.5rem;
+}
+
+.cart__skeleton-line {
+  height: 0.85rem;
+}
+
+.cart__skeleton-line--title {
+  width: 65%;
+  height: 1rem;
+}
+
+.cart__skeleton-line--sum-title {
+  width: 45%;
+  height: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.cart__skeleton-line--name {
+  width: 80%;
+  height: 1rem;
+  margin-bottom: 0.35rem;
+}
+
+.cart__skeleton-line--sub {
+  width: 45%;
+  height: 0.75rem;
+}
+
+.cart__skeleton-line--price {
+  width: 30%;
+  height: 0.75rem;
+  margin-top: 0.35rem;
+}
+
+.cart__skeleton-line--val {
+  width: 25%;
+  height: 0.85rem;
 }
 
 .page__state {
