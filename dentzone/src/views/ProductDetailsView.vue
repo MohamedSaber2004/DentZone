@@ -86,16 +86,33 @@ const availableStores = computed<StoreOption[]>(() => {
   for (let i = 0; i < (d.prices || []).length; i++) {
     const p = d.prices[i]!
     if (!p.inventoryUserId || seenIds.has(p.inventoryUserId)) continue
+    // Only include stores that genuinely offer the product (have price or stock)
+    if (p.salesPrice <= 0 && p.stockQuantity <= 0 && (p.effectiveSalesPrice == null || p.effectiveSalesPrice <= 0)) continue
     seenIds.add(p.inventoryUserId)
+
+    const effPrice = p.effectiveSalesPrice > 0 ? p.effectiveSalesPrice : p.salesPrice
+    let oldPrice = p.priceBeforeFlashSale && p.priceBeforeFlashSale > effPrice ? p.priceBeforeFlashSale : null
+    let discountRate = p.discountRate || 0
+
+    if (!oldPrice && p.salesPrice > effPrice) {
+      oldPrice = p.salesPrice
+      if (discountRate === 0) {
+        discountRate = Math.round(((p.salesPrice - effPrice) / p.salesPrice) * 100)
+      }
+    } else if (!oldPrice && discountRate > 0 && effPrice > 0) {
+      const r = discountRate < 1 ? discountRate * 100 : discountRate
+      oldPrice = Math.round((effPrice / (1 - r / 100)) * 100) / 100
+    }
+
     list.push({
       inventoryUserId: p.inventoryUserId,
       inventoryUserName: resolveStoreName(p.inventoryUserId, p.inventoryUserName, list.length),
-      salesPrice: p.salesPrice,
-      effectiveSalesPrice: p.effectiveSalesPrice > 0 ? p.effectiveSalesPrice : p.salesPrice,
+      salesPrice: oldPrice ?? p.salesPrice,
+      effectiveSalesPrice: effPrice,
       stockQuantity: p.stockQuantity,
-      isFlashSaleActive: !!p.isFlashSaleActive,
-      priceBeforeFlashSale: p.priceBeforeFlashSale,
-      discountRate: p.discountRate,
+      isFlashSaleActive: !!p.isFlashSaleActive || oldPrice != null,
+      priceBeforeFlashSale: oldPrice,
+      discountRate,
       priceId: p.id,
     })
   }
@@ -103,19 +120,42 @@ const availableStores = computed<StoreOption[]>(() => {
   for (let i = 0; i < (d.inventories || []).length; i++) {
     const inv = d.inventories[i]!
     if (!inv.inventoryUserId || seenIds.has(inv.inventoryUserId)) continue
+    if (inv.salesPrice <= 0 && inv.stockQuantity <= 0 && (inv.effectiveSalesPrice == null || inv.effectiveSalesPrice <= 0)) continue
     seenIds.add(inv.inventoryUserId)
+
+    const effPrice = inv.effectiveSalesPrice > 0 ? inv.effectiveSalesPrice : inv.salesPrice
+    let oldPrice = inv.priceBeforeFlashSale && inv.priceBeforeFlashSale > effPrice ? inv.priceBeforeFlashSale : null
+    let discountRate = inv.discountRate || 0
+
+    if (!oldPrice && inv.salesPrice > effPrice) {
+      oldPrice = inv.salesPrice
+      if (discountRate === 0) {
+        discountRate = Math.round(((inv.salesPrice - effPrice) / inv.salesPrice) * 100)
+      }
+    } else if (!oldPrice && discountRate > 0 && effPrice > 0) {
+      const r = discountRate < 1 ? discountRate * 100 : discountRate
+      oldPrice = Math.round((effPrice / (1 - r / 100)) * 100) / 100
+    }
+
     list.push({
       inventoryUserId: inv.inventoryUserId,
       inventoryUserName: resolveStoreName(inv.inventoryUserId, inv.inventoryName, list.length),
-      salesPrice: inv.salesPrice,
-      effectiveSalesPrice: inv.effectiveSalesPrice > 0 ? inv.effectiveSalesPrice : inv.salesPrice,
+      salesPrice: oldPrice ?? inv.salesPrice,
+      effectiveSalesPrice: effPrice,
       stockQuantity: inv.stockQuantity,
-      isFlashSaleActive: !!inv.isFlashSaleActive,
-      priceBeforeFlashSale: inv.priceBeforeFlashSale,
-      discountRate: inv.discountRate,
+      isFlashSaleActive: !!inv.isFlashSaleActive || oldPrice != null,
+      priceBeforeFlashSale: oldPrice,
+      discountRate,
       priceId: '',
     })
   }
+
+  // Sort: In-stock stores first (lowest price first), then out-of-stock
+  list.sort((a, b) => {
+    if (a.stockQuantity > 0 && b.stockQuantity <= 0) return -1
+    if (a.stockQuantity <= 0 && b.stockQuantity > 0) return 1
+    return a.effectiveSalesPrice - b.effectiveSalesPrice
+  })
 
   return list
 })
@@ -296,11 +336,52 @@ const currentPrice = computed<ProductPriceDto | null>(() => {
     if (match) return match
   }
   return (
-    d.prices.find((p) => p.stockQuantity > 0) ??
+    d.prices.find((p) => p.stockQuantity > 0 && p.effectiveSalesPrice > 0) ??
     d.prices.find((p) => p.effectiveSalesPrice > 0) ??
+    d.prices.find((p) => p.stockQuantity > 0) ??
     d.prices[0] ??
     null
   )
+})
+
+const detailEffectivePrice = computed<number>(() => {
+  const p = currentPrice.value
+  if (!p) return 0
+  return p.effectiveSalesPrice > 0 ? p.effectiveSalesPrice : p.salesPrice
+})
+
+const detailOldPrice = computed<number | null>(() => {
+  const p = currentPrice.value
+  if (!p) return null
+  const eff = detailEffectivePrice.value
+  if (p.priceBeforeFlashSale && p.priceBeforeFlashSale > eff) return p.priceBeforeFlashSale
+  if (p.salesPrice && p.salesPrice > eff) return p.salesPrice
+  if (p.discountRate && p.discountRate > 0 && eff > 0) {
+    const r = p.discountRate < 1 ? p.discountRate * 100 : p.discountRate
+    return Math.round((eff / (1 - r / 100)) * 100) / 100
+  }
+  return null
+})
+
+const hasDetailDiscount = computed<boolean>(() => {
+  const p = currentPrice.value
+  if (!p) return false
+  const eff = detailEffectivePrice.value
+  return (detailOldPrice.value != null && detailOldPrice.value > eff) || !!p.isFlashSaleActive
+})
+
+const detailDiscountPercent = computed<number>(() => {
+  const p = currentPrice.value
+  if (!p) return 0
+  if (p.discountRate && p.discountRate > 0) {
+    return p.discountRate < 1 ? Math.round(p.discountRate * 100) : Math.round(p.discountRate)
+  }
+  const old = detailOldPrice.value
+  const eff = detailEffectivePrice.value
+  if (old && eff && old > eff) {
+    return Math.round(((old - eff) / old) * 100)
+  }
+  return 0
 })
 
 const truncateMeta = (value: string): string => {
@@ -704,7 +785,7 @@ watch(() => route.params.productId, () => {
                 </div>
                 <div class="detail__store-bottom">
                   <div class="detail__store-pricing">
-                    <span v-if="store.isFlashSaleActive && store.priceBeforeFlashSale" class="detail__store-old">
+                    <span v-if="store.priceBeforeFlashSale && store.priceBeforeFlashSale > store.effectiveSalesPrice" class="detail__store-old">
                       {{ formatPrice(store.priceBeforeFlashSale) }}
                     </span>
                     <span class="detail__store-price">{{ formatPrice(store.effectiveSalesPrice) }} {{ t('products.currency') }}</span>
@@ -757,12 +838,15 @@ watch(() => route.params.productId, () => {
           </div>
 
           <div class="detail__price-row">
-            <span v-if="currentPrice?.isFlashSaleActive && currentPrice.priceBeforeFlashSale" class="detail__price-old">
-              {{ formatPrice(currentPrice.priceBeforeFlashSale) }}
+            <span v-if="hasDetailDiscount && detailOldPrice" class="detail__price-old">
+              {{ formatPrice(detailOldPrice) }}
             </span>
-            <strong class="detail__price">{{ formatPrice(currentPrice?.effectiveSalesPrice) }}</strong>
+            <strong class="detail__price">{{ formatPrice(detailEffectivePrice) }}</strong>
             <span class="detail__currency">{{ t('products.currency') }}</span>
-            <span v-if="currentPrice?.isFlashSaleActive" class="detail__sale">{{ t('products.sale') }}</span>
+            <span v-if="hasDetailDiscount" class="detail__sale-badge">
+              <AppIcon name="flame" :size="12" />
+              <span>{{ detailDiscountPercent > 0 ? `-${detailDiscountPercent}%` : t('products.sale') }}</span>
+            </span>
             <button
               type="button"
               class="detail__favorite"
@@ -1265,6 +1349,19 @@ html[dir='rtl'] .page__back svg {
   color: var(--dz-white);
   font-size: 0.72rem;
   font-weight: 700;
+}
+
+.detail__sale-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--dz-radius-full);
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: var(--dz-white);
+  font-size: 0.78rem;
+  font-weight: 800;
+  box-shadow: 0 2px 8px rgb(239 68 68 / 0.35);
 }
 
 .detail__favorite {

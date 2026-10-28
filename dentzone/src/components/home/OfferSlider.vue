@@ -179,22 +179,26 @@ onBeforeUnmount(stopTimer)
 .offer-slider__card {
   flex: 0 0 100%;
   scroll-snap-align: start;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--dz-surface);
 }
 
 .offer-slider__card img {
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
-  aspect-ratio: 16 / 7;
+  aspect-ratio: 2 / 1;
   user-select: none;
 }
 
 .offer-slider__skeleton {
   width: 100%;
   margin-inline: auto;
-  aspect-ratio: 16 / 7;
+  aspect-ratio: 2 / 1;
   border-radius: var(--dz-radius-lg);
   background: linear-gradient(
     100deg,

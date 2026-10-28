@@ -119,6 +119,7 @@ export const authService = services.authService
 export const cartService = services.cartService
 export const addressRepository = services.addressRepository
 export const orderRepository = services.orderRepository
+export const homeRepository = services.homeRepository
 export const notificationRepository = services.notificationRepository
 export const firebaseMessagingService = services.firebaseMessagingService
 

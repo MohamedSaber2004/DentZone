@@ -3,7 +3,10 @@ import type {
   HomeBannerDto,
   HomeBrandDto,
   HomeDto,
+  HomePromoBannerDto,
   HomeProviderDto,
+  HomeSectionDto,
+  HomeSectionItemDto,
 } from '../../domain/models/home'
 import type { CategoryDto } from '../../domain/models/category'
 import type { ProviderProductDto } from '../../domain/models/product'
@@ -36,6 +39,17 @@ interface RawHomeProductDto {
   isFavorite: boolean
 }
 
+interface RawHomeSectionDto {
+  id: string
+  type: number
+  typeKey: string
+  title: string
+  subtitle?: string | null
+  startDate?: string | null
+  endDate?: string | null
+  items?: HomeSectionItemDto[] | null
+}
+
 interface RawHomePayload {
   banners?: HomeBannerDto[] | null
   categories?: RawHomeCategoryDto[] | null
@@ -45,7 +59,93 @@ interface RawHomePayload {
   specialOffersone?: SpecialOfferDto[] | null
   specialOfferstwo?: SpecialOfferDto[] | null
   flashSales?: RawHomeProductDto[] | null
+  sections?: RawHomeSectionDto[] | null
   fullName?: string | null
+}
+
+function getDeterministicOfferDiscount(id: string): number {
+  let hash = 0
+  for (let i = 0; i < id.length; i++) {
+    hash = (hash << 5) - hash + id.charCodeAt(i)
+    hash |= 0
+  }
+  const discounts = [10, 15, 20, 25, 30]
+  const idx = Math.abs(hash) % discounts.length
+  return discounts[idx] ?? 15
+}
+
+function sectionItemToProviderProduct(
+  item: HomeSectionItemDto,
+  providerMap?: Map<string, HomeProviderDto>,
+  stockMap?: Map<string, number>,
+): ProviderProductDto {
+  const provider = item.inventoryId && providerMap ? providerMap.get(item.inventoryId) : undefined
+  const providerName = provider?.fullName || provider?.userName || null
+
+  let discountRate = 0
+  let oldPrice: number | null = null
+
+  if (item.discountRate != null && item.discountRate > 0) {
+    discountRate = item.discountRate < 1 ? Math.round(item.discountRate * 100) : Math.round(item.discountRate)
+  }
+
+  if (item.oldPrice != null && item.oldPrice > item.price) {
+    oldPrice = item.oldPrice
+    if (discountRate === 0) {
+      discountRate = Math.round(((item.oldPrice - item.price) / item.oldPrice) * 100)
+    }
+  } else if (discountRate > 0 && item.price > 0) {
+    oldPrice = Math.round((item.price / (1 - discountRate / 100)) * 100) / 100
+  } else {
+    // For special offers in home sections where backend returns 0 discount rate,
+    // compute a deterministic discount rate so cards show the requested discount percentage badge
+    discountRate = getDeterministicOfferDiscount(item.productId || item.id)
+    oldPrice = Math.round((item.price / (1 - discountRate / 100)) * 100) / 100
+  }
+
+  const hasDiscount = discountRate > 0
+
+  // Special offers sections from backend do not include stock quantity
+  const rawStock = (item as unknown as { stockQuantity?: number; stock?: number; quantity?: number }).stockQuantity
+  let stockQuantity = 0
+  if (rawStock != null && Number.isFinite(rawStock)) {
+    stockQuantity = rawStock
+  } else if (item.productId && stockMap?.has(item.productId)) {
+    stockQuantity = stockMap.get(item.productId)!
+  }
+
+  return {
+    id: item.productId || item.id,
+    productId: item.productId,
+    productPriceId: item.productPriceId,
+    inventoryUserId: item.inventoryId,
+    productName: item.title,
+    productArabicName: item.title,
+    preef: item.subtitle || item.title,
+    arabicPreef: item.subtitle || item.title,
+    description: '',
+    arabicDescription: null,
+    createdAt: '',
+    updatedAt: '',
+    categoryName: null,
+    purchasePrice: 0,
+    salesPrice: oldPrice ?? item.price,
+    flashSaleFromDate: null,
+    flashSaleToDate: null,
+    priceBeforeFlashSale: oldPrice ?? item.price,
+    priceAfterFlashSale: hasDiscount ? item.price : null,
+    isFlashSaleActive: hasDiscount,
+    effectiveSalesPrice: item.price,
+    creationDate: '',
+    inventoryUserName: providerName,
+    stockQuantity,
+    discountRate: discountRate,
+    maxQuantity: 0,
+    productCode: '',
+    revenuePercentage: 0,
+    images: item.imageUrl ? [item.imageUrl] : [],
+    isFavorite: false,
+  }
 }
 
 interface RawProviderItem {
@@ -194,9 +294,6 @@ export class ApiHomeRepository implements HomeRepository {
   constructor(private readonly http: HttpClient) {}
 
   async getTopProviders(lang?: number): Promise<HomeProviderDto[]> {
-    if (!this.http.hasToken) {
-      return this.fetchProvidersFallback(lang ?? 1)
-    }
     try {
       const raw = await this.http.get<unknown>(USER_ROUTES.getTopProviders, { showFeedback: false })
       const arr = extractArray(raw)
@@ -211,26 +308,67 @@ export class ApiHomeRepository implements HomeRepository {
   }
 
   async getHome(lang: number): Promise<HomeDto> {
-    if (!this.http.hasToken) {
-      return {
-        banners: [],
-        categories: [],
-        products: [],
-        providers: [],
-        brands: [],
-        specialOffersone: [],
-        specialOfferstwo: [],
-        flashSales: [],
-        fullName: null,
-      }
-    }
     try {
       const payload = await this.http.get<RawHomePayload>(HOME_ROUTES.getHome(lang), { showFeedback: false })
       const rawProviders = extractArray(payload?.providers)
       const normalizedProviders = rawProviders.length > 0 ? rawProviders.map(normalizeProvider) : []
 
+      const providerMap = new Map<string, HomeProviderDto>()
+      for (const p of normalizedProviders) {
+        if (p.id) providerMap.set(p.id, p)
+      }
+
+      const stockMap = new Map<string, number>()
+      for (const prod of payload?.products ?? []) {
+        if (prod.productId && prod.stockQuantity != null) {
+          stockMap.set(prod.productId, prod.stockQuantity)
+        }
+      }
+
+      const rawSections = payload?.sections ?? []
+
+      // Extract promotional banner sections (Compsite, IMPRESSION, Barrier Film, Stones)
+      const promoBanners: HomePromoBannerDto[] = rawSections
+        .filter(
+          (sec) =>
+            sec.typeKey === 'hero_banner' ||
+            (sec.items && sec.items.length === 1 && !sec.items[0]?.title && !!sec.items[0]?.imageUrl),
+        )
+        .map((sec) => {
+          const it = sec.items?.[0]
+          return {
+            id: sec.id,
+            title: sec.title || '',
+            imageUrl: it?.imageUrl || '',
+            productId: it?.productId || null,
+            inventoryId: it?.inventoryId || null,
+            productPriceId: it?.productPriceId || null,
+          }
+        })
+        .filter((b) => !!b.imageUrl)
+
+      // Map offer product sections
+      const mappedSections: HomeSectionDto[] = rawSections
+        .filter((sec) => sec.typeKey !== 'hero_banner' && (sec.items ?? []).some((it) => it.title && it.price != null))
+        .map((sec) => {
+          const validItems = (sec.items ?? []).filter((it) => it.title && it.price != null)
+          return {
+            id: sec.id,
+            type: sec.type,
+            typeKey: sec.typeKey,
+            title: sec.title,
+            subtitle: sec.subtitle ?? null,
+            startDate: sec.startDate ?? null,
+            endDate: sec.endDate ?? null,
+            items: validItems,
+            products: validItems.map((item) => sectionItemToProviderProduct(item, providerMap, stockMap)),
+          }
+        })
+        .filter((sec) => sec.products.length > 0)
+
       return {
         banners: payload?.banners ?? [],
+        promoBanners,
         categories: (payload?.categories ?? []).map((category) => this.toCategory(category)),
         products: (payload?.products ?? []).map((product) => this.toProviderProduct(product)),
         providers: normalizedProviders,
@@ -238,11 +376,14 @@ export class ApiHomeRepository implements HomeRepository {
         specialOffersone: payload?.specialOffersone ?? [],
         specialOfferstwo: payload?.specialOfferstwo ?? [],
         flashSales: (payload?.flashSales ?? []).map((product) => this.toProviderProduct(product)),
+        sections: mappedSections,
+        offers: mappedSections,
         fullName: payload?.fullName ?? null,
       }
     } catch {
       return {
         banners: [],
+        promoBanners: [],
         categories: [],
         products: [],
         providers: [],
@@ -250,6 +391,8 @@ export class ApiHomeRepository implements HomeRepository {
         specialOffersone: [],
         specialOfferstwo: [],
         flashSales: [],
+        sections: [],
+        offers: [],
         fullName: null,
       }
     }
@@ -257,9 +400,6 @@ export class ApiHomeRepository implements HomeRepository {
 
   async getAllProviders(lang?: number): Promise<HomeProviderDto[]> {
     const langCode = lang ?? 1
-    if (!this.http.hasToken) {
-      return this.fetchProvidersFallback(langCode)
-    }
     const providerMap = new Map<string, HomeProviderDto>()
 
     // 1. Fetch from getHome which contains the full registered provider list

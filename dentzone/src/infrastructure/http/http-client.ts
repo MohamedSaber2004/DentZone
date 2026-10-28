@@ -1,5 +1,6 @@
 import { locale, t } from '../../i18n'
-import { API_BASE_URL, AUTH_ROUTES } from '../../config/api.config'
+import { API_BASE_URL, AUTH_ROUTES, PASSWORD_ROUTES } from '../../config/api.config'
+import { getGuestToken } from './guest-token'
 import { requestTracker } from '../../application/request.tracker'
 import { ApiError, GENERIC_OK_MESSAGES, type ApiEnvelope } from './api-error'
 import type { TokenStore } from './token-store'
@@ -151,6 +152,15 @@ export interface RequestOptions {
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE'
 
 const NO_FEEDBACK_PATHS = [AUTH_ROUTES.login, AUTH_ROUTES.loginGuest]
+const GUEST_EXCLUDED_PATHS = [
+  AUTH_ROUTES.login,
+  AUTH_ROUTES.loginGuest,
+  AUTH_ROUTES.register,
+  PASSWORD_ROUTES.forgot,
+  PASSWORD_ROUTES.verifyOtp,
+  PASSWORD_ROUTES.reset,
+  PASSWORD_ROUTES.resendOtp,
+]
 
 const MAX_RATE_LIMIT_WAIT_MS = 10_000
 const MAX_429_RETRIES = 2
@@ -245,7 +255,14 @@ export class HttpClient {
     if (body !== undefined && !(body instanceof FormData)) headers['Content-Type'] = 'application/json'
 
     const activeToken = this.tokenStore.getAccessToken()
-    if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`
+    if (activeToken) {
+      headers['Authorization'] = `Bearer ${activeToken}`
+    } else if (!headers['Authorization'] && !GUEST_EXCLUDED_PATHS.some((candidate) => path.startsWith(candidate))) {
+      const guestToken = await getGuestToken()
+      if (guestToken) {
+        headers['Authorization'] = `Bearer ${guestToken}`
+      }
+    }
 
     const doFetch = (): Promise<Response> =>
       fetch(`${API_BASE_URL}${path}`, {

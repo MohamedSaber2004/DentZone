@@ -103,6 +103,7 @@ export const CART_ROUTES = {
 } as const
 
 export const ORDER_ROUTES = {
+  getLimitsOrder: `${base}/Orders/get-limits-order`,
   deliveryTimeSlots: (day: number) => `${base}/DeliveryTimeSlots?day=${day}`,
   applyCoupon: `${base}/Coupons/apply`,
   shippingFees: (addressId: string) => `${base}/Address/GetShippingFess/${addressId}`,

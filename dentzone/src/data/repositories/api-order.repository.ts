@@ -1,5 +1,5 @@
 import type { OrderRepository } from '../../domain/ports/order-repository'
-import type { ApplyCouponDto, CreateOrderParams, DeliveryTimeSlotDto, GroupedOrderDto } from '../../domain/models/order'
+import type { ApplyCouponDto, CreateOrderParams, DeliveryTimeSlotDto, GroupedOrderDto, OrderLimitDto } from '../../domain/models/order'
 import { ORDER_ROUTES } from '../../config/api.config'
 import type { HttpClient } from '../../infrastructure/http/http-client'
 
@@ -9,7 +9,28 @@ interface DeliveryTimeSlotsResult {
 }
 
 export class ApiOrderRepository implements OrderRepository {
+  private cachedLimits: OrderLimitDto[] | null = null
+
   constructor(private readonly http: HttpClient) {}
+
+  async getOrderLimits(): Promise<OrderLimitDto[]> {
+    if (this.cachedLimits && this.cachedLimits.length > 0) {
+      return this.cachedLimits
+    }
+    try {
+      const result = await this.http.get<OrderLimitDto[] | { value?: OrderLimitDto[] } | null>(
+        ORDER_ROUTES.getLimitsOrder,
+        { showFeedback: false },
+      )
+      const list = Array.isArray(result) ? result : result?.value ?? []
+      if (list.length > 0) {
+        this.cachedLimits = list
+      }
+      return list
+    } catch {
+      return this.cachedLimits ?? []
+    }
+  }
 
   async getDeliveryTimeSlots(day: number): Promise<DeliveryTimeSlotDto[]> {
     const result = await this.http.get<DeliveryTimeSlotDto[] | DeliveryTimeSlotsResult>(

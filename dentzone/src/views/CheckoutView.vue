@@ -2,7 +2,8 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { locale, t } from '../i18n'
-import { addressRepository, cartService, orderRepository, authService } from '../di/container'
+import { addressRepository, cartService, orderRepository, authService, homeRepository } from '../di/container'
+import { API_LANG } from '../config/api.config'
 import AppIcon from '../components/ui/AppIcon.vue'
 import AppButton from '../components/ui/AppButton.vue'
 import AppInput from '../components/ui/AppInput.vue'
@@ -127,12 +128,81 @@ const dateLabel = (offsetDays: number) => {
   })
 }
 
+const vendorsAvailability = ref<Map<string, boolean>>(new Map())
+
+const loadVendorsStatus = async () => {
+  try {
+    const lang = locale.value === 'ar' ? API_LANG.ARABIC : API_LANG.ENGLISH
+    const providers = await homeRepository.getAllProviders(lang)
+    const map = new Map<string, boolean>()
+    for (const p of providers) {
+      if (p.id) {
+        map.set(p.id, p.isAvailableNow)
+      }
+    }
+    vendorsAvailability.value = map
+  } catch {
+    // Ignore error
+  }
+}
+
+watch(locale, () => {
+  void loadVendorsStatus()
+})
+
+const isAnyVendorUnavailable = computed(() => {
+  // 1. Check cart-level availability flag
+  if (cart.value && cart.value.isAvailableNow === false) {
+    return true
+  }
+
+  // 2. Check each cart item's flags
+  const items = cart.value?.items ?? []
+  for (const item of items) {
+    if (item.isAvailableNow === false) {
+      return true
+    }
+    const rawItem = item as unknown as { isAvailable?: boolean }
+    if (rawItem.isAvailable === false) {
+      return true
+    }
+    const invUser = item.inventoryUser as unknown as
+      | { isAvailableNow?: boolean; isAvailable?: boolean; isActive?: boolean }
+      | undefined
+    if (invUser?.isAvailableNow === false || invUser?.isAvailable === false || invUser?.isActive === false) {
+      return true
+    }
+
+    // 3. Check against loaded vendor availability map
+    const vendorId = item.inventoryUserId || item.inventoryUser?.id
+    if (vendorId && vendorsAvailability.value.has(vendorId)) {
+      if (vendorsAvailability.value.get(vendorId) === false) {
+        return true
+      }
+    }
+  }
+
+  return false
+})
+
 const deliveryDayOptions = computed(() => {
   const options: { value: number; label: string; sub: string }[] = []
-  for (const offset of [0, 1]) {
+
+  // If vendor is unavailable, ignore today (offset: 0) and directly start from tomorrow (offset: 1)
+  const allowedOffsets = isAnyVendorUnavailable.value ? [1] : [0, 1]
+
+  for (const offset of allowedOffsets) {
     const date = new Date()
     date.setDate(date.getDate() + offset)
-    if (date.getDay() === FRIDAY) continue
+    if (date.getDay() === FRIDAY) {
+      date.setDate(date.getDate() + 1)
+      options.push({
+        value: offset + 2,
+        label: t('checkout.tomorrow'),
+        sub: dateLabel(offset + 1),
+      })
+      continue
+    }
     options.push({
       value: offset + 1,
       label: offset === 0 ? t('checkout.today') : t('checkout.tomorrow'),
@@ -381,6 +451,21 @@ const load = async () => {
     if (!ok || !cartService.cart.value || cartService.cart.value.items.length === 0) {
       void router.replace({ name: 'cart' })
       return
+    }
+
+    void loadVendorsStatus()
+    try {
+      const limits = await orderRepository.getOrderLimits()
+      if (limits && limits.length > 0 && limits[0]) {
+        const raw = limits[0]
+        const minOrder = Number(raw.minimumorder ?? (raw as unknown as { minimumOrder?: number }).minimumOrder ?? 0)
+        if (minOrder > 0 && Math.ceil(cartService.cart.value.totalAmountCart ?? 0) < minOrder) {
+          void router.replace({ name: 'cart' })
+          return
+        }
+      }
+    } catch {
+      // Graceful ignore
     }
     const areaPromise = addressRepository.getAllAreas()
       .then((items: AreaDto[]) => (areas.value = items))
@@ -653,6 +738,12 @@ onMounted(load)
               <span class="checkout__step-num">4</span>
               {{ t('checkout.stepDeliveryTime') }}
             </h2>
+            <div v-if="isAnyVendorUnavailable" class="checkout__vendor-notice">
+              <AppIcon name="clock" :size="16" />
+              <span>
+                {{ locale === 'ar' ? 'المورد غير متاح حالياً للتوصيل اليوم، موعد التوصيل المتاح غداً مباشرة.' : 'The supplier is not available for today delivery; delivery is scheduled for tomorrow.' }}
+              </span>
+            </div>
 
             <div
               class="checkout__days"
@@ -1238,6 +1329,26 @@ onMounted(load)
 .checkout__coupon-input:focus {
   outline: none;
   border-color: var(--dz-primary);
+}
+
+.checkout__vendor-notice {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.9rem;
+  margin-bottom: 0.85rem;
+  border-radius: var(--dz-radius-md, 0.5rem);
+  background: rgba(247, 147, 59, 0.1);
+  border: 1px solid rgba(247, 147, 59, 0.3);
+  color: var(--dz-gold-dark, #b45309);
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.checkout__vendor-notice svg {
+  flex-shrink: 0;
+  color: var(--dz-gold, #f7931b);
 }
 
 .checkout__days {

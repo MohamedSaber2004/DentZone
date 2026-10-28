@@ -282,11 +282,11 @@ const onKeydown = (e: KeyboardEvent) => {
                           {{ locale === 'ar' ? 'أفضل سعر' : 'Best Price' }}
                         </span>
                         <span
-                          v-if="store.isFlashSaleActive"
+                          v-if="store.discountRate && store.discountRate > 0"
                           class="provider-card__tag provider-card__tag--deal"
                         >
                           <AppIcon name="flame" :size="12" />
-                          {{ locale === 'ar' ? `خصم ${store.discountRate || 0}%` : `${store.discountRate || 0}% OFF` }}
+                          {{ locale === 'ar' ? `خصم ${store.discountRate}%` : `${store.discountRate}% OFF` }}
                         </span>
                         <span
                           class="provider-card__tag"
@@ -303,7 +303,7 @@ const onKeydown = (e: KeyboardEvent) => {
                 <div class="provider-card__action-col">
                   <div class="provider-card__price-box">
                     <span
-                      v-if="store.isFlashSaleActive && store.priceBeforeFlashSale"
+                      v-if="store.priceBeforeFlashSale && store.priceBeforeFlashSale > store.effectiveSalesPrice"
                       class="provider-card__old-price"
                     >
                       {{ formatPrice(store.priceBeforeFlashSale) }}

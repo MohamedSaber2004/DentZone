@@ -456,6 +456,12 @@ export const en: Messages = {
     providerTotal: 'Supplier Total ({name})',
     providerGroupTitle: 'Supplier Products',
     viewProviderStore: 'Visit Supplier Store',
+    minOrderTitle: 'Minimum Order',
+    minOrderNotice: 'Minimum order amount is {amount} {currency}',
+    minOrderRemaining: 'Add {amount} {currency} more to proceed with checkout',
+    minOrderReached: 'Minimum order requirement met! You can proceed to checkout',
+    minOrderShortNotice: '{amount} {currency} remaining to reach minimum',
+    minOrderRequirementNote: 'Minimum order amount is {amount} {currency} to proceed to checkout.',
   },
   summary: {
     subtotal: 'Subtotal',

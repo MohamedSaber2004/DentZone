@@ -444,6 +444,12 @@ export type Messages = {
     providerTotal: string
     providerGroupTitle: string
     viewProviderStore: string
+    minOrderTitle: string
+    minOrderNotice: string
+    minOrderRemaining: string
+    minOrderReached: string
+    minOrderShortNotice: string
+    minOrderRequirementNote: string
   }
   summary: {
     subtotal: string

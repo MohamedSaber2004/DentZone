@@ -456,6 +456,12 @@ export const ar: Messages = {
     providerTotal: 'إجمالي المورد ({name})',
     providerGroupTitle: 'منتجات المورد',
     viewProviderStore: 'زيارة متجر المورد',
+    minOrderTitle: 'الحد الأدنى للطلب',
+    minOrderNotice: 'الحد الأدنى للطلب هو {amount} {currency}',
+    minOrderRemaining: 'أضف منتجات بقيمة {amount} {currency} إضافية لتتمكن من إتمام الطلب',
+    minOrderReached: 'تم استيفاء الحد الأدنى للطلب! يمكنك إتمام طلبك الآن',
+    minOrderShortNotice: 'متبقي {amount} {currency} للوصول للحد الأدنى',
+    minOrderRequirementNote: 'الحد الأدنى للطلب هو {amount} {currency} للمتابعة إلى إتمام الطلب.',
   },
   summary: {
     subtotal: 'المجموع الفرعي',

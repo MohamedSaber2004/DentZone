@@ -1,3 +1,8 @@
+export interface OrderLimitDto {
+  id: number
+  minimumorder: number
+}
+
 export interface DeliveryTimeSlotDto {
   id: string
   name: string

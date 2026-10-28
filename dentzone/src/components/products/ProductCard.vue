@@ -9,13 +9,19 @@ import { productRoute } from '../../utils/route-crypto'
 
 import { type RouteLocationRaw, useRouter } from 'vue-router'
 
-const props = defineProps<{
-  product: ProviderProductDto
-  detailsTo?: RouteLocationRaw
-  favorite?: boolean
-  favoriteBusy?: boolean
-  providerCount?: number
-}>()
+const props = withDefaults(
+  defineProps<{
+    product: ProviderProductDto
+    detailsTo?: RouteLocationRaw
+    favorite?: boolean
+    favoriteBusy?: boolean
+    providerCount?: number
+    hideStock?: boolean
+  }>(),
+  {
+    hideStock: false,
+  },
+)
 
 const emit = defineEmits<{
   (e: 'toggle-favorite', product: ProviderProductDto): void
@@ -52,6 +58,31 @@ const displayName = (product: ProviderProductDto) =>
   locale.value === 'ar' ? product.productArabicName || product.productName : product.productName || product.preef
 
 const displayCode = (product: ProviderProductDto) => product.productCode
+
+const discountPercent = computed<number>(() => {
+  if (props.product.discountRate && props.product.discountRate > 0) {
+    const r = props.product.discountRate
+    return r > 0 && r < 1 ? Math.round(r * 100) : Math.round(r)
+  }
+  const oldP = props.product.priceBeforeFlashSale || props.product.salesPrice
+  const currP = props.product.effectiveSalesPrice
+  if (oldP && currP && oldP > currP) {
+    return Math.round(((oldP - currP) / oldP) * 100)
+  }
+  return 0
+})
+
+const hasOldPrice = computed<boolean>(() => {
+  const oldP = props.product.priceBeforeFlashSale || props.product.salesPrice
+  return oldP != null && oldP > props.product.effectiveSalesPrice
+})
+
+const displayStockText = computed<string>(() => {
+  const qty = props.product.stockQuantity
+  if (qty <= 0) return t('products.outOfStock')
+  if (qty >= 100) return locale.value === 'ar' ? 'متوفر في المخزون' : 'In Stock'
+  return t('products.inStock', { count: qty })
+})
 
 const formatPrice = (value: number | null | undefined) =>
   value == null || !Number.isFinite(value)
@@ -104,7 +135,7 @@ const formatPrice = (value: number | null | undefined) =>
           type="button"
           class="product-card__cart"
           :aria-label="`${t('product.addToCart')}: ${displayName(product)}`"
-          :disabled="product.stockQuantity <= 0"
+          :disabled="!hideStock && product.stockQuantity <= 0"
           @click.stop="emit('add-to-cart', product)"
         >
           <AppIcon name="cart" :size="16" />
@@ -118,7 +149,11 @@ const formatPrice = (value: number | null | undefined) =>
           <AppIcon name="eye" :size="15" />
         </RouterLink>
       </div>
-      <span v-if="product.isFlashSaleActive" class="product-card__sale">
+      <span v-if="discountPercent > 0" class="product-card__sale product-card__sale--discount">
+        <AppIcon name="flame" :size="12" />
+        <span>{{ locale === 'ar' ? `-${discountPercent}%` : `-${discountPercent}%` }}</span>
+      </span>
+      <span v-else-if="product.isFlashSaleActive" class="product-card__sale">
         {{ t('products.sale') }}
       </span>
     </div>
@@ -138,19 +173,19 @@ const formatPrice = (value: number | null | undefined) =>
 
       <div class="product-card__price-row">
         <span
-          v-if="product.isFlashSaleActive"
+          v-if="hasOldPrice"
           class="product-card__price-old"
         >
-          {{ formatPrice(product.priceBeforeFlashSale) }}
+          {{ formatPrice(product.priceBeforeFlashSale || product.salesPrice) }}
         </span>
         <strong class="product-card__price">{{ formatPrice(product.effectiveSalesPrice) }}</strong>
         <span class="product-card__currency">{{ t('products.currency') }}</span>
       </div>
 
-      <div class="product-card__meta">
+      <div v-if="!hideStock" class="product-card__meta">
         <span v-if="product.stockQuantity > 0" class="product-card__stock">
           <AppIcon name="check" :size="13" />
-          {{ t('products.inStock', { count: product.stockQuantity }) }}
+          {{ displayStockText }}
         </span>
         <span v-else class="product-card__stock product-card__stock--out">
           {{ t('products.outOfStock') }}
@@ -227,12 +262,25 @@ const formatPrice = (value: number | null | undefined) =>
   position: absolute;
   top: 0.7rem;
   inset-inline-start: 0.7rem;
-  padding: 0.25rem 0.65rem;
+  padding: 0.28rem 0.65rem;
   border-radius: var(--dz-radius-full);
   background: var(--dz-danger);
   color: var(--dz-white);
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  box-shadow: 0 2px 8px rgb(239 68 68 / 0.35);
+  z-index: 2;
+  letter-spacing: 0.01em;
+}
+
+.product-card__sale--discount {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  font-weight: 800;
+  font-size: 0.75rem;
+  padding: 0.28rem 0.65rem;
 }
 
 .product-card__media-actions {

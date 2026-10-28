@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { locale, t } from '../i18n'
-import {  cartService } from '../di/container'
+import { cartService, orderRepository } from '../di/container'
 import { resolveMediaUrl } from '../utils/media'
 import { inventoryRoute, productRoute } from '../utils/route-crypto'
 import AppIcon from '../components/ui/AppIcon.vue'
@@ -158,6 +158,47 @@ const remove = async (line: CartLine) => {
 const formatPrice = (value: number) =>
   Math.ceil(value).toLocaleString(locale.value === 'ar' ? 'ar-EG' : 'en-US', { maximumFractionDigits: 0 })
 
+const minOrderLimit = ref<number | null>(null)
+const minOrderLoading = ref(true)
+
+const loadOrderLimits = async () => {
+  minOrderLoading.value = true
+  try {
+    const limits = await orderRepository.getOrderLimits()
+    if (limits && limits.length > 0 && limits[0]) {
+      const raw = limits[0]
+      const val = Number(raw.minimumorder ?? (raw as unknown as { minimumOrder?: number }).minimumOrder ?? 0)
+      if (val > 0) {
+        minOrderLimit.value = val
+      }
+    }
+  } catch {
+    // Graceful fallback if endpoint is unavailable
+  } finally {
+    minOrderLoading.value = false
+  }
+}
+
+const hasMinOrder = computed(() => minOrderLimit.value !== null && minOrderLimit.value > 0)
+
+const currentCartAmount = computed(() => Math.ceil(subtotal.value))
+
+const minOrderProgress = computed(() => {
+  if (!hasMinOrder.value || !minOrderLimit.value) return 100
+  const pct = Math.round((currentCartAmount.value / minOrderLimit.value) * 100)
+  return Math.min(100, Math.max(0, pct))
+})
+
+const minOrderRemaining = computed(() => {
+  if (!hasMinOrder.value || !minOrderLimit.value) return 0
+  return Math.max(0, minOrderLimit.value - currentCartAmount.value)
+})
+
+const isMinOrderReached = computed(() => {
+  if (!hasMinOrder.value) return true
+  return currentCartAmount.value >= (minOrderLimit.value ?? 0)
+})
+
 const load = async () => {
   if (!cartService.cart.value) loading.value = true
   loadError.value = false
@@ -174,10 +215,14 @@ const load = async () => {
 const router = useRouter()
 
 const onProceedToCheckout = () => {
+  if (!isMinOrderReached.value) return
   void router.push('/checkout')
 }
 
-onMounted(load)
+onMounted(() => {
+  void load()
+  void loadOrderLimits()
+})
 </script>
 
 <template>
@@ -261,6 +306,52 @@ onMounted(load)
 
     <div v-else class="cart__layout">
       <div class="cart__groups">
+        <!-- Minimum Order Banner (Prominent progress & alert above cart items) -->
+        <div
+          v-if="hasMinOrder && lines.length"
+          class="cart__min-order-banner"
+          :class="{ 'cart__min-order-banner--reached': isMinOrderReached }"
+          role="status"
+          :aria-live="'polite'"
+        >
+          <div class="cart__min-order-header">
+            <div class="cart__min-order-title-group">
+              <span class="cart__min-order-icon">
+                <AppIcon :name="isMinOrderReached ? 'check-circle' : 'shield-check'" :size="20" />
+              </span>
+              <div>
+                <h3 class="cart__min-order-heading">
+                  {{ isMinOrderReached ? t('cart.minOrderReached') : t('cart.minOrderNotice', { amount: formatPrice(minOrderLimit!), currency: t('products.currency') }) }}
+                </h3>
+                <p class="cart__min-order-desc">
+                  <template v-if="!isMinOrderReached">
+                    {{ t('cart.minOrderRemaining', { amount: formatPrice(minOrderRemaining), currency: t('products.currency') }) }}
+                  </template>
+                  <template v-else>
+                    {{ t('cart.minOrderRequirementNote', { amount: formatPrice(minOrderLimit!), currency: t('products.currency') }) }}
+                  </template>
+                </p>
+              </div>
+            </div>
+            <span class="cart__min-order-badge">
+              {{ minOrderProgress }}%
+            </span>
+          </div>
+
+          <div
+            class="cart__min-order-track"
+            role="progressbar"
+            :aria-valuenow="minOrderProgress"
+            aria-valuemin="0"
+            aria-valuemax="100"
+          >
+            <div
+              class="cart__min-order-bar"
+              :style="{ width: `${minOrderProgress}%` }"
+            />
+          </div>
+        </div>
+
         <div
           v-for="group in providerGroups"
           :key="group.inventoryUserId"
@@ -388,11 +479,51 @@ onMounted(load)
           <span>{{ t('summary.total') }}</span>
           <strong>{{ formatPrice(Math.ceil(total)) }} {{ t('products.currency') }}</strong>
         </div>
+
+        <div
+          v-if="hasMinOrder"
+          class="cart__summary-min-order"
+          :class="{ 'cart__summary-min-order--reached': isMinOrderReached }"
+        >
+          <div class="cart__summary-min-order-info">
+            <span class="cart__summary-min-order-label">
+              <AppIcon :name="isMinOrderReached ? 'check-circle' : 'shield-check'" :size="15" />
+              {{ t('cart.minOrderTitle') }}
+            </span>
+            <strong class="cart__summary-min-order-val">
+              {{ formatPrice(minOrderLimit!) }} {{ t('products.currency') }}
+            </strong>
+          </div>
+
+          <div class="cart__min-order-track cart__min-order-track--sm">
+            <div
+              class="cart__min-order-bar"
+              :style="{ width: `${minOrderProgress}%` }"
+            />
+          </div>
+
+          <span v-if="!isMinOrderReached" class="cart__summary-min-order-hint">
+            {{ t('cart.minOrderShortNotice', { amount: formatPrice(minOrderRemaining), currency: t('products.currency') }) }}
+          </span>
+          <span v-else class="cart__summary-min-order-hint cart__summary-min-order-hint--success">
+            {{ t('cart.minOrderReached') }}
+          </span>
+        </div>
+
         <div class="cart__checkout-link">
-          <AppButton variant="primary" class="cart__checkout" @click="onProceedToCheckout">
+          <AppButton
+            variant="primary"
+            class="cart__checkout"
+            :disabled="!isMinOrderReached"
+            @click="onProceedToCheckout"
+          >
             {{ t('cart.proceedToCheckout') }}
             <AppIcon name="arrow-right" :size="15" />
           </AppButton>
+          <p v-if="!isMinOrderReached && hasMinOrder" class="cart__checkout-disabled-hint">
+            <AppIcon name="alert-circle" :size="13" />
+            {{ t('cart.minOrderRequirementNote', { amount: formatPrice(minOrderLimit!), currency: t('products.currency') }) }}
+          </p>
         </div>
         <RouterLink to="/categories" class="cart__continue">
           <AppIcon name="arrow-left" :size="15" />
@@ -985,5 +1116,185 @@ onMounted(load)
     min-width: 1.3rem;
     font-size: 0.82rem;
   }
+}
+
+/* Minimum Order Banner (Prominent notification & progress bar above cart items) */
+.cart__min-order-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1.15rem 1.35rem;
+  border-radius: var(--dz-radius-lg);
+  border: 1px solid color-mix(in srgb, var(--dz-gold) 35%, var(--dz-border));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--dz-gold-soft) 35%, var(--dz-surface)) 0%,
+    var(--dz-surface) 100%
+  );
+  box-shadow: var(--dz-shadow-xs);
+  transition: all 0.3s ease;
+}
+
+.cart__min-order-banner--reached {
+  border-color: color-mix(in srgb, var(--dz-success) 35%, var(--dz-border));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--dz-success-soft) 40%, var(--dz-surface)) 0%,
+    var(--dz-surface) 100%
+  );
+}
+
+.cart__min-order-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.cart__min-order-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.cart__min-order-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: var(--dz-radius-full);
+  background: var(--dz-gold-soft);
+  color: var(--dz-gold-strong);
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.cart__min-order-banner--reached .cart__min-order-icon {
+  background: var(--dz-success-soft);
+  color: var(--dz-success);
+}
+
+.cart__min-order-heading {
+  font-family: var(--dz-font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--dz-ink);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.cart__min-order-desc {
+  font-size: 0.84rem;
+  color: var(--dz-ink-soft);
+  margin-top: 0.2rem;
+  line-height: 1.4;
+}
+
+.cart__min-order-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--dz-radius-full);
+  font-size: 0.82rem;
+  font-weight: 700;
+  background: var(--dz-gold-soft);
+  color: var(--dz-gold-strong);
+  flex-shrink: 0;
+}
+
+.cart__min-order-banner--reached .cart__min-order-badge {
+  background: var(--dz-success-soft);
+  color: var(--dz-success);
+}
+
+.cart__min-order-track {
+  width: 100%;
+  height: 8px;
+  border-radius: var(--dz-radius-full);
+  background: var(--dz-surface-soft);
+  overflow: hidden;
+  border: 1px solid var(--dz-border);
+}
+
+.cart__min-order-track--sm {
+  height: 6px;
+  margin-block: 0.2rem;
+}
+
+.cart__min-order-bar {
+  height: 100%;
+  border-radius: var(--dz-radius-full);
+  background: linear-gradient(90deg, var(--dz-gold), #f59e0b);
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cart__min-order-banner--reached .cart__min-order-bar,
+.cart__summary-min-order--reached .cart__min-order-bar {
+  background: linear-gradient(90deg, #10b981, #059669);
+}
+
+/* Minimum Order Inside Cart Summary Sidebar */
+.cart__summary-min-order {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.85rem;
+  border-radius: var(--dz-radius);
+  background: color-mix(in srgb, var(--dz-gold-soft) 30%, var(--dz-surface));
+  border: 1px dashed color-mix(in srgb, var(--dz-gold) 35%, var(--dz-border));
+  margin-top: 0.4rem;
+}
+
+.cart__summary-min-order--reached {
+  background: color-mix(in srgb, var(--dz-success-soft) 35%, var(--dz-surface));
+  border-color: color-mix(in srgb, var(--dz-success) 35%, var(--dz-border));
+}
+
+.cart__summary-min-order-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.84rem;
+}
+
+.cart__summary-min-order-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+  color: var(--dz-ink);
+}
+
+.cart__summary-min-order-val {
+  font-weight: 700;
+  color: var(--dz-gold-strong);
+}
+
+.cart__summary-min-order--reached .cart__summary-min-order-val {
+  color: var(--dz-success);
+}
+
+.cart__summary-min-order-hint {
+  font-size: 0.78rem;
+  color: var(--dz-gold-strong);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.cart__summary-min-order-hint--success {
+  color: var(--dz-success);
+}
+
+.cart__checkout-disabled-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.76rem;
+  color: var(--dz-warning);
+  margin-top: 0.45rem;
+  line-height: 1.35;
 }
 </style>

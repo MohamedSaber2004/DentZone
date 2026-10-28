@@ -10,6 +10,7 @@ import type {
 } from '../../domain/models/product'
 import { PRODUCT_ROUTES } from '../../config/api.config'
 import type { HttpClient } from '../../infrastructure/http/http-client'
+import type { CategoryDto } from '../../domain/models/category'
 import { decryptId } from '../../utils/route-crypto'
 
 export interface SearchProductItemDto {
@@ -317,7 +318,7 @@ function normalizeProductDetail(rawInput: unknown): ProductDetailDto {
     arabicDescription: (raw.arabicDescription as string) || (raw.ArabicDescription as string) || null,
     createdAt: String(raw.createdAt || raw.CreatedAt || ''),
     updatedAt: String(raw.updatedAt || raw.UpdatedAt || ''),
-    category: ((raw.category || raw.Category || null) as unknown) as any,
+    category: ((raw.category || raw.Category || null) as unknown) as CategoryDto | null,
     prices,
     inventories,
     inventoryUserId: String(
@@ -630,20 +631,23 @@ export class ApiProductRepository implements ProductRepository {
       brandName: null,
       createdAt: '',
       updatedAt: '',
-      prices: pricesArray,
-      inventories: pricesArray.map((p: any) => ({
-        inventoryUserId: p.inventoryUserId || p.inventoryUser?.id || '',
-        salesPrice: p.salesPrice ?? 0,
-        flashSaleFromDate: p.flashSaleFromDate ?? null,
-        flashSaleToDate: p.flashSaleToDate ?? null,
-        priceBeforeFlashSale: p.priceBeforeFlashSale ?? 0,
-        priceAfterFlashSale: p.priceAfterFlashSale ?? null,
-        isFlashSaleActive: Boolean(p.isFlashSaleActive),
-        effectiveSalesPrice: p.effectiveSalesPrice ?? p.salesPrice ?? 0,
-        discountRate: p.discountRate ?? 0,
-        stockQuantity: p.stockQuantity ?? 0,
-        inventoryName: p.inventoryUser?.fullName || p.inventoryUser?.userName || '',
-      })),
+      prices: pricesArray as unknown as ProductPriceDto[],
+      inventories: (pricesArray as Record<string, unknown>[]).map((p): ProductInventoryDto => {
+        const invUser = p.inventoryUser as Record<string, unknown> | undefined
+        return {
+          inventoryUserId: String(p.inventoryUserId || invUser?.id || ''),
+          salesPrice: Number(p.salesPrice ?? 0),
+          flashSaleFromDate: (p.flashSaleFromDate as string | null) ?? null,
+          flashSaleToDate: (p.flashSaleToDate as string | null) ?? null,
+          priceBeforeFlashSale: p.priceBeforeFlashSale != null ? Number(p.priceBeforeFlashSale) : 0,
+          priceAfterFlashSale: p.priceAfterFlashSale != null ? Number(p.priceAfterFlashSale) : null,
+          isFlashSaleActive: Boolean(p.isFlashSaleActive),
+          effectiveSalesPrice: Number(p.effectiveSalesPrice ?? p.salesPrice ?? 0),
+          discountRate: Number(p.discountRate ?? 0),
+          stockQuantity: Number(p.stockQuantity ?? 0),
+          inventoryName: String(invUser?.fullName || invUser?.userName || ''),
+        }
+      }),
       images,
       productCode,
       isPopular: false,
@@ -692,7 +696,6 @@ export class ApiProductRepository implements ProductRepository {
   }
 
   async getPopularProducts(): Promise<ProviderProductDto[]> {
-    if (!this.http.hasToken) return []
     try {
       const items = await this.http.get<PopularProductDto[]>(PRODUCT_ROUTES.popularProducts, {
         showFeedback: false,

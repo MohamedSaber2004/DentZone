@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { services } from '../di/container'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { t, locale } from '../i18n'
 import { API_LANG } from '../config/api.config'
@@ -8,11 +8,11 @@ import AppButton from '../components/ui/AppButton.vue'
 import AppIcon from '../components/ui/AppIcon.vue'
 import CategoryCard from '../components/categories/CategoryCard.vue'
 import ProductCard from '../components/products/ProductCard.vue'
-import OfferSlider from '../components/home/OfferSlider.vue'
 import ProviderGrid from '../components/home/ProviderGrid.vue'
 import type { CategoryDto } from '../domain/models/category'
-import type { HomeDto, HomeProviderDto } from '../domain/models/home'
+import type { HomeDto, HomePromoBannerDto, HomeProviderDto, HomeSectionDto } from '../domain/models/home'
 import type { ProviderProductDto } from '../domain/models/product'
+import { resolveMediaUrl } from '../utils/media'
 
 const router = useRouter()
 const { authService, categoryRepository, homeRepository, productRepository, cartService, wishlistService } = services
@@ -40,10 +40,219 @@ const displayedPopularProducts = computed(() => {
   return popularProducts.value.slice(0, POPULAR_LIMIT)
 })
 
-const offersOne = computed(() => home.value?.specialOffersone ?? [])
-const offersTwo = computed(() => home.value?.specialOfferstwo ?? [])
 const featuredProducts = computed(() => home.value?.products ?? [])
 const flashSales = computed(() => home.value?.flashSales ?? [])
+const mainBanners = computed(() => home.value?.banners ?? [])
+const promoBanners = computed<HomePromoBannerDto[]>(() => home.value?.promoBanners ?? [])
+const allProviders = computed(() => home.value?.providers ?? [])
+
+// --- Hero Banners Carousel Controls ---
+const currentBannerIndex = ref(0)
+let bannerTimer: ReturnType<typeof setInterval> | null = null
+
+const startBannerTimer = () => {
+  stopBannerTimer()
+  if (mainBanners.value.length > 1) {
+    bannerTimer = setInterval(() => {
+      currentBannerIndex.value = (currentBannerIndex.value + 1) % mainBanners.value.length
+    }, 3500)
+  }
+}
+
+const stopBannerTimer = () => {
+  if (bannerTimer) {
+    clearInterval(bannerTimer)
+    bannerTimer = null
+  }
+}
+
+const nextBanner = () => {
+  if (mainBanners.value.length === 0) return
+  currentBannerIndex.value = (currentBannerIndex.value + 1) % mainBanners.value.length
+}
+
+const prevBanner = () => {
+  if (mainBanners.value.length === 0) return
+  currentBannerIndex.value = (currentBannerIndex.value - 1 + mainBanners.value.length) % mainBanners.value.length
+}
+
+const goToBanner = (idx: number) => {
+  currentBannerIndex.value = idx
+}
+
+watch(
+  mainBanners,
+  (banners) => {
+    if (banners.length > 1) {
+      startBannerTimer()
+    } else {
+      stopBannerTimer()
+    }
+  },
+  { immediate: true },
+)
+
+// --- Promotional Advertising Banners Slider Controls ---
+const currentPromoIndex = ref(0)
+let promoTimer: ReturnType<typeof setInterval> | null = null
+
+const startPromoTimer = () => {
+  stopPromoTimer()
+  if (promoBanners.value.length > 1) {
+    promoTimer = setInterval(() => {
+      currentPromoIndex.value = (currentPromoIndex.value + 1) % promoBanners.value.length
+    }, 3500)
+  }
+}
+
+const stopPromoTimer = () => {
+  if (promoTimer) {
+    clearInterval(promoTimer)
+    promoTimer = null
+  }
+}
+
+const nextPromo = () => {
+  if (promoBanners.value.length === 0) return
+  currentPromoIndex.value = (currentPromoIndex.value + 1) % promoBanners.value.length
+}
+
+const prevPromo = () => {
+  if (promoBanners.value.length === 0) return
+  currentPromoIndex.value = (currentPromoIndex.value - 1 + promoBanners.value.length) % promoBanners.value.length
+}
+
+const goToPromo = (idx: number) => {
+  currentPromoIndex.value = idx
+}
+
+watch(
+  promoBanners,
+  (list) => {
+    if (list.length > 1) {
+      startPromoTimer()
+    } else {
+      stopPromoTimer()
+    }
+  },
+  { immediate: true },
+)
+
+onUnmounted(() => {
+  stopBannerTimer()
+  stopPromoTimer()
+})
+
+const promoBannerRoute = (banner: HomePromoBannerDto) => {
+  if (banner.productId) {
+    return productRoute(banner.productId, banner.inventoryId || undefined)
+  }
+  return { name: 'products' }
+}
+
+// --- Offers (Provider sections & deals from GetHomeProduct) ---
+const offers = computed<HomeSectionDto[]>(() => home.value?.offers ?? home.value?.sections ?? [])
+
+interface OfferProviderTab {
+  id: string
+  name: string
+  image?: string
+  count: number
+}
+
+const selectedOfferProviderId = ref<string>('')
+
+const offerProviders = computed<OfferProviderTab[]>(() => {
+  const sections = offers.value
+  const providerMap = new Map<string, { name: string; image?: string; count: number }>()
+
+  const knownProviders = new Map<string, HomeProviderDto>()
+  for (const p of allProviders.value) {
+    if (p.id) knownProviders.set(p.id, p)
+  }
+
+  for (const sec of sections) {
+    for (const prod of sec.products) {
+      const invId = prod.inventoryUserId || 'unknown'
+      const known = knownProviders.get(invId)
+      const name = known?.fullName || known?.userName || prod.inventoryUserName || sec.title
+      const image = known?.profileImage
+
+      if (!providerMap.has(invId)) {
+        providerMap.set(invId, { name, image, count: 1 })
+      } else {
+        const curr = providerMap.get(invId)!
+        curr.count++
+        if (!curr.image && image) curr.image = image
+      }
+    }
+  }
+
+  const tabs: OfferProviderTab[] = []
+
+  for (const [id, info] of providerMap.entries()) {
+    tabs.push({
+      id,
+      name: info.name,
+      image: info.image,
+      count: info.count,
+    })
+  }
+
+  return tabs
+})
+
+watch(
+  offerProviders,
+  (tabs) => {
+    if (tabs.length > 0) {
+      if (!selectedOfferProviderId.value || !tabs.some((t) => t.id === selectedOfferProviderId.value)) {
+        selectedOfferProviderId.value = tabs[0]!.id
+      }
+    } else {
+      selectedOfferProviderId.value = ''
+    }
+  },
+  { immediate: true },
+)
+
+// Unified flat list of offer products across all sections
+const allOfferProducts = computed<ProviderProductDto[]>(() => {
+  const seen = new Set<string>()
+  const list: ProviderProductDto[] = []
+  for (const sec of offers.value) {
+    for (const prod of sec.products) {
+      const key = prod.productPriceId || prod.productId
+      if (!seen.has(key)) {
+        seen.add(key)
+        list.push(prod)
+      }
+    }
+  }
+  return list
+})
+
+const filteredOfferProducts = computed<ProviderProductDto[]>(() => {
+  const pid = selectedOfferProviderId.value
+  if (!pid) {
+    return allOfferProducts.value
+  }
+  return allOfferProducts.value.filter((p) => p.inventoryUserId === pid)
+})
+
+const OFFERS_PAGE_LIMIT = 12
+const showAllOffers = ref(false)
+
+const displayedOfferProducts = computed<ProviderProductDto[]>(() => {
+  if (showAllOffers.value) {
+    return filteredOfferProducts.value
+  }
+  return filteredOfferProducts.value.slice(0, OFFERS_PAGE_LIMIT)
+})
+
+watch(selectedOfferProviderId, () => {
+  showAllOffers.value = false
+})
 
 // --- 1. Top Providers Section (Independent Endpoint /api/Users/get-top-providers) ---
 const topProviders = ref<HomeProviderDto[]>([])
@@ -51,8 +260,6 @@ const topProvidersLoading = ref(false)
 const topProvidersError = ref(false)
 
 // --- 2. All Suppliers / Providers (General section) ---
-const allProviders = computed(() => home.value?.providers ?? [])
-
 // Home sections show the first 8 providers; "View all suppliers" opens the full list.
 const HOME_PROVIDERS_LIMIT = 8
 const displayedTopProviders = computed(() => topProviders.value.slice(0, HOME_PROVIDERS_LIMIT))
@@ -154,17 +361,14 @@ const loadCategories = async () => {
 }
 
 const loadPopularProducts = async () => {
-  if (!isAuthenticated.value) {
-    popularLoading.value = false
-    popularProducts.value = []
-    return
-  }
   popularLoading.value = true
   popularError.value = false
   try {
     const list = await productRepository.getPopularProducts()
     popularProducts.value = list
-    wishlistService.mergeFavorites(list.filter((p) => p.isFavorite).map((p) => p.productPriceId))
+    if (isAuthenticated.value) {
+      wishlistService.mergeFavorites(list.filter((p) => p.isFavorite).map((p) => p.productPriceId))
+    }
   } catch {
     popularError.value = true
   } finally {
@@ -173,16 +377,20 @@ const loadPopularProducts = async () => {
 }
 
 const loadHome = async () => {
-  if (!isAuthenticated.value) {
-    homeLoading.value = false
-    home.value = null
-    return
-  }
   homeLoading.value = true
   homeError.value = false
   try {
     home.value = await homeRepository.getHome(locale.value === 'ar' ? API_LANG.ARABIC : API_LANG.ENGLISH)
-    wishlistService.mergeFavorites(home.value.products.filter((p) => p.isFavorite).map((p) => p.productPriceId))
+    if (isAuthenticated.value && home.value) {
+      const sectionFavs = (home.value.offers ?? home.value.sections ?? [])
+        .flatMap((s) => s.products)
+        .filter((p) => p.isFavorite)
+        .map((p) => p.productPriceId)
+      wishlistService.mergeFavorites([
+        ...home.value.products.filter((p) => p.isFavorite).map((p) => p.productPriceId),
+        ...sectionFavs,
+      ])
+    }
 
     if (catalogProducts.value.length === 0 && home.value?.products?.length) {
       catalogProducts.value = home.value.products
@@ -218,7 +426,9 @@ const loadCatalogProducts = async () => {
   try {
     const list = await productRepository.searchProducts({})
     catalogProducts.value = list
-    wishlistService.mergeFavorites(list.filter((p) => p.isFavorite).map((p) => p.productPriceId))
+    if (isAuthenticated.value) {
+      wishlistService.mergeFavorites(list.filter((p) => p.isFavorite).map((p) => p.productPriceId))
+    }
   } catch {
     catalogError.value = true
   } finally {
@@ -230,29 +440,20 @@ onMounted(() => {
   void loadCategories()
   void loadCatalogProducts()
   void loadTopProviders()
+  void loadPopularProducts()
+  void loadHome()
   if (isAuthenticated.value) {
-    void loadPopularProducts()
-    void loadHome()
     void wishlistService.refresh()
-  } else {
-    homeLoading.value = false
-    popularLoading.value = false
   }
 })
 
 watch(isAuthenticated, (authed) => {
+  void loadHome()
+  void loadPopularProducts()
+  void loadTopProviders()
+  void loadCatalogProducts()
   if (authed) {
-    void loadHome()
-    void loadPopularProducts()
-    void loadTopProviders()
-    void loadCatalogProducts()
     void wishlistService.refresh(true)
-  } else {
-    home.value = null
-    popularProducts.value = []
-    homeLoading.value = false
-    popularLoading.value = false
-    void loadTopProviders()
   }
 })
 </script>
@@ -325,6 +526,70 @@ watch(isAuthenticated, (authed) => {
     </section>
   </div>
 
+    <!-- Hero Banners Slider -->
+    <section
+      v-if="mainBanners.length > 0"
+      class="hero-banners"
+      :aria-label="locale === 'ar' ? 'العروض والبنرات الرئيسية' : 'Featured Banners'"
+      @mouseenter="stopBannerTimer"
+      @mouseleave="startBannerTimer"
+    >
+      <div class="container">
+        <div class="hero-banners__slider" dir="ltr">
+          <div
+            class="hero-banners__track"
+            :style="{ transform: `translateX(-${currentBannerIndex * 100}%)` }"
+          >
+            <div
+              v-for="(banner, idx) in mainBanners"
+              :key="banner.id || idx"
+              class="hero-banners__slide"
+            >
+              <img
+                :src="banner.imageName"
+                :alt="locale === 'ar' ? `بانر عروض دنت زون ${idx + 1}` : `DentZone Banner ${idx + 1}`"
+                class="hero-banners__img"
+                loading="eager"
+              />
+            </div>
+          </div>
+
+          <!-- Slider Controls -->
+          <button
+            v-if="mainBanners.length > 1"
+            type="button"
+            class="hero-banners__nav hero-banners__nav--prev"
+            :aria-label="locale === 'ar' ? 'البانر السابق' : 'Previous Banner'"
+            @click="prevBanner"
+          >
+            <AppIcon name="chevron-right" :size="20" />
+          </button>
+          <button
+            v-if="mainBanners.length > 1"
+            type="button"
+            class="hero-banners__nav hero-banners__nav--next"
+            :aria-label="locale === 'ar' ? 'البانر التالي' : 'Next Banner'"
+            @click="nextBanner"
+          >
+            <AppIcon name="chevron-left" :size="20" />
+          </button>
+
+          <!-- Slider Dots -->
+          <div v-if="mainBanners.length > 1" class="hero-banners__dots" role="tablist">
+            <button
+              v-for="(_, idx) in mainBanners"
+              :key="idx"
+              type="button"
+              class="hero-banners__dot"
+              :class="{ 'hero-banners__dot--active': currentBannerIndex === idx }"
+              :aria-label="`Slide ${idx + 1}`"
+              @click="goToBanner(idx)"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section class="categories" :aria-label="t('home.shopByCategory')">
     <div class="container">
       <div class="categories__head">
@@ -373,6 +638,97 @@ watch(isAuthenticated, (authed) => {
     </div>
     </section>
 
+    <!-- Promotional Advertising Banners Slider -->
+    <section
+      v-if="promoBanners.length > 0"
+      class="promo-slider"
+      :aria-label="locale === 'ar' ? 'العروض والبنرات الإعلانية' : 'Featured Promotional Banners'"
+      @mouseenter="stopPromoTimer"
+      @mouseleave="startPromoTimer"
+    >
+      <div class="container">
+        <div class="promo-slider__head">
+          <div>
+            <span class="promo-slider__badge">
+              <AppIcon name="sparkles" :size="14" />
+              {{ locale === 'ar' ? 'عروض وبنرات إعلانية' : 'Promotional Deals' }}
+            </span>
+            <h2 class="promo-slider__title">
+              {{ locale === 'ar' ? 'أقوى العروض الإعلانية' : 'Featured Advertising Deals' }}
+            </h2>
+            <p class="promo-slider__subtitle">
+              {{ locale === 'ar' ? 'بانرات إعلانية متجددة لأحدث المستلزمات الطبية وأفضل الأسعار' : 'Fresh advertising banners for top dental equipment and exclusive supplies' }}
+            </p>
+          </div>
+        </div>
+
+        <div class="promo-slider__slider" dir="ltr">
+          <div
+            class="promo-slider__track"
+            :style="{ transform: `translateX(-${currentPromoIndex * 100}%)` }"
+          >
+            <div
+              v-for="(banner, idx) in promoBanners"
+              :key="banner.id || idx"
+              class="promo-slider__slide"
+            >
+              <RouterLink :to="promoBannerRoute(banner)" class="promo-slider__link">
+                <img
+                  :src="resolveMediaUrl(banner.imageUrl)"
+                  :alt="banner.title"
+                  class="promo-slider__img"
+                  loading="lazy"
+                />
+                <div class="promo-slider__overlay">
+                  <span class="promo-slider__tag">
+                    <AppIcon name="sparkles" :size="13" />
+                    {{ banner.title }}
+                  </span>
+                  <span class="promo-slider__cta">
+                    <span>{{ locale === 'ar' ? 'تسوق العرض' : 'Shop Deal' }}</span>
+                    <AppIcon name="arrow-right" :size="14" />
+                  </span>
+                </div>
+              </RouterLink>
+            </div>
+          </div>
+
+          <!-- Controls -->
+          <button
+            v-if="promoBanners.length > 1"
+            type="button"
+            class="promo-slider__nav promo-slider__nav--prev"
+            :aria-label="locale === 'ar' ? 'البانر السابق' : 'Previous Banner'"
+            @click="prevPromo"
+          >
+            <AppIcon name="chevron-right" :size="20" />
+          </button>
+          <button
+            v-if="promoBanners.length > 1"
+            type="button"
+            class="promo-slider__nav promo-slider__nav--next"
+            :aria-label="locale === 'ar' ? 'البانر التالي' : 'Next Banner'"
+            @click="nextPromo"
+          >
+            <AppIcon name="chevron-left" :size="20" />
+          </button>
+
+          <!-- Dots -->
+          <div v-if="promoBanners.length > 1" class="promo-slider__dots" role="tablist">
+            <button
+              v-for="(_, idx) in promoBanners"
+              :key="idx"
+              type="button"
+              class="promo-slider__dot"
+              :class="{ 'promo-slider__dot--active': currentPromoIndex === idx }"
+              :aria-label="`Slide ${idx + 1}`"
+              @click="goToPromo(idx)"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- SECTION 1: Top Providers (Independent Section) -->
     <section v-if="topProvidersLoading || displayedTopProviders.length > 0" class="providers providers--top" :aria-label="t('home.topProvidersTitle')">
       <div class="container">
@@ -412,16 +768,6 @@ watch(isAuthenticated, (authed) => {
         <ProviderGrid v-if="!topProvidersLoading && displayedTopProviders.length > 0" :providers="displayedTopProviders" />
       </div>
     </section>
-
-    <OfferSlider
-      :offers="offersOne"
-      :title="t('home.specialOffers')"
-      :subtitle="t('home.specialOffersSubtitle')"
-      show-states
-      :loading="homeLoading"
-      :error="homeError"
-      @retry="loadHome"
-    />
 
     <section
       v-if="popularLoading || (!popularError && popularProducts.length)"
@@ -532,19 +878,13 @@ watch(isAuthenticated, (authed) => {
             :favorite-busy="favoriteBusy.has(product.productId)"
             :details-to="detailsTo(product)"
             :provider-count="getProductProviderCount(product)"
+            :hide-stock="true"
             @toggle-favorite="toggleFavorite"
             @add-to-cart="addToCart"
           />
         </div>
       </div>
     </section>
-
-    <OfferSlider
-      v-if="!homeLoading && !homeError && offersTwo.length"
-      :offers="offersTwo"
-      :title="t('home.moreOffersTitle')"
-      :subtitle="t('home.moreOffersSubtitle')"
-    />
 
     <!-- SECTION 2: All Suppliers / Providers (General Section) -->
     <section v-if="!homeLoading && allProviders.length > 0" class="providers providers--all" :aria-label="t('home.shopByVendor')">
@@ -562,6 +902,110 @@ watch(isAuthenticated, (authed) => {
 
         <!-- All Suppliers Grid -->
         <ProviderGrid :providers="displayedAllProviders" />
+      </div>
+    </section>
+
+
+    <!-- SECTION: Grouped Special Offers Hub with Provider Filter -->
+    <section
+      v-if="!homeLoading && !homeError && offers.length > 0"
+      class="offers-hub"
+      :aria-label="t('home.specialOffers')"
+    >
+      <div class="container">
+        <!-- Main Offers Hub Head -->
+        <div class="offers-hub__head">
+          <div class="offers-hub__title-wrap">
+            <span class="offers-hub__badge">
+              <AppIcon name="sparkles" :size="15" />
+              {{ t('home.specialOffers') }}
+            </span>
+            <h2 class="offers-hub__title">{{ locale === 'ar' ? 'عروض وتخفيضات الموردين' : 'Supplier Deals & Offers' }}</h2>
+            <p class="offers-hub__subtitle">
+              {{ locale === 'ar' ? 'تصفح أقوى العروض والخصومات الحصرية مجمعة ومفلترة حسب كل مورد وشركة معتمدة' : 'Browse exclusive discounts and deals grouped and filterable by supplier' }}
+            </p>
+          </div>
+
+          <!-- Total stats chip -->
+          <div class="offers-hub__stat">
+            <AppIcon name="flame" :size="16" />
+            <span>{{ locale === 'ar' ? `${allOfferProducts.length} عرض متوفر` : `${allOfferProducts.length} Offers Available` }}</span>
+          </div>
+        </div>
+
+        <!-- Provider Filter Pills / Tabs Bar -->
+        <div class="offers-hub__filter-bar" role="tablist" :aria-label="locale === 'ar' ? 'فلترة حسب المورد' : 'Filter by Supplier'">
+          <button
+            v-for="tab in offerProviders"
+            :key="tab.id"
+            type="button"
+            class="offers-hub__filter-pill"
+            :class="{ 'offers-hub__filter-pill--active': selectedOfferProviderId === tab.id }"
+            role="tab"
+            :aria-selected="selectedOfferProviderId === tab.id"
+            @click="selectedOfferProviderId = tab.id"
+          >
+            <!-- Provider Avatar / Icon -->
+            <img
+              v-if="tab.image"
+              :src="resolveMediaUrl(tab.image)"
+              :alt="tab.name"
+              class="offers-hub__pill-avatar"
+              loading="lazy"
+            />
+            <span v-else class="offers-hub__pill-icon">
+              <AppIcon name="store" :size="13" />
+            </span>
+
+            <span class="offers-hub__pill-name">{{ tab.name }}</span>
+            <span class="offers-hub__pill-count">{{ tab.count }}</span>
+          </button>
+        </div>
+
+        <!-- Single Unified Offer Products Grid -->
+        <div v-if="displayedOfferProducts.length > 0" class="featured__grid">
+          <ProductCard
+            v-for="product in displayedOfferProducts"
+            :key="product.productPriceId || product.productId"
+            :product="product"
+            :favorite="wishlistService.isFavorite(product.productId, product.productPriceId)"
+            :favorite-busy="favoriteBusy.has(product.productId)"
+            :details-to="detailsTo(product)"
+            :provider-count="getProductProviderCount(product)"
+            :hide-stock="true"
+            @toggle-favorite="toggleFavorite"
+            @add-to-cart="addToCart"
+          />
+        </div>
+
+        <!-- Offers Toggle View All Action -->
+        <div
+          v-if="filteredOfferProducts.length > OFFERS_PAGE_LIMIT"
+          class="featured__footer-action"
+        >
+          <button
+            type="button"
+            class="featured__toggle-btn featured__toggle-btn--lg"
+            :aria-expanded="showAllOffers"
+            @click="showAllOffers = !showAllOffers"
+          >
+            <span>
+              {{ showAllOffers ? (locale === 'ar' ? 'عرض أقل' : 'Show Less') : (locale === 'ar' ? 'عرض جميع العروض' : 'View All Offers') }}
+              <template v-if="!showAllOffers">({{ filteredOfferProducts.length }})</template>
+            </span>
+            <AppIcon :name="showAllOffers ? 'chevron-up' : 'arrow-right'" :size="15" />
+          </button>
+        </div>
+
+        <!-- Empty state if a selected provider has no offers -->
+        <div v-if="filteredOfferProducts.length === 0" class="categories__empty">
+          <span class="categories__empty-icon"><AppIcon name="search" :size="24" /></span>
+          <strong>{{ locale === 'ar' ? 'لا توجد عروض حالياً لهذا المورد' : 'No offers currently for this supplier' }}</strong>
+          <span>{{ locale === 'ar' ? 'يمكنك استعراض عروض الموردين الآخرين من الشريط أعلاه' : 'Browse other supplier offers from the filter bar above' }}</span>
+          <AppButton variant="secondary" size="sm" @click="selectedOfferProviderId = 'all'">
+            {{ locale === 'ar' ? 'عرض جميع العروض' : 'Show All Offers' }}
+          </AppButton>
+        </div>
       </div>
     </section>
 
@@ -1027,6 +1471,10 @@ html[dir='rtl'] .hero__search {
 
 .featured--flash {
   padding-top: 3rem;
+}
+
+.featured--offers {
+  padding-top: 3.5rem;
 }
 
 .featured__badge {
@@ -1816,5 +2264,509 @@ html[dir='rtl'] .catalog-section__footer-btn svg {
     animation: none;
     transition: none;
   }
+}
+/* =========================================================================
+   Offers Hub & Provider Grouping Section
+   ========================================================================= */
+.offers-hub {
+  padding: 4rem 0 3.5rem;
+  background: var(--dz-paper);
+  border-top: 1px solid var(--dz-border);
+}
+
+.offers-hub__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.offers-hub__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: var(--dz-radius-full);
+  background: linear-gradient(135deg, rgba(247, 147, 59, 0.15) 0%, rgba(13, 148, 136, 0.15) 100%);
+  color: var(--dz-primary-strong);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin-bottom: 0.5rem;
+  border: 1px solid rgba(13, 148, 136, 0.2);
+}
+
+.offers-hub__title {
+  font-family: var(--dz-font-display);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--dz-ink);
+}
+
+.offers-hub__subtitle {
+  margin-top: 0.4rem;
+  font-size: 0.95rem;
+  color: var(--dz-muted);
+  max-width: 65ch;
+}
+
+.offers-hub__stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.1rem;
+  border-radius: var(--dz-radius-full);
+  background: var(--dz-surface);
+  border: 1px solid var(--dz-border);
+  box-shadow: var(--dz-shadow-sm);
+  color: var(--dz-danger);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.offers-hub__filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  overflow-x: auto;
+  padding: 0.35rem 0.25rem 1.25rem;
+  margin-bottom: 1.75rem;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.offers-hub__filter-bar::-webkit-scrollbar {
+  height: 4px;
+}
+
+.offers-hub__filter-bar::-webkit-scrollbar-thumb {
+  background: var(--dz-border);
+  border-radius: 4px;
+}
+
+.offers-hub__filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--dz-radius-full);
+  background: var(--dz-surface);
+  border: 1.5px solid var(--dz-border);
+  color: var(--dz-ink);
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: var(--dz-shadow-sm);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+}
+
+.offers-hub__filter-pill:hover {
+  border-color: var(--dz-primary);
+  background: var(--dz-surface-soft);
+  transform: translateY(-2px);
+  box-shadow: var(--dz-shadow);
+}
+
+.offers-hub__filter-pill--active {
+  background: linear-gradient(135deg, var(--dz-primary) 0%, var(--dz-primary-strong) 100%) !important;
+  color: var(--dz-on-primary) !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 14px rgb(13 148 136 / 0.35);
+  transform: translateY(-2px);
+}
+
+.offers-hub__pill-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: var(--dz-radius-full);
+  background: var(--dz-surface-soft);
+  color: var(--dz-primary);
+}
+
+.offers-hub__filter-pill--active .offers-hub__pill-icon {
+  background: rgb(255 255 255 / 0.25);
+  color: var(--dz-white);
+}
+
+.offers-hub__pill-avatar {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: var(--dz-radius-full);
+  object-fit: cover;
+  background: #fff;
+  border: 1px solid var(--dz-border);
+}
+
+.offers-hub__pill-name {
+  line-height: 1;
+}
+
+.offers-hub__pill-count {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--dz-radius-full);
+  background: var(--dz-surface-soft);
+  color: var(--dz-muted);
+}
+
+.offers-hub__filter-pill--active .offers-hub__pill-count {
+  background: rgb(255 255 255 / 0.25);
+  color: var(--dz-white);
+}
+
+/* =========================================================================
+   Hero Banners Slider
+   ========================================================================= */
+.hero-banners {
+  position: relative;
+  padding: 1.5rem 0 2rem;
+  background: var(--dz-paper);
+}
+
+.hero-banners__slider {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 21 / 8;
+  min-height: 200px;
+  max-height: 380px;
+  border-radius: var(--dz-radius-2xl, 1.25rem);
+  overflow: hidden;
+  box-shadow: 0 12px 36px -8px rgb(0 0 0 / 0.12);
+  border: 1px solid var(--dz-border);
+  background: #ffffff;
+}
+
+@media (max-width: 768px) {
+  .hero-banners__slider {
+    aspect-ratio: 16 / 9;
+    min-height: 180px;
+    border-radius: var(--dz-radius-lg, 0.75rem);
+  }
+}
+
+.hero-banners__track {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.65s cubic-bezier(0.25, 1, 0.5, 1);
+  will-change: transform;
+}
+
+.hero-banners__slide {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+}
+
+.hero-banners__img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  display: block;
+}
+
+.hero-banners__nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--dz-radius-full);
+  background: rgb(255 255 255 / 0.85);
+  backdrop-filter: blur(8px);
+  color: var(--dz-ink);
+  border: 1px solid rgb(255 255 255 / 0.5);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.15);
+  cursor: pointer;
+  z-index: 2;
+  transition: all 0.2s ease;
+}
+
+.hero-banners__nav:hover {
+  background: var(--dz-white);
+  color: var(--dz-primary);
+  transform: translateY(-50%) scale(1.08);
+}
+
+.hero-banners__nav--prev {
+  inset-inline-start: 1rem;
+}
+
+.hero-banners__nav--next {
+  inset-inline-end: 1rem;
+}
+
+.hero-banners__dots {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--dz-radius-full);
+  background: rgb(0 0 0 / 0.35);
+  backdrop-filter: blur(8px);
+  z-index: 2;
+}
+
+.hero-banners__dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: var(--dz-radius-full);
+  background: rgb(255 255 255 / 0.5);
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.25s ease;
+}
+
+.hero-banners__dot:hover {
+  background: rgb(255 255 255 / 0.85);
+}
+
+.hero-banners__dot--active {
+  width: 1.5rem;
+  background: var(--dz-gold, #f7931b);
+}
+
+/* =========================================================================
+   Promotional Advertising Banners Slider
+   ========================================================================= */
+.promo-slider {
+  padding: 2.5rem 0 3rem;
+  background: var(--dz-paper);
+}
+
+.promo-slider__head {
+  margin-bottom: 1.5rem;
+}
+
+.promo-slider__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: var(--dz-radius-full);
+  background: var(--dz-surface-soft);
+  color: var(--dz-primary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  border: 1px solid var(--dz-border);
+}
+
+.promo-slider__title {
+  font-family: var(--dz-font-display);
+  font-size: clamp(1.4rem, 2.5vw, 1.85rem);
+  font-weight: 700;
+  color: var(--dz-ink);
+}
+
+.promo-slider__subtitle {
+  margin-top: 0.35rem;
+  font-size: 0.92rem;
+  color: var(--dz-muted);
+}
+
+.promo-slider__slider {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 21 / 8;
+  min-height: 220px;
+  max-height: 380px;
+  border-radius: var(--dz-radius-2xl, 1.25rem);
+  overflow: hidden;
+  box-shadow: 0 12px 36px -8px rgb(0 0 0 / 0.12);
+  border: 1px solid var(--dz-border);
+  background: #ffffff;
+}
+
+@media (max-width: 768px) {
+  .promo-slider__slider {
+    aspect-ratio: 16 / 9;
+    min-height: 180px;
+    border-radius: var(--dz-radius-lg, 0.75rem);
+  }
+}
+
+.promo-slider__track {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.65s cubic-bezier(0.25, 1, 0.5, 1);
+  will-change: transform;
+}
+
+.promo-slider__slide {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+}
+
+.promo-slider__link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  text-decoration: none;
+  overflow: hidden;
+}
+
+.promo-slider__img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  display: block;
+  transition: transform 0.4s ease;
+}
+
+.promo-slider__link:hover .promo-slider__img {
+  transform: scale(1.02);
+}
+
+.promo-slider__overlay {
+  position: absolute;
+  bottom: 1.25rem;
+  inset-inline-end: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--dz-radius-full);
+  background: rgb(255 255 255 / 0.9);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgb(255 255 255 / 0.6);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.12);
+  z-index: 2;
+  transition: all 0.25s ease;
+}
+
+@media (max-width: 576px) {
+  .promo-slider__overlay {
+    bottom: 0.75rem;
+    inset-inline-end: 0.75rem;
+    padding: 0.35rem 0.65rem;
+    gap: 0.45rem;
+  }
+}
+
+.promo-slider__link:hover .promo-slider__overlay {
+  background: var(--dz-white);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.16);
+}
+
+.promo-slider__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--dz-ink);
+}
+
+.promo-slider__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--dz-primary);
+}
+
+.promo-slider__nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--dz-radius-full);
+  background: rgb(255 255 255 / 0.85);
+  backdrop-filter: blur(8px);
+  color: var(--dz-ink);
+  border: 1px solid rgb(255 255 255 / 0.5);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.15);
+  cursor: pointer;
+  z-index: 2;
+  transition: all 0.2s ease;
+}
+
+.promo-slider__nav:hover {
+  background: var(--dz-white);
+  color: var(--dz-primary);
+  transform: translateY(-50%) scale(1.08);
+}
+
+.promo-slider__nav--prev {
+  inset-inline-start: 1rem;
+}
+
+.promo-slider__nav--next {
+  inset-inline-end: 1rem;
+}
+
+.promo-slider__dots {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--dz-radius-full);
+  background: rgb(0 0 0 / 0.35);
+  backdrop-filter: blur(8px);
+  z-index: 2;
+}
+
+.promo-slider__dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: var(--dz-radius-full);
+  background: rgb(255 255 255 / 0.5);
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.25s ease;
+}
+
+.promo-slider__dot:hover {
+  background: rgb(255 255 255 / 0.85);
+}
+
+.promo-slider__dot--active {
+  width: 1.5rem;
+  background: var(--dz-gold, #f7931b);
 }
 </style>
