@@ -1,20 +1,24 @@
+Options -Indexes
+
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
 
-  # Redirect HTTP to HTTPS
+  # 1. Force HTTPS
   RewriteCond %{HTTPS} off
   RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
-  # Redirect www.dentzone.shop to dentzone.shop (Canonical)
+  # 2. Redirect www.dentzone.shop to dentzone.shop
   RewriteCond %{HTTP_HOST} ^www\.dentzone\.shop$ [NC]
   RewriteRule ^(.*)$ https://dentzone.shop/$1 [L,R=301]
 
-  # SPA Routing (Vue Router history mode fallback)
+  # 3. Handle /products route to prevent conflict with /products directory
+  RewriteRule ^products/?$ /index.html [L]
+
+  # 4. Vue SPA fallback: if request is not an existing file, serve index.html
   RewriteRule ^index\.html$ - [L]
   RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteRule . /index.html [L]
+  RewriteRule ^(.*)$ /index.html [L]
 </IfModule>
 
 # Browser Caching for Performance & SEO
