@@ -1,8 +1,9 @@
 {
-  "rewrites": [
+  "redirects": [
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "source": "/:match*",
+      "destination": "https://dentzone.shop/:match*",
+      "permanent": true
     }
   ]
 }
