@@ -590,6 +590,110 @@ watch(isAuthenticated, (authed) => {
       </div>
     </section>
 
+    <!-- SECTION: Grouped Special Offers Hub with Provider Filter (Black Friday Offers) -->
+    <section
+      v-if="!homeLoading && !homeError && offers.length > 0"
+      id="black-friday-offers"
+      class="offers-hub"
+      :aria-label="locale === 'ar' ? 'عروض black friday' : 'black friday offers'"
+    >
+      <div class="container">
+        <!-- Main Offers Hub Head -->
+        <div class="offers-hub__head">
+          <div class="offers-hub__title-wrap">
+            <span class="offers-hub__badge">
+              <AppIcon name="sparkles" :size="15" />
+              {{ locale === 'ar' ? 'عروض black friday' : 'black friday offers' }}
+            </span>
+            <h2 class="offers-hub__title">{{ locale === 'ar' ? 'عروض black friday' : 'black friday offers' }}</h2>
+            <p class="offers-hub__subtitle">
+              {{ locale === 'ar' ? 'تصفح أقوى تخفيضات وعروض Black Friday الحصرية مجمعة ومفلترة حسب كل مورد وشركة معتمدة' : 'Browse exclusive Black Friday discounts and deals grouped and filterable by supplier' }}
+            </p>
+          </div>
+
+          <!-- Total stats chip -->
+          <div class="offers-hub__stat">
+            <AppIcon name="flame" :size="16" />
+            <span>{{ locale === 'ar' ? `${allOfferProducts.length} عرض متوفر` : `${allOfferProducts.length} Offers Available` }}</span>
+          </div>
+        </div>
+
+        <!-- Provider Filter Pills / Tabs Bar -->
+        <div class="offers-hub__filter-bar" role="tablist" :aria-label="locale === 'ar' ? 'فلترة حسب المورد' : 'Filter by Supplier'">
+          <button
+            v-for="tab in offerProviders"
+            :key="tab.id"
+            type="button"
+            class="offers-hub__filter-pill"
+            :class="{ 'offers-hub__filter-pill--active': selectedOfferProviderId === tab.id }"
+            role="tab"
+            :aria-selected="selectedOfferProviderId === tab.id"
+            @click="selectedOfferProviderId = tab.id"
+          >
+            <!-- Provider Avatar / Icon -->
+            <img
+              v-if="tab.image"
+              :src="resolveMediaUrl(tab.image)"
+              :alt="tab.name"
+              class="offers-hub__pill-avatar"
+              loading="lazy"
+            />
+            <span v-else class="offers-hub__pill-icon">
+              <AppIcon name="store" :size="13" />
+            </span>
+
+            <span class="offers-hub__pill-name">{{ tab.name }}</span>
+            <span class="offers-hub__pill-count">{{ tab.count }}</span>
+          </button>
+        </div>
+
+        <!-- Single Unified Offer Products Grid -->
+        <div v-if="displayedOfferProducts.length > 0" class="featured__grid">
+          <ProductCard
+            v-for="product in displayedOfferProducts"
+            :key="product.productPriceId || product.productId"
+            :product="product"
+            :favorite="wishlistService.isFavorite(product.productId, product.productPriceId)"
+            :favorite-busy="favoriteBusy.has(product.productId)"
+            :details-to="detailsTo(product)"
+            :provider-count="getProductProviderCount(product)"
+            :hide-stock="true"
+            @toggle-favorite="toggleFavorite"
+            @add-to-cart="addToCart"
+          />
+        </div>
+
+        <!-- Offers Toggle View All Action -->
+        <div
+          v-if="filteredOfferProducts.length > OFFERS_PAGE_LIMIT"
+          class="featured__footer-action"
+        >
+          <button
+            type="button"
+            class="featured__toggle-btn featured__toggle-btn--lg"
+            :aria-expanded="showAllOffers"
+            @click="showAllOffers = !showAllOffers"
+          >
+            <span>
+              {{ showAllOffers ? (locale === 'ar' ? 'عرض أقل' : 'Show Less') : (locale === 'ar' ? 'عرض جميع العروض' : 'View All Offers') }}
+              <template v-if="!showAllOffers">({{ filteredOfferProducts.length }})</template>
+            </span>
+            <AppIcon :name="showAllOffers ? 'chevron-up' : 'arrow-right'" :size="15" />
+          </button>
+        </div>
+
+        <!-- Empty state if a selected provider has no offers -->
+        <div v-if="filteredOfferProducts.length === 0" class="categories__empty">
+          <span class="categories__empty-icon"><AppIcon name="search" :size="24" /></span>
+          <strong>{{ locale === 'ar' ? 'لا توجد عروض حالياً لهذا المورد' : 'No offers currently for this supplier' }}</strong>
+          <span>{{ locale === 'ar' ? 'يمكنك استعراض عروض الموردين الآخرين من الشريط أعلاه' : 'Browse other supplier offers from the filter bar above' }}</span>
+          <AppButton variant="secondary" size="sm" @click="selectedOfferProviderId = 'all'">
+            {{ locale === 'ar' ? 'عرض جميع العروض' : 'Show All Offers' }}
+          </AppButton>
+        </div>
+      </div>
+    </section>
+
     <section class="categories" :aria-label="t('home.shopByCategory')">
     <div class="container">
       <div class="categories__head">
@@ -902,110 +1006,6 @@ watch(isAuthenticated, (authed) => {
 
         <!-- All Suppliers Grid -->
         <ProviderGrid :providers="displayedAllProviders" />
-      </div>
-    </section>
-
-
-    <!-- SECTION: Grouped Special Offers Hub with Provider Filter -->
-    <section
-      v-if="!homeLoading && !homeError && offers.length > 0"
-      class="offers-hub"
-      :aria-label="t('home.specialOffers')"
-    >
-      <div class="container">
-        <!-- Main Offers Hub Head -->
-        <div class="offers-hub__head">
-          <div class="offers-hub__title-wrap">
-            <span class="offers-hub__badge">
-              <AppIcon name="sparkles" :size="15" />
-              {{ t('home.specialOffers') }}
-            </span>
-            <h2 class="offers-hub__title">{{ locale === 'ar' ? 'عروض وتخفيضات الموردين' : 'Supplier Deals & Offers' }}</h2>
-            <p class="offers-hub__subtitle">
-              {{ locale === 'ar' ? 'تصفح أقوى العروض والخصومات الحصرية مجمعة ومفلترة حسب كل مورد وشركة معتمدة' : 'Browse exclusive discounts and deals grouped and filterable by supplier' }}
-            </p>
-          </div>
-
-          <!-- Total stats chip -->
-          <div class="offers-hub__stat">
-            <AppIcon name="flame" :size="16" />
-            <span>{{ locale === 'ar' ? `${allOfferProducts.length} عرض متوفر` : `${allOfferProducts.length} Offers Available` }}</span>
-          </div>
-        </div>
-
-        <!-- Provider Filter Pills / Tabs Bar -->
-        <div class="offers-hub__filter-bar" role="tablist" :aria-label="locale === 'ar' ? 'فلترة حسب المورد' : 'Filter by Supplier'">
-          <button
-            v-for="tab in offerProviders"
-            :key="tab.id"
-            type="button"
-            class="offers-hub__filter-pill"
-            :class="{ 'offers-hub__filter-pill--active': selectedOfferProviderId === tab.id }"
-            role="tab"
-            :aria-selected="selectedOfferProviderId === tab.id"
-            @click="selectedOfferProviderId = tab.id"
-          >
-            <!-- Provider Avatar / Icon -->
-            <img
-              v-if="tab.image"
-              :src="resolveMediaUrl(tab.image)"
-              :alt="tab.name"
-              class="offers-hub__pill-avatar"
-              loading="lazy"
-            />
-            <span v-else class="offers-hub__pill-icon">
-              <AppIcon name="store" :size="13" />
-            </span>
-
-            <span class="offers-hub__pill-name">{{ tab.name }}</span>
-            <span class="offers-hub__pill-count">{{ tab.count }}</span>
-          </button>
-        </div>
-
-        <!-- Single Unified Offer Products Grid -->
-        <div v-if="displayedOfferProducts.length > 0" class="featured__grid">
-          <ProductCard
-            v-for="product in displayedOfferProducts"
-            :key="product.productPriceId || product.productId"
-            :product="product"
-            :favorite="wishlistService.isFavorite(product.productId, product.productPriceId)"
-            :favorite-busy="favoriteBusy.has(product.productId)"
-            :details-to="detailsTo(product)"
-            :provider-count="getProductProviderCount(product)"
-            :hide-stock="true"
-            @toggle-favorite="toggleFavorite"
-            @add-to-cart="addToCart"
-          />
-        </div>
-
-        <!-- Offers Toggle View All Action -->
-        <div
-          v-if="filteredOfferProducts.length > OFFERS_PAGE_LIMIT"
-          class="featured__footer-action"
-        >
-          <button
-            type="button"
-            class="featured__toggle-btn featured__toggle-btn--lg"
-            :aria-expanded="showAllOffers"
-            @click="showAllOffers = !showAllOffers"
-          >
-            <span>
-              {{ showAllOffers ? (locale === 'ar' ? 'عرض أقل' : 'Show Less') : (locale === 'ar' ? 'عرض جميع العروض' : 'View All Offers') }}
-              <template v-if="!showAllOffers">({{ filteredOfferProducts.length }})</template>
-            </span>
-            <AppIcon :name="showAllOffers ? 'chevron-up' : 'arrow-right'" :size="15" />
-          </button>
-        </div>
-
-        <!-- Empty state if a selected provider has no offers -->
-        <div v-if="filteredOfferProducts.length === 0" class="categories__empty">
-          <span class="categories__empty-icon"><AppIcon name="search" :size="24" /></span>
-          <strong>{{ locale === 'ar' ? 'لا توجد عروض حالياً لهذا المورد' : 'No offers currently for this supplier' }}</strong>
-          <span>{{ locale === 'ar' ? 'يمكنك استعراض عروض الموردين الآخرين من الشريط أعلاه' : 'Browse other supplier offers from the filter bar above' }}</span>
-          <AppButton variant="secondary" size="sm" @click="selectedOfferProviderId = 'all'">
-            {{ locale === 'ar' ? 'عرض جميع العروض' : 'Show All Offers' }}
-          </AppButton>
-        </div>
       </div>
     </section>
 
