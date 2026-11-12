@@ -20,6 +20,7 @@ export const en: Messages = {
     home: 'Home',
     shop: 'Shop',
     allProducts: 'Products',
+    offers: 'Offers',
     categories: 'Categories',
     vendors: 'Suppliers',
     privacyPolicy: 'Privacy Policy',
@@ -121,6 +122,22 @@ export const en: Messages = {
     nextPage: 'Next',
     noPaginatedProducts: 'No products found',
     noPaginatedProductsDesc: 'Try adjusting your search query or supplier filter.',
+  },
+  offers: {
+    title: 'Special offers',
+    subtitle:
+      'Every discounted product from our verified suppliers in one place — filter by supplier, search and sort to find the deal you need.',
+    badge: 'Active deals',
+    count: '{count} offer available|{count} offers available',
+    supplierCount: 'From {count} suppliers',
+    searchPlaceholder: 'Search offers by name, code, or supplier…',
+    viewAll: 'View all offers',
+    emptyTitle: 'No offers available',
+    emptyDesc: 'There are no active offers right now. Check back soon for exclusive deals.',
+    retry: 'Try again',
+    noResultsTitle: 'No matching offers',
+    noResultsDesc: 'Try a different search term, or clear the supplier filter to see every offer.',
+    browseCatalog: 'Browse the full catalog',
   },
   catalog: {
     all: 'All',
@@ -632,6 +649,9 @@ export const en: Messages = {
     productsTitle: 'All dental products',
     productsDescription:
       'Explore the dental supplies catalogue: tools, equipment, consumables and care products at wholesale prices from trusted suppliers.',
+    offersTitle: 'Dental supplies offers & discounts',
+    offersDescription:
+      'Browse every active discounted dental product on DentZone, grouped and filterable by verified supplier.',
     vendorsTitle: 'Dental supply vendors',
     vendorsDescription: 'Discover verified dental suppliers and compare their products and prices.',
     categoryTitle: 'Dental suppliers by category',

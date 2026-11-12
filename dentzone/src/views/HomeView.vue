@@ -9,13 +9,15 @@ import AppIcon from '../components/ui/AppIcon.vue'
 import CategoryCard from '../components/categories/CategoryCard.vue'
 import ProductCard from '../components/products/ProductCard.vue'
 import ProviderGrid from '../components/home/ProviderGrid.vue'
+import OffersHub from '../components/offers/OffersHub.vue'
 import type { CategoryDto } from '../domain/models/category'
-import type { HomeDto, HomePromoBannerDto, HomeProviderDto, HomeSectionDto } from '../domain/models/home'
+import type { HomePromoBannerDto, HomeProviderDto } from '../domain/models/home'
 import type { ProviderProductDto } from '../domain/models/product'
 import { resolveMediaUrl } from '../utils/media'
 
 const router = useRouter()
-const { authService, categoryRepository, homeRepository, productRepository, cartService, wishlistService } = services
+const { authService, categoryRepository, homeRepository, homeService, productRepository, cartService, wishlistService } =
+  services
 
 const isAuthenticated = computed(() => authService.isAuthenticated)
 
@@ -24,10 +26,6 @@ const CATEGORIES_LIMIT = 10
 const categories = ref<CategoryDto[]>([])
 const categoriesLoading = ref(true)
 const categoriesError = ref(false)
-
-const home = ref<HomeDto | null>(null)
-const homeLoading = ref(true)
-const homeError = ref(false)
 
 const popularProducts = ref<ProviderProductDto[]>([])
 const popularLoading = ref(true)
@@ -40,11 +38,12 @@ const displayedPopularProducts = computed(() => {
   return popularProducts.value.slice(0, POPULAR_LIMIT)
 })
 
-const featuredProducts = computed(() => home.value?.products ?? [])
-const flashSales = computed(() => home.value?.flashSales ?? [])
-const mainBanners = computed(() => home.value?.banners ?? [])
-const promoBanners = computed<HomePromoBannerDto[]>(() => home.value?.promoBanners ?? [])
-const allProviders = computed(() => home.value?.providers ?? [])
+const home = homeService.home
+const featuredProducts = computed(() => home.value.products)
+const flashSales = computed(() => home.value.flashSales)
+const mainBanners = computed(() => home.value.banners)
+const promoBanners = computed<HomePromoBannerDto[]>(() => home.value.promoBanners)
+const allProviders = computed(() => home.value.providers)
 
 // --- Hero Banners Carousel Controls ---
 const currentBannerIndex = ref(0)
@@ -150,109 +149,11 @@ const promoBannerRoute = (banner: HomePromoBannerDto) => {
   return { name: 'products' }
 }
 
-// --- Offers (Provider sections & deals from GetHomeProduct) ---
-const offers = computed<HomeSectionDto[]>(() => home.value?.offers ?? home.value?.sections ?? [])
-
-interface OfferProviderTab {
-  id: string
-  name: string
-  image?: string
-  count: number
-}
-
-const selectedOfferProviderId = ref<string>('')
-
-const offerProviders = computed<OfferProviderTab[]>(() => {
-  const sections = offers.value
-  const providerMap = new Map<string, { name: string; image?: string; count: number }>()
-
-  const knownProviders = new Map<string, HomeProviderDto>()
-  for (const p of allProviders.value) {
-    if (p.id) knownProviders.set(p.id, p)
-  }
-
-  for (const sec of sections) {
-    for (const prod of sec.products) {
-      const invId = prod.inventoryUserId || 'unknown'
-      const known = knownProviders.get(invId)
-      const name = known?.fullName || known?.userName || prod.inventoryUserName || sec.title
-      const image = known?.profileImage
-
-      if (!providerMap.has(invId)) {
-        providerMap.set(invId, { name, image, count: 1 })
-      } else {
-        const curr = providerMap.get(invId)!
-        curr.count++
-        if (!curr.image && image) curr.image = image
-      }
-    }
-  }
-
-  const tabs: OfferProviderTab[] = []
-
-  for (const [id, info] of providerMap.entries()) {
-    tabs.push({
-      id,
-      name: info.name,
-      image: info.image,
-      count: info.count,
-    })
-  }
-
-  return tabs
-})
-
-watch(
-  offerProviders,
-  (tabs) => {
-    if (tabs.length > 0) {
-      if (!selectedOfferProviderId.value || !tabs.some((t) => t.id === selectedOfferProviderId.value)) {
-        selectedOfferProviderId.value = tabs[0]!.id
-      }
-    } else {
-      selectedOfferProviderId.value = ''
-    }
-  },
-  { immediate: true },
-)
-
-// Unified flat list of offer products across all sections
-const allOfferProducts = computed<ProviderProductDto[]>(() => {
-  const seen = new Set<string>()
-  const list: ProviderProductDto[] = []
-  for (const sec of offers.value) {
-    for (const prod of sec.products) {
-      const key = prod.productPriceId || prod.productId
-      if (!seen.has(key)) {
-        seen.add(key)
-        list.push(prod)
-      }
-    }
-  }
-  return list
-})
-
-const filteredOfferProducts = computed<ProviderProductDto[]>(() => {
-  const pid = selectedOfferProviderId.value
-  if (!pid) {
-    return allOfferProducts.value
-  }
-  return allOfferProducts.value.filter((p) => p.inventoryUserId === pid)
-})
-
-const OFFERS_PAGE_LIMIT = 12
-const showAllOffers = ref(false)
-
-const displayedOfferProducts = computed<ProviderProductDto[]>(() => {
-  if (showAllOffers.value) {
-    return filteredOfferProducts.value
-  }
-  return filteredOfferProducts.value.slice(0, OFFERS_PAGE_LIMIT)
-})
-
-watch(selectedOfferProviderId, () => {
-  showAllOffers.value = false
-})
+// --- Offers preview (the full list lives on the /offers page) ---
+const homeLoading = computed(() => homeService.loading.value)
+const offerProducts = computed(() => homeService.offerProducts.value)
+const offerHeadline = computed(() => homeService.headline.value || t('offers.title'))
+const hasOffers = computed(() => offerProducts.value.length > 0)
 
 // --- 1. Top Providers Section (Independent Endpoint /api/Users/get-top-providers) ---
 const topProviders = ref<HomeProviderDto[]>([])
@@ -376,32 +277,15 @@ const loadPopularProducts = async () => {
   }
 }
 
-const loadHome = async () => {
-  homeLoading.value = true
-  homeError.value = false
-  try {
-    home.value = await homeRepository.getHome(locale.value === 'ar' ? API_LANG.ARABIC : API_LANG.ENGLISH)
-    if (isAuthenticated.value && home.value) {
-      const sectionFavs = (home.value.offers ?? home.value.sections ?? [])
-        .flatMap((s) => s.products)
-        .filter((p) => p.isFavorite)
-        .map((p) => p.productPriceId)
-      wishlistService.mergeFavorites([
-        ...home.value.products.filter((p) => p.isFavorite).map((p) => p.productPriceId),
-        ...sectionFavs,
-      ])
-    }
-
-    if (catalogProducts.value.length === 0 && home.value?.products?.length) {
-      catalogProducts.value = home.value.products
+watch(
+  () => home.value.products,
+  (products) => {
+    if (catalogProducts.value.length === 0 && products.length) {
+      catalogProducts.value = products
       catalogLoading.value = false
     }
-  } catch {
-    homeError.value = true
-  } finally {
-    homeLoading.value = false
-  }
-}
+  },
+)
 
 const loadTopProviders = async () => {
   topProvidersLoading.value = true
@@ -441,14 +325,13 @@ onMounted(() => {
   void loadCatalogProducts()
   void loadTopProviders()
   void loadPopularProducts()
-  void loadHome()
+  void homeService.ensureLoaded()
   if (isAuthenticated.value) {
     void wishlistService.refresh()
   }
 })
 
 watch(isAuthenticated, (authed) => {
-  void loadHome()
   void loadPopularProducts()
   void loadTopProviders()
   void loadCatalogProducts()
@@ -590,107 +473,20 @@ watch(isAuthenticated, (authed) => {
       </div>
     </section>
 
-    <!-- SECTION: Grouped Special Offers Hub with Provider Filter (Black Friday Offers) -->
+    <!-- SECTION: Offers preview — the full hub lives on the /offers page -->
     <section
-      v-if="!homeLoading && !homeError && offers.length > 0"
+      v-if="!homeLoading && hasOffers"
       id="black-friday-offers"
-      class="offers-hub"
-      :aria-label="locale === 'ar' ? 'عروض black friday' : 'black friday offers'"
+      class="offers-preview"
+      :aria-label="offerHeadline"
     >
       <div class="container">
-        <!-- Main Offers Hub Head -->
-        <div class="offers-hub__head">
-          <div class="offers-hub__title-wrap">
-            <span class="offers-hub__badge">
-              <AppIcon name="sparkles" :size="15" />
-              {{ locale === 'ar' ? 'عروض black friday' : 'black friday offers' }}
-            </span>
-            <h2 class="offers-hub__title">{{ locale === 'ar' ? 'عروض black friday' : 'black friday offers' }}</h2>
-            <p class="offers-hub__subtitle">
-              {{ locale === 'ar' ? 'تصفح أقوى تخفيضات وعروض Black Friday الحصرية مجمعة ومفلترة حسب كل مورد وشركة معتمدة' : 'Browse exclusive Black Friday discounts and deals grouped and filterable by supplier' }}
-            </p>
-          </div>
-
-          <!-- Total stats chip -->
-          <div class="offers-hub__stat">
-            <AppIcon name="flame" :size="16" />
-            <span>{{ locale === 'ar' ? `${allOfferProducts.length} عرض متوفر` : `${allOfferProducts.length} Offers Available` }}</span>
-          </div>
-        </div>
-
-        <!-- Provider Filter Pills / Tabs Bar -->
-        <div class="offers-hub__filter-bar" role="tablist" :aria-label="locale === 'ar' ? 'فلترة حسب المورد' : 'Filter by Supplier'">
-          <button
-            v-for="tab in offerProviders"
-            :key="tab.id"
-            type="button"
-            class="offers-hub__filter-pill"
-            :class="{ 'offers-hub__filter-pill--active': selectedOfferProviderId === tab.id }"
-            role="tab"
-            :aria-selected="selectedOfferProviderId === tab.id"
-            @click="selectedOfferProviderId = tab.id"
-          >
-            <!-- Provider Avatar / Icon -->
-            <img
-              v-if="tab.image"
-              :src="resolveMediaUrl(tab.image)"
-              :alt="tab.name"
-              class="offers-hub__pill-avatar"
-              loading="lazy"
-            />
-            <span v-else class="offers-hub__pill-icon">
-              <AppIcon name="store" :size="13" />
-            </span>
-
-            <span class="offers-hub__pill-name">{{ tab.name }}</span>
-            <span class="offers-hub__pill-count">{{ tab.count }}</span>
-          </button>
-        </div>
-
-        <!-- Single Unified Offer Products Grid -->
-        <div v-if="displayedOfferProducts.length > 0" class="featured__grid">
-          <ProductCard
-            v-for="product in displayedOfferProducts"
-            :key="product.productPriceId || product.productId"
-            :product="product"
-            :favorite="wishlistService.isFavorite(product.productId, product.productPriceId)"
-            :favorite-busy="favoriteBusy.has(product.productId)"
-            :details-to="detailsTo(product)"
-            :provider-count="getProductProviderCount(product)"
-            :hide-stock="true"
-            @toggle-favorite="toggleFavorite"
-            @add-to-cart="addToCart"
-          />
-        </div>
-
-        <!-- Offers Toggle View All Action -->
-        <div
-          v-if="filteredOfferProducts.length > OFFERS_PAGE_LIMIT"
-          class="featured__footer-action"
-        >
-          <button
-            type="button"
-            class="featured__toggle-btn featured__toggle-btn--lg"
-            :aria-expanded="showAllOffers"
-            @click="showAllOffers = !showAllOffers"
-          >
-            <span>
-              {{ showAllOffers ? (locale === 'ar' ? 'عرض أقل' : 'Show Less') : (locale === 'ar' ? 'عرض جميع العروض' : 'View All Offers') }}
-              <template v-if="!showAllOffers">({{ filteredOfferProducts.length }})</template>
-            </span>
-            <AppIcon :name="showAllOffers ? 'chevron-up' : 'arrow-right'" :size="15" />
-          </button>
-        </div>
-
-        <!-- Empty state if a selected provider has no offers -->
-        <div v-if="filteredOfferProducts.length === 0" class="categories__empty">
-          <span class="categories__empty-icon"><AppIcon name="search" :size="24" /></span>
-          <strong>{{ locale === 'ar' ? 'لا توجد عروض حالياً لهذا المورد' : 'No offers currently for this supplier' }}</strong>
-          <span>{{ locale === 'ar' ? 'يمكنك استعراض عروض الموردين الآخرين من الشريط أعلاه' : 'Browse other supplier offers from the filter bar above' }}</span>
-          <AppButton variant="secondary" size="sm" @click="selectedOfferProviderId = 'all'">
-            {{ locale === 'ar' ? 'عرض جميع العروض' : 'Show All Offers' }}
-          </AppButton>
-        </div>
+        <OffersHub
+          mode="preview"
+          :products="offerProducts"
+          :suppliers="allProviders"
+          :headline="offerHeadline"
+        />
       </div>
     </section>
 
@@ -939,7 +735,7 @@ watch(isAuthenticated, (authed) => {
       </div>
     </section>
 
-    <section v-if="!homeLoading && !homeError && featuredProducts.length" class="featured" :aria-label="t('home.featuredTitle')">
+    <section v-if="!homeLoading && featuredProducts.length" class="featured" :aria-label="t('home.featuredTitle')">
       <div class="container">
         <div class="featured__head">
           <div>
@@ -964,7 +760,7 @@ watch(isAuthenticated, (authed) => {
       </div>
     </section>
 
-    <section v-if="!homeLoading && !homeError && flashSales.length" class="featured featured--flash" :aria-label="t('home.flashSalesTitle')">
+    <section v-if="!homeLoading && flashSales.length" class="featured featured--flash" :aria-label="t('home.flashSalesTitle')">
       <div class="container">
         <div class="featured__head">
           <div>
@@ -2266,161 +2062,12 @@ html[dir='rtl'] .catalog-section__footer-btn svg {
   }
 }
 /* =========================================================================
-   Offers Hub & Provider Grouping Section
+   Offers preview section wrapper (the hub itself is OffersHub.vue)
    ========================================================================= */
-.offers-hub {
+.offers-preview {
   padding: 4rem 0 3.5rem;
   background: var(--dz-paper);
   border-top: 1px solid var(--dz-border);
-}
-
-.offers-hub__head {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-  flex-wrap: wrap;
-}
-
-.offers-hub__badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.35rem 0.85rem;
-  border-radius: var(--dz-radius-full);
-  background: linear-gradient(135deg, rgba(247, 147, 59, 0.15) 0%, rgba(13, 148, 136, 0.15) 100%);
-  color: var(--dz-primary-strong);
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  margin-bottom: 0.5rem;
-  border: 1px solid rgba(13, 148, 136, 0.2);
-}
-
-.offers-hub__title {
-  font-family: var(--dz-font-display);
-  font-size: clamp(1.5rem, 3vw, 2rem);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--dz-ink);
-}
-
-.offers-hub__subtitle {
-  margin-top: 0.4rem;
-  font-size: 0.95rem;
-  color: var(--dz-muted);
-  max-width: 65ch;
-}
-
-.offers-hub__stat {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.55rem 1.1rem;
-  border-radius: var(--dz-radius-full);
-  background: var(--dz-surface);
-  border: 1px solid var(--dz-border);
-  box-shadow: var(--dz-shadow-sm);
-  color: var(--dz-danger);
-  font-size: 0.88rem;
-  font-weight: 700;
-}
-
-.offers-hub__filter-bar {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  overflow-x: auto;
-  padding: 0.35rem 0.25rem 1.25rem;
-  margin-bottom: 1.75rem;
-  scrollbar-width: thin;
-  -webkit-overflow-scrolling: touch;
-}
-
-.offers-hub__filter-bar::-webkit-scrollbar {
-  height: 4px;
-}
-
-.offers-hub__filter-bar::-webkit-scrollbar-thumb {
-  background: var(--dz-border);
-  border-radius: 4px;
-}
-
-.offers-hub__filter-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.55rem;
-  padding: 0.5rem 1rem;
-  border-radius: var(--dz-radius-full);
-  background: var(--dz-surface);
-  border: 1.5px solid var(--dz-border);
-  color: var(--dz-ink);
-  font-size: 0.88rem;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-  box-shadow: var(--dz-shadow-sm);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  flex-shrink: 0;
-}
-
-.offers-hub__filter-pill:hover {
-  border-color: var(--dz-primary);
-  background: var(--dz-surface-soft);
-  transform: translateY(-2px);
-  box-shadow: var(--dz-shadow);
-}
-
-.offers-hub__filter-pill--active {
-  background: linear-gradient(135deg, var(--dz-primary) 0%, var(--dz-primary-strong) 100%) !important;
-  color: var(--dz-on-primary) !important;
-  border-color: transparent !important;
-  box-shadow: 0 4px 14px rgb(13 148 136 / 0.35);
-  transform: translateY(-2px);
-}
-
-.offers-hub__pill-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  border-radius: var(--dz-radius-full);
-  background: var(--dz-surface-soft);
-  color: var(--dz-primary);
-}
-
-.offers-hub__filter-pill--active .offers-hub__pill-icon {
-  background: rgb(255 255 255 / 0.25);
-  color: var(--dz-white);
-}
-
-.offers-hub__pill-avatar {
-  width: 1.5rem;
-  height: 1.5rem;
-  border-radius: var(--dz-radius-full);
-  object-fit: cover;
-  background: #fff;
-  border: 1px solid var(--dz-border);
-}
-
-.offers-hub__pill-name {
-  line-height: 1;
-}
-
-.offers-hub__pill-count {
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 0.15rem 0.5rem;
-  border-radius: var(--dz-radius-full);
-  background: var(--dz-surface-soft);
-  color: var(--dz-muted);
-}
-
-.offers-hub__filter-pill--active .offers-hub__pill-count {
-  background: rgb(255 255 255 / 0.25);
-  color: var(--dz-white);
 }
 
 /* =========================================================================

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { services } from '../../di/container'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-const { authService, cartService, notificationRepository, wishlistService } = services
+const { authService, cartService, notificationRepository, wishlistService, homeService } = services
 import { useRouter } from 'vue-router'
 import { t, locale, setLocale } from '../../i18n'
 import { theme, toggleTheme } from '../../application/theme.service'
@@ -34,6 +34,8 @@ const isAuthenticated = computed(() => authService.isAuthenticated)
 const user = computed(() => authService.user.value)
 const cartCount = computed(() => cartService.count.value)
 const wishlistCount = computed(() => wishlistService.count.value)
+/** The offers campaign lives in the backend data, so the nav entry follows it. */
+const showOffersLink = computed(() => homeService.hasOffers.value)
 
 const loadNotifCount = async () => {
   if (!authService.isAuthenticated || !user.value?.id) {
@@ -131,6 +133,7 @@ onMounted(() => {
   document.addEventListener('click', onClickOutside)
   document.addEventListener('keydown', onEscape)
   window.addEventListener('dz_notifications_viewed', onNotificationsViewed)
+  void homeService.ensureLoaded()
   if (isAuthenticated.value) {
     void loadNotifCount()
   }
@@ -180,6 +183,15 @@ const logout = () => {
         >
           <AppIcon name="box" :size="16" />
           {{ t('nav.allProducts') }}
+        </RouterLink>
+        <RouterLink
+          v-if="showOffersLink"
+          to="/offers"
+          class="app-header__nav-link app-header__nav-link--offer"
+          active-class="app-header__nav-link--active"
+        >
+          <AppIcon name="sparkles" :size="16" />
+          {{ t('nav.offers') }}
         </RouterLink>
         <RouterLink
           to="/categories"
@@ -371,6 +383,16 @@ const logout = () => {
         >
           <AppIcon name="box" :size="17" />
           {{ t('nav.allProducts') }}
+        </RouterLink>
+        <RouterLink
+          v-if="showOffersLink"
+          to="/offers"
+          class="app-header__panel-link app-header__panel-link--offer"
+          active-class="app-header__nav-link--active"
+          @click="closeMobileMenu"
+        >
+          <AppIcon name="sparkles" :size="17" />
+          {{ t('nav.offers') }}
         </RouterLink>
         <RouterLink
           to="/categories"
@@ -587,6 +609,11 @@ const logout = () => {
   transition:
     background-color 0.2s,
     color 0.2s;
+}
+
+.app-header__nav-link--offer {
+  color: var(--dz-gold-strong);
+  font-weight: 700;
 }
 
 .app-header__nav-link:hover {
@@ -1049,6 +1076,10 @@ const logout = () => {
   font-weight: 700;
 }
 
+.app-header__panel-link--offer {
+  color: var(--dz-gold-strong);
+}
+
 .app-header__panel-link--danger {
   color: var(--dz-danger);
 }
@@ -1070,22 +1101,22 @@ const logout = () => {
   }
 }
 
-/* ── Small laptops (≤ 1320px): compact links so 6 items still fit ── */
+/* ── Small laptops (≤ 1320px): compact links so 7 items still fit ── */
 @media (max-width: 1320px) {
   .app-header__nav {
-    gap: 0.15rem;
+    gap: 0.1rem;
   }
 
   .app-header__nav-link {
-    padding: 0.45rem 0.62rem;
-    gap: 0.3rem;
-    font-size: 0.79rem;
+    padding: 0.42rem 0.5rem;
+    gap: 0.28rem;
+    font-size: 0.76rem;
   }
 
   .app-header__search {
-    min-width: 110px;
-    max-width: 170px;
-    flex: 0 1 170px;
+    min-width: 100px;
+    max-width: 150px;
+    flex: 0 1 150px;
   }
 }
 

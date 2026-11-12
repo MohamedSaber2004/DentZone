@@ -68,6 +68,12 @@ const router = createRouter({
       meta: { titleKey: 'seo.productsTitle', descriptionKey: 'seo.productsDescription' },
     },
     {
+      path: '/offers',
+      name: 'offers',
+      component: () => import('../views/OffersView.vue'),
+      meta: { titleKey: 'seo.offersTitle', descriptionKey: 'seo.offersDescription' },
+    },
+    {
       path: '/vendors',
       name: 'vendors',
       component: () => import('../views/VendorsView.vue'),

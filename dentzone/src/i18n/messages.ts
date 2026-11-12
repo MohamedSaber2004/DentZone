@@ -18,6 +18,7 @@ export type Messages = {
     home: string
     shop: string
     allProducts: string
+    offers: string
     categories: string
     vendors: string
     privacyPolicy: string
@@ -117,6 +118,21 @@ export type Messages = {
     nextPage: string
     noPaginatedProducts: string
     noPaginatedProductsDesc: string
+  }
+  offers: {
+    title: string
+    subtitle: string
+    badge: string
+    count: string
+    supplierCount: string
+    searchPlaceholder: string
+    viewAll: string
+    emptyTitle: string
+    emptyDesc: string
+    retry: string
+    noResultsTitle: string
+    noResultsDesc: string
+    browseCatalog: string
   }
   catalog: {
     all: string
@@ -617,6 +633,8 @@ export type Messages = {
     categoriesDescription: string
     productsTitle: string
     productsDescription: string
+    offersTitle: string
+    offersDescription: string
     vendorsTitle: string
     vendorsDescription: string
     categoryTitle: string

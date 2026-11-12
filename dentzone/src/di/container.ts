@@ -16,6 +16,7 @@ import { FirebaseMessagingService } from '../infrastructure/firebase/firebase-me
 import { AuthService } from '../application/auth.service'
 import { CartService } from '../application/cart.service'
 import { WishlistService } from '../application/wishlist.service'
+import { HomeService } from '../application/home.service'
 
 type AnyConstructor = new (...args: never[]) => unknown
 
@@ -96,6 +97,14 @@ container.register(WishlistService, () =>
   ),
 )
 
+container.register(HomeService, () =>
+  new HomeService(
+    container.resolve<ApiHomeRepository>(ApiHomeRepository),
+    container.resolve<AuthService>(AuthService),
+    container.resolve<WishlistService>(WishlistService),
+  ),
+)
+
 export const services = {
   tokenStore: container.resolve<TokenStore>(TokenStore),
   authBridge: container.resolve<AuthBridge>(AuthBridge),
@@ -103,6 +112,7 @@ export const services = {
   authService: container.resolve<AuthService>(AuthService),
   cartService: container.resolve<CartService>(CartService),
   wishlistService: container.resolve<WishlistService>(WishlistService),
+  homeService: container.resolve<HomeService>(HomeService),
   categoryRepository: container.resolve<ApiCategoryRepository>(ApiCategoryRepository),
   productRepository: container.resolve<ApiProductRepository>(ApiProductRepository),
   policyRepository: container.resolve<ApiPolicyRepository>(ApiPolicyRepository),

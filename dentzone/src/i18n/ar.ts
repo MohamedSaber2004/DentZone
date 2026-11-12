@@ -20,6 +20,7 @@ export const ar: Messages = {
     home: 'الرئيسية',
     shop: 'المتجر',
     allProducts: 'المنتجات',
+    offers: 'العروض',
     categories: 'التصنيفات',
     vendors: 'الموردون',
     privacyPolicy: 'سياسة الخصوصية',
@@ -121,6 +122,22 @@ export const ar: Messages = {
     nextPage: 'التالي',
     noPaginatedProducts: 'لا توجد منتجات مطابقة',
     noPaginatedProductsDesc: 'يرجى تغيير كلمة البحث أو اختيار مورد آخر.',
+  },
+  offers: {
+    title: 'العروض والخصومات',
+    subtitle:
+      'كل المنتجات المخفّضة من موردينا المعتمدين في مكان واحد — صفِّ حسب المورد أو ابحث أو رتّب لتصل إلى العرض الذي تحتاجه عيادتك.',
+    badge: 'عروض نشطة',
+    count: '{count} عرض متوفر|{count} عروض متوفرة',
+    supplierCount: 'من {count} موردين',
+    searchPlaceholder: 'ابحث في العروض بالاسم، الكود، أو اسم المورد…',
+    viewAll: 'عرض كل العروض',
+    emptyTitle: 'لا توجد عروض',
+    emptyDesc: 'لا توجد عروض متاحة حالياً. تابعنا للاطلاع على أحدث العروض والخصومات القادمة.',
+    retry: 'إعادة المحاولة',
+    noResultsTitle: 'لا توجد عروض مطابقة',
+    noResultsDesc: 'جرّب كلمة بحث مختلفة، أو امسح فلتر المورد لعرض كل العروض.',
+    browseCatalog: 'تصفح الكتالوج الكامل',
   },
   catalog: {
     all: 'الكل',
@@ -632,6 +649,9 @@ export const ar: Messages = {
     productsTitle: 'كل منتجات الأسنان',
     productsDescription:
       'استعرض كتالوج مستلزمات الأسنان: أدوات ومعدات ومستهلكات وعناية بأسعار الجملة من موردين موثوقين.',
+    offersTitle: 'عروض وخصومات مستلزمات الأسنان',
+    offersDescription:
+      'تصفح كل العروض النشطة والمنتجات المخفّضة على DentZone مجمّعة ومفلترة حسب كل مورد معتمد.',
     vendorsTitle: 'موردو مستلزمات الأسنان',
     vendorsDescription: 'تعرّف على موردي ومتاجر مستلزمات الأسنان المعتمدين وقارن منتجاتهم وأسعارهم.',
     categoryTitle: 'موردو مستلزمات الأسنان حسب التصنيف',
