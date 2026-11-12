@@ -294,15 +294,17 @@ export class ApiHomeRepository implements HomeRepository {
   constructor(private readonly http: HttpClient) {}
 
   async getTopProviders(lang?: number): Promise<HomeProviderDto[]> {
-    try {
-      const raw = await this.http.get<unknown>(USER_ROUTES.getTopProviders, { showFeedback: false })
-      const arr = extractArray(raw)
-      if (arr.length > 0) {
-        const mapped = arr.map(normalizeProvider).filter((p) => p.id && p.fullName)
-        if (mapped.length > 0) return mapped
+    if (this.http.hasToken) {
+      try {
+        const raw = await this.http.get<unknown>(USER_ROUTES.getTopProviders, { showFeedback: false })
+        const arr = extractArray(raw)
+        if (arr.length > 0) {
+          const mapped = arr.map(normalizeProvider).filter((p) => p.id && p.fullName)
+          if (mapped.length > 0) return mapped
+        }
+      } catch {
+        // fall through to backend-derived fallback
       }
-    } catch {
-      // fall through to backend-derived fallback
     }
     return this.fetchProvidersFallback(lang ?? 1)
   }
