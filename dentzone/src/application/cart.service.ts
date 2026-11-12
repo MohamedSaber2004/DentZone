@@ -3,10 +3,21 @@ import type { AuthService } from './auth.service'
 import type { CartRepository } from '../domain/ports/cart-repository'
 import type { AddToCartInput, CartDto, GuestCartItem } from '../domain/models/cart'
 import { toastService } from '../infrastructure/feedback/toast.service'
+import { pushDataLayer } from '../infrastructure/analytics/data-layer'
+import { SITE_CURRENCY } from '../config/site.config'
 import { t } from '../i18n'
 import router from '../router'
 
 const GUEST_CART_KEY = 'dentzone_guest_cart'
+
+const trackAddToCart = (input: AddToCartInput, quantity: number): void => {
+  pushDataLayer('dz_add_to_cart', {
+    currency: SITE_CURRENCY,
+    value: (input.salesPrice ?? 0) * quantity,
+    quantity,
+    items: [{ item_id: input.productId, item_name: input.name, price: input.salesPrice ?? 0, quantity }],
+  })
+}
 
 const clampQuantity = (quantity: number, stockQuantity: number, maxQuantity: number): number => {
   const upper = Math.min(
@@ -169,6 +180,7 @@ export class CartService {
       }
       writeGuestCart(items)
       this.cart.value = createSyntheticCart(items)
+      trackAddToCart(input, clampedQty)
       toastService.success(t('product.addToast', { name: input.name }), {
         action: { label: t('cart.viewCart'), onClick: () => void router.push({ name: 'cart' }) },
       })
@@ -182,6 +194,7 @@ export class CartService {
         productId: input.productId,
         quantity: clampedQty,
       })
+      trackAddToCart(input, clampedQty)
       toastService.success(t('product.addToast', { name: input.name }), {
         action: { label: t('cart.viewCart'), onClick: () => void router.push({ name: 'cart' }) },
       })
@@ -221,6 +234,7 @@ export class CartService {
       }
       writeGuestCart(items)
       this.cart.value = createSyntheticCart(items)
+      trackAddToCart(input, clampedQty)
       toastService.success(t('product.addToast', { name: input.name }), {
         action: { label: t('cart.viewCart'), onClick: () => void router.push({ name: 'cart' }) },
       })

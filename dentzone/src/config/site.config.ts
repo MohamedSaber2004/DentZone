@@ -4,4 +4,4 @@ export const SITE_URL = 'https://dentzone.shop'
 
 export const SITE_LOGO_URL = `${SITE_URL}/denta-logo.png`
 
-export const SITE_CURRENCY = 'USD'
+export const SITE_CURRENCY = 'EGP'

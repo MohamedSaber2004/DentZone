@@ -4,6 +4,7 @@ import { services } from '../di/container'
 import { onLocaleChange, t, type MessageKey } from '../i18n'
 import { applySeo, homeJsonLd } from '../utils/seo'
 import { requestTracker } from '../application/request.tracker'
+import { pushDataLayer } from '../infrastructure/analytics/data-layer'
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -219,9 +220,7 @@ router.afterEach((to) => {
   const pageTitle = pageTitleFor(to)
   const fullTitle = pageTitle ? `${pageTitle} · DentZone` : 'DentZone'
 
-  window.dataLayer = window.dataLayer || []
-  window.dataLayer.push({
-    event: 'page_view',
+  pushDataLayer('dz_page_view', {
     page_path: to.fullPath,
     page_title: fullTitle,
     page_location: window.location.href,

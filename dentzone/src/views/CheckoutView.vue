@@ -4,6 +4,8 @@ import { useRouter } from 'vue-router'
 import { locale, t } from '../i18n'
 import { addressRepository, cartService, orderRepository, authService, homeRepository } from '../di/container'
 import { API_LANG } from '../config/api.config'
+import { SITE_CURRENCY } from '../config/site.config'
+import { pushDataLayer } from '../infrastructure/analytics/data-layer'
 import AppIcon from '../components/ui/AppIcon.vue'
 import AppButton from '../components/ui/AppButton.vue'
 import AppInput from '../components/ui/AppInput.vue'
@@ -412,6 +414,17 @@ const onAuthModalSuccess = async () => {
 
 const executeOrderPlacement = async (targetAddressId: string) => {
   placing.value = true
+  pushDataLayer('dz_begin_checkout', {
+    currency: SITE_CURRENCY,
+    value: total.value,
+    num_items: itemsCount.value,
+    items: (cart.value?.items ?? []).map((item) => ({
+      item_id: item.product.id,
+      item_name: item.product.name,
+      price: item.productPrice.effectiveSalesPrice,
+      quantity: item.quantity,
+    })),
+  })
   try {
     const response = await orderRepository.createOrder({
       addresssId: targetAddressId,
@@ -421,6 +434,12 @@ const executeOrderPlacement = async (targetAddressId: string) => {
       couponCode: couponApplied.value?.code,
     })
     orderNumber.value = parseOrderNumber(response)
+    pushDataLayer('dz_purchase', {
+      transaction_id: orderNumber.value ?? undefined,
+      currency: SITE_CURRENCY,
+      value: total.value,
+      num_items: itemsCount.value,
+    })
     cartService.clear()
     placed.value = true
     window.scrollTo({ top: 0 })
