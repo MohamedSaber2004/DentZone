@@ -114,6 +114,7 @@ export type Messages = {
     availableFromProviders: string
     singleProvider: string
     pageOf: string
+    pageNumber: string
     previousPage: string
     nextPage: string
     noPaginatedProducts: string

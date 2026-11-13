@@ -167,6 +167,7 @@ const displayedTopProviders = computed(() => topProviders.value.slice(0, HOME_PR
 const displayedAllProviders = computed(() => allProviders.value.slice(0, HOME_PROVIDERS_LIMIT))
 
 // --- 3. Products Section (First Page 15 items + View All) ---
+const CATALOG_PREVIEW_LIMIT = 15
 const catalogProducts = ref<ProviderProductDto[]>([])
 const catalogLoading = ref(true)
 const catalogError = ref(false)
@@ -300,18 +301,17 @@ const loadTopProviders = async () => {
   }
 }
 
-const displayedCatalogProducts = computed(() => {
-  return catalogProducts.value.slice(0, 15)
-})
-
 const loadCatalogProducts = async () => {
   catalogLoading.value = true
   catalogError.value = false
   try {
-    const list = await productRepository.searchProducts({})
-    catalogProducts.value = list
+    const page = await productRepository.searchProductPaginated({
+      page: 1,
+      pageSize: CATALOG_PREVIEW_LIMIT,
+    })
+    catalogProducts.value = page.items
     if (isAuthenticated.value) {
-      wishlistService.mergeFavorites(list.filter((p) => p.isFavorite).map((p) => p.productPriceId))
+      wishlistService.mergeFavorites(page.items.filter((p) => p.isFavorite).map((p) => p.productPriceId))
     }
   } catch {
     catalogError.value = true
@@ -855,7 +855,7 @@ watch(isAuthenticated, (authed) => {
         <!-- First Page 15-Product Grid -->
         <div v-else class="catalog-section__grid">
           <ProductCard
-            v-for="product in displayedCatalogProducts"
+            v-for="product in catalogProducts"
             :key="product.productPriceId || product.productId"
             :product="product"
             :favorite="wishlistService.isFavorite(product.productId, product.productPriceId)"

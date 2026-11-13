@@ -118,6 +118,7 @@ export const ar: Messages = {
     availableFromProviders: 'متوفر لدى {count} موردين',
     singleProvider: 'متوفر لدى مورد معتمد',
     pageOf: 'صفحة {current} من {total}',
+    pageNumber: 'صفحة {current}',
     previousPage: 'السابق',
     nextPage: 'التالي',
     noPaginatedProducts: 'لا توجد منتجات مطابقة',

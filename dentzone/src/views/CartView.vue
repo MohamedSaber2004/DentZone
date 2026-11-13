@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { locale, t } from '../i18n'
-import { cartService, orderRepository } from '../di/container'
+import { authService, cartService, orderRepository } from '../di/container'
 import { resolveMediaUrl } from '../utils/media'
 import { inventoryRoute, productRoute } from '../utils/route-crypto'
 import AppIcon from '../components/ui/AppIcon.vue'
@@ -162,6 +162,11 @@ const minOrderLimit = ref<number | null>(null)
 const minOrderLoading = ref(true)
 
 const loadOrderLimits = async () => {
+  // /Orders/get-limits-order rejects the Guest role, so asking while signed out only logs a 403.
+  if (!authService.isAuthenticated) {
+    minOrderLoading.value = false
+    return
+  }
   minOrderLoading.value = true
   try {
     const limits = await orderRepository.getOrderLimits()

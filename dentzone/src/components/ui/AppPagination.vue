@@ -6,11 +6,14 @@ import AppIcon from './AppIcon.vue'
 const props = withDefaults(
   defineProps<{
     modelValue: number
-    totalItems: number
+    totalItems?: number
     pageSize?: number
+    hasNextPage?: boolean
   }>(),
   {
+    totalItems: 0,
     pageSize: 15,
+    hasNextPage: false,
   },
 )
 
@@ -19,8 +22,23 @@ const emit = defineEmits<{
   (e: 'change', page: number): void
 }>()
 
+const hasKnownTotal = computed(() => props.totalItems > 0)
+
 const totalPages = computed(() => {
-  return Math.max(1, Math.ceil(props.totalItems / props.pageSize))
+  if (hasKnownTotal.value) {
+    return Math.max(1, Math.ceil(props.totalItems / props.pageSize))
+  }
+  return props.hasNextPage ? props.modelValue + 1 : props.modelValue
+})
+
+const isVisible = computed(() => {
+  if (hasKnownTotal.value) return totalPages.value > 1
+  return props.hasNextPage || props.modelValue > 1
+})
+
+const canGoNext = computed(() => {
+  if (hasKnownTotal.value) return totalPages.value > 1 && props.modelValue < totalPages.value
+  return props.hasNextPage
 })
 
 const currentPage = computed(() => {
@@ -76,7 +94,7 @@ const setPage = (page: number | string) => {
 </script>
 
 <template>
-  <nav v-if="totalPages > 1" class="app-pagination" role="navigation" :aria-label="t('catalog.catalog')">
+  <nav v-if="isVisible" class="app-pagination" role="navigation" :aria-label="t('catalog.catalog')">
     <div class="app-pagination__controls">
       <!-- Previous Button -->
       <button
@@ -91,7 +109,7 @@ const setPage = (page: number | string) => {
       </button>
 
       <!-- Numbered Pages -->
-      <div class="app-pagination__pages">
+      <div v-if="hasKnownTotal" class="app-pagination__pages">
         <template v-for="(page, idx) in visiblePages" :key="idx">
           <span v-if="page === '...'" class="app-pagination__dots" aria-hidden="true">...</span>
           <button
@@ -111,7 +129,7 @@ const setPage = (page: number | string) => {
       <button
         type="button"
         class="app-pagination__btn app-pagination__btn--nav"
-        :disabled="currentPage === totalPages"
+        :disabled="!canGoNext"
         :aria-label="t('home.nextPage')"
         @click="setPage(currentPage + 1)"
       >
@@ -123,7 +141,11 @@ const setPage = (page: number | string) => {
     <!-- Items Range and Page Info -->
     <div class="app-pagination__summary">
       <span class="app-pagination__info">
-        {{ t('home.pageOf', { current: currentPage, total: totalPages }) }}
+        {{
+          hasKnownTotal
+            ? t('home.pageOf', { current: currentPage, total: totalPages })
+            : t('home.pageNumber', { current: currentPage })
+        }}
       </span>
       <span v-if="totalItems > 0" class="app-pagination__range">
         ({{ startItem }}–{{ endItem }} / {{ totalItems }})

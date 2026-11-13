@@ -1,29 +1,61 @@
 <script setup lang="ts">
 import { services } from '../di/container'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { t } from '../i18n'
+import { API_LANG } from '../config/api.config'
+import { locale, t } from '../i18n'
 import ProductCard from '../components/products/ProductCard.vue'
 import AppButton from '../components/ui/AppButton.vue'
 import AppIcon from '../components/ui/AppIcon.vue'
 import AppPagination from '../components/ui/AppPagination.vue'
+import type { HomeProviderDto } from '../domain/models/home'
 import type { ProviderProductDto } from '../domain/models/product'
+import { productRoute } from '../utils/route-crypto'
 
 const route = useRoute()
 const router = useRouter()
-const { productRepository, cartService, wishlistService } = services
+const { productRepository, homeRepository, cartService, wishlistService } = services
 
 const PAGE_SIZE = 15
+const MIN_SEARCH_LENGTH = 2
+const SEARCH_DEBOUNCE_MS = 350
 
-const allProducts = ref<ProviderProductDto[]>([])
+const queryValue = (value: unknown): string => (typeof value === 'string' ? value : '')
+
+const pageFromQuery = (value: unknown): number => {
+  const raw = queryValue(value)
+  const parsed = raw ? Number.parseInt(raw, 10) : 1
+  return Number.isFinite(parsed) && parsed >= 1 ? parsed : 1
+}
+
+const products = ref<ProviderProductDto[]>([])
+const providers = ref<HomeProviderDto[]>([])
 const loading = ref(true)
 const error = ref(false)
-const search = ref(typeof route.query.search === 'string' ? route.query.search : '')
-const selectedProvider = ref(typeof route.query.provider === 'string' ? route.query.provider : '')
-const currentPage = ref(1)
+const hasNextPage = ref(false)
+const supplierTotal = ref(0)
+const search = ref(queryValue(route.query.search))
+const selectedProvider = ref(queryValue(route.query.provider))
+const currentPage = ref(pageFromQuery(route.query.page))
 
 const hasQuery = computed(() => search.value.trim().length > 0)
 const hasFilters = computed(() => hasQuery.value || selectedProvider.value !== '')
+const knownTotal = computed(() => (selectedProvider.value ? supplierTotal.value : 0))
+
+const activeSearch = computed(() => {
+  const trimmed = search.value.trim()
+  return trimmed.length >= MIN_SEARCH_LENGTH ? trimmed : ''
+})
+
+const providerOptions = computed(() =>
+  providers.value
+    .map((provider) => ({ id: provider.id, name: provider.fullName || provider.userName }))
+    .filter((provider) => provider.id && provider.name),
+)
+
+const activeProviderName = computed(
+  () => providerOptions.value.find((provider) => provider.id === selectedProvider.value)?.name ?? '',
+)
 
 function normalizeText(text: string): string {
   return text
@@ -34,59 +66,31 @@ function normalizeText(text: string): string {
     .trim()
 }
 
-// Available suppliers extracted from all loaded products
-const availableProviders = computed(() => {
-  const map = new Map<string, string>()
-  for (const p of allProducts.value) {
-    if (p.inventoryUserId && p.inventoryUserName) {
-      map.set(p.inventoryUserId, p.inventoryUserName)
-    } else if (p.inventoryUserName) {
-      map.set(p.inventoryUserName, p.inventoryUserName)
-    }
-  }
-  return Array.from(map.entries()).map(([id, name]) => ({ id, name }))
-})
+function matchesQuery(product: ProviderProductDto, q: string): boolean {
+  return [
+    product.productName,
+    product.productArabicName,
+    product.description,
+    product.arabicDescription,
+    product.preef,
+    product.arabicPreef,
+    product.productCode,
+    product.categoryName,
+    product.inventoryUserName,
+  ]
+    .filter(Boolean)
+    .some((field) => normalizeText(String(field)).includes(q))
+}
 
-const filteredProducts = computed(() => {
-  let list = allProducts.value
+// search-product-category ignores paging, so a supplier list is fetched once and paged here.
+const supplierCache = new Map<string, ProviderProductDto[]>()
 
-  // Filter by selected provider dropdown if active
-  const provider = selectedProvider.value.trim()
-  if (provider) {
-    list = list.filter((p) => p.inventoryUserId === provider || p.inventoryUserName === provider)
-  }
-
-  // Filter by search query (name, code, description, and provider/supplier name)
-  const q = normalizeText(search.value)
-  if (q) {
-    list = list.filter((p) => {
-      const fields = [
-        p.productName,
-        p.productArabicName,
-        p.description,
-        p.arabicDescription,
-        p.preef,
-        p.arabicPreef,
-        p.productCode,
-        p.inventoryUserName,
-      ]
-        .filter(Boolean)
-        .map((f) => normalizeText(String(f)))
-
-      return fields.some((f) => f.includes(q))
-    })
-  }
-
+const loadSupplierProducts = async (inventoryId: string): Promise<ProviderProductDto[]> => {
+  const cached = supplierCache.get(inventoryId)
+  if (cached) return cached
+  const list = await productRepository.searchProducts({ inventoryId })
+  supplierCache.set(inventoryId, list)
   return list
-})
-
-const paginatedProducts = computed(() => {
-  const start = (currentPage.value - 1) * PAGE_SIZE
-  return filteredProducts.value.slice(start, start + PAGE_SIZE)
-})
-
-const loadFavorites = async () => {
-  await wishlistService.refresh()
 }
 
 const toggleFavorite = (product: ProviderProductDto) => {
@@ -97,8 +101,6 @@ const toggleFavorite = (product: ProviderProductDto) => {
     name: product.productName,
   })
 }
-
-import { productRoute } from '../utils/route-crypto'
 
 const detailsTo = (product: ProviderProductDto) =>
   productRoute(product.productId, product.inventoryUserId, {
@@ -123,38 +125,56 @@ const addToCart = (product: ProviderProductDto) => {
   })
 }
 
+let pendingRequest = 0
+let searchTimer: ReturnType<typeof setTimeout> | undefined
+
 const loadProducts = async () => {
+  const requestId = ++pendingRequest
   loading.value = true
   error.value = false
   try {
-    const list = await productRepository.searchProducts({})
-    allProducts.value = list
+    if (selectedProvider.value) {
+      const list = await loadSupplierProducts(selectedProvider.value)
+      const q = normalizeText(activeSearch.value)
+      const matched = q ? list.filter((product) => matchesQuery(product, q)) : list
+      const start = (currentPage.value - 1) * PAGE_SIZE
+      if (requestId !== pendingRequest) return
+      products.value = matched.slice(start, start + PAGE_SIZE)
+      supplierTotal.value = matched.length
+      hasNextPage.value = start + PAGE_SIZE < matched.length
+      return
+    }
+
+    const page = await productRepository.searchProductPaginated({
+      search: activeSearch.value || undefined,
+      page: currentPage.value,
+      pageSize: PAGE_SIZE,
+    })
+    if (requestId !== pendingRequest) return
+    products.value = page.items
+    supplierTotal.value = 0
+    hasNextPage.value = page.hasNextPage
   } catch {
-    allProducts.value = []
+    if (requestId !== pendingRequest) return
+    products.value = []
+    hasNextPage.value = false
     error.value = true
   } finally {
-    loading.value = false
+    if (requestId === pendingRequest) loading.value = false
   }
 }
 
-const onSearchInput = () => {
-  currentPage.value = 1
-  updateRouteQuery()
+const loadProviders = async () => {
+  try {
+    providers.value = await homeRepository.getAllProviders(
+      locale.value === 'ar' ? API_LANG.ARABIC : API_LANG.ENGLISH,
+    )
+  } catch {
+    providers.value = []
+  }
 }
 
-const onProviderChange = () => {
-  currentPage.value = 1
-  updateRouteQuery()
-}
-
-const clearSearch = () => {
-  search.value = ''
-  selectedProvider.value = ''
-  currentPage.value = 1
-  updateRouteQuery()
-}
-
-const updateRouteQuery = () => {
+const syncRouteQuery = () => {
   const query: Record<string, string> = {}
   if (search.value.trim()) {
     query.search = search.value.trim()
@@ -168,36 +188,56 @@ const updateRouteQuery = () => {
   void router.replace({ query })
 }
 
+const applyFilters = () => {
+  currentPage.value = 1
+  syncRouteQuery()
+  void loadProducts()
+}
+
+const onSearchInput = () => {
+  if (searchTimer) clearTimeout(searchTimer)
+  searchTimer = setTimeout(applyFilters, SEARCH_DEBOUNCE_MS)
+}
+
+const onProviderChange = () => {
+  applyFilters()
+}
+
+const clearSearch = () => {
+  search.value = ''
+  selectedProvider.value = ''
+  applyFilters()
+}
+
 const onPageChange = () => {
-  updateRouteQuery()
+  syncRouteQuery()
+  void loadProducts()
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 onMounted(() => {
-  if (typeof route.query.page === 'string') {
-    const p = parseInt(route.query.page, 10)
-    if (!isNaN(p) && p >= 1) currentPage.value = p
-  }
   void loadProducts()
-  void loadFavorites()
+  void loadProviders()
+  void wishlistService.refresh()
+})
+
+onBeforeUnmount(() => {
+  if (searchTimer) clearTimeout(searchTimer)
 })
 
 watch(
-  () => [route.query.search, route.query.provider] as const,
-  ([newSearch, newProvider]) => {
-    const s = typeof newSearch === 'string' ? newSearch : ''
-    const p = typeof newProvider === 'string' ? newProvider : ''
-    if (s !== search.value || p !== selectedProvider.value) {
-      search.value = s
-      selectedProvider.value = p
-      currentPage.value = 1
-    }
+  () => [route.query.search, route.query.provider, route.query.page] as const,
+  ([nextSearch, nextProvider, nextPage]) => {
+    const s = queryValue(nextSearch)
+    const p = queryValue(nextProvider)
+    const page = pageFromQuery(nextPage)
+    if (s === search.value && p === selectedProvider.value && page === currentPage.value) return
+    search.value = s
+    selectedProvider.value = p
+    currentPage.value = page
+    void loadProducts()
   },
 )
-
-watch(currentPage, () => {
-  updateRouteQuery()
-})
 </script>
 
 <template>
@@ -207,8 +247,8 @@ watch(currentPage, () => {
         <h1 class="page__title">{{ t('home.allProductsTitle') }}</h1>
         <p class="page__subtitle">{{ t('home.allProductsSubtitle') }}</p>
       </div>
-      <span v-if="!loading && !error && filteredProducts.length" class="page__count">
-        {{ t('products.count', { count: filteredProducts.length }) }}
+      <span v-if="!loading && !error && knownTotal" class="page__count">
+        {{ t('products.count', { count: knownTotal }) }}
       </span>
     </div>
 
@@ -238,7 +278,7 @@ watch(currentPage, () => {
       </div>
 
       <!-- Supplier Dropdown Filter -->
-      <div v-if="availableProviders.length" class="page__select-wrap">
+      <div v-if="providerOptions.length" class="page__select-wrap">
         <span class="page__select-icon"><AppIcon name="store" :size="16" /></span>
         <select
           v-model="selectedProvider"
@@ -248,7 +288,7 @@ watch(currentPage, () => {
         >
           <option value="">{{ t('home.allProvidersOption') }}</option>
           <option
-            v-for="provider in availableProviders"
+            v-for="provider in providerOptions"
             :key="provider.id"
             :value="provider.id"
           >
@@ -290,10 +330,14 @@ watch(currentPage, () => {
     </div>
 
     <!-- Empty State -->
-    <div v-else-if="filteredProducts.length === 0" class="page__state">
+    <div v-else-if="products.length === 0" class="page__state">
       <span class="page__state-icon"><AppIcon name="search" :size="32" /></span>
       <h2 class="page__state-title">
-        {{ hasFilters ? t('products.noResultsTitle', { query: search.trim() || selectedProvider }) : t('home.noPaginatedProducts') }}
+        {{
+          hasFilters
+            ? t('products.noResultsTitle', { query: search.trim() || activeProviderName })
+            : t('home.noPaginatedProducts')
+        }}
       </h2>
       <p class="page__state-desc">
         {{ hasFilters ? t('products.noResultsDescription') : t('home.noPaginatedProductsDesc') }}
@@ -303,10 +347,10 @@ watch(currentPage, () => {
       </AppButton>
     </div>
 
-    <!-- 15-Product Frontend Paginated Grid -->
+    <!-- One Server Page Of Products -->
     <div v-else class="page__grid">
       <ProductCard
-        v-for="product in paginatedProducts"
+        v-for="product in products"
         :key="product.productPriceId || product.productId"
         :product="product"
         :favorite="wishlistService.isFavorite(product.productId, product.productPriceId)"
@@ -317,11 +361,12 @@ watch(currentPage, () => {
       />
     </div>
 
-    <!-- Frontend Pagination Component (Page Size: 15) -->
+    <!-- Pagination -->
     <AppPagination
-      v-if="!loading && !error && filteredProducts.length > PAGE_SIZE"
+      v-if="!loading && !error"
       v-model="currentPage"
-      :total-items="filteredProducts.length"
+      :total-items="knownTotal"
+      :has-next-page="hasNextPage"
       :page-size="PAGE_SIZE"
       @change="onPageChange"
     />

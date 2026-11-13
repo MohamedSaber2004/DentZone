@@ -45,14 +45,13 @@ export const PRODUCT_ROUTES = {
     const suffix = query.toString()
     return `${base}/Products/search-product-category${suffix ? `?${suffix}` : ''}`
   },
-  /** Product search: optionally accepts search, page, pageSize */
-  searchProduct: (params: { search?: string; page?: number; pageSize?: number } = {}) => {
+  /** page is 1-based; omitting page/pageSize makes the API run unbounded and time out. */
+  searchProduct: (params: { search?: string; page: number; pageSize: number }) => {
     const query = new URLSearchParams()
     if (params.search) query.set('search', params.search)
-    if (params.page !== undefined) query.set('page', String(params.page))
-    if (params.pageSize !== undefined) query.set('pageSize', String(params.pageSize))
-    const suffix = query.toString()
-    return `${base}/Products/search-product${suffix ? `?${suffix}` : ''}`
+    query.set('page', String(params.page))
+    query.set('pageSize', String(params.pageSize))
+    return `${base}/Products/search-product?${query.toString()}`
   },
   byId: (id: string, lang: number) => `${base}/Products/${id}?lang=${lang}`,
   pricesByProduct: (productId: string) => `${base}/ProductPrices/by-product/${productId}`,

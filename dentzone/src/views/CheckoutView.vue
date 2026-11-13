@@ -473,18 +473,20 @@ const load = async () => {
     }
 
     void loadVendorsStatus()
-    try {
-      const limits = await orderRepository.getOrderLimits()
-      if (limits && limits.length > 0 && limits[0]) {
-        const raw = limits[0]
-        const minOrder = Number(raw.minimumorder ?? (raw as unknown as { minimumOrder?: number }).minimumOrder ?? 0)
-        if (minOrder > 0 && Math.ceil(cartService.cart.value.totalAmountCart ?? 0) < minOrder) {
-          void router.replace({ name: 'cart' })
-          return
+    if (authService.isAuthenticated) {
+      try {
+        const limits = await orderRepository.getOrderLimits()
+        if (limits && limits.length > 0 && limits[0]) {
+          const raw = limits[0]
+          const minOrder = Number(raw.minimumorder ?? (raw as unknown as { minimumOrder?: number }).minimumOrder ?? 0)
+          if (minOrder > 0 && Math.ceil(cartService.cart.value.totalAmountCart ?? 0) < minOrder) {
+            void router.replace({ name: 'cart' })
+            return
+          }
         }
+      } catch {
+        // Graceful ignore
       }
-    } catch {
-      // Graceful ignore
     }
     const areaPromise = addressRepository.getAllAreas()
       .then((items: AreaDto[]) => (areas.value = items))

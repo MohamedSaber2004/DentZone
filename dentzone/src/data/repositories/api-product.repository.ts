@@ -1,4 +1,8 @@
-import type { ProductRepository, SearchProductsParams } from '../../domain/ports/product-repository'
+import type {
+  PaginatedProductsResult,
+  ProductRepository,
+  SearchProductsParams,
+} from '../../domain/ports/product-repository'
 import type {
   FavoriteProductDto,
   PopularProductDto,
@@ -49,6 +53,8 @@ function normalizeSearchText(text: string): string {
 }
 
 const EMPTY_GUID = /^0{8}-0{4}-0{4}-0{4}-0{12}$/i
+
+const CATALOG_SCAN_SIZE = 500
 
 function extractProductItems(raw: unknown): SearchProductItemDto[] {
   if (!raw) return []
@@ -337,24 +343,21 @@ export class ApiProductRepository implements ProductRepository {
   constructor(private readonly http: HttpClient) {}
 
   /**
-   * Paginated search using /api/Products/search-product.
-   * page is 0-indexed; pageSize=15. Returns items for the page and
-   * a hasNextPage flag (true when the backend returned a full page).
+   * One server-side page from /api/Products/search-product. `page` is 1-based.
+   * The API returns no total count, so a full page is treated as "more exists".
    */
   async searchProductPaginated(params: {
     search?: string
     page: number
     pageSize: number
-  }): Promise<{ items: ProviderProductDto[]; hasNextPage: boolean }> {
-    try {
-      const raw = await this.http.get<unknown>(PRODUCT_ROUTES.searchProduct(params), {
-        showFeedback: false,
-      })
-      const items = extractProductItems(raw)
-      const mapped = items.map((p) => this.toProviderProduct(p))
-      return { items: mapped, hasNextPage: items.length === params.pageSize }
-    } catch {
-      return { items: [], hasNextPage: false }
+  }): Promise<PaginatedProductsResult> {
+    const raw = await this.http.get<unknown>(PRODUCT_ROUTES.searchProduct(params), {
+      showFeedback: false,
+    })
+    const items = extractProductItems(raw)
+    return {
+      items: items.map((p) => this.toProviderProduct(p)),
+      hasNextPage: items.length === params.pageSize,
     }
   }
 
@@ -421,14 +424,9 @@ export class ApiProductRepository implements ProductRepository {
       // If a specific category was requested (catId), we MUST NEVER fall back to showing the entire vendor store.
       if (inventoryId && !catId) {
         try {
-          const allRaw = await this.http.get<unknown>(
-            PRODUCT_ROUTES.searchProduct({ search: undefined }),
-            { showFeedback: false },
-          )
-          const items = extractProductItems(allRaw)
-          if (items.length > 0) {
-            let mapped = items.map((p) => this.toProviderProduct(p))
-            mapped = mapped.filter((p) => p.inventoryUserId === inventoryId)
+          const page = await this.searchProductPaginated({ page: 1, pageSize: CATALOG_SCAN_SIZE })
+          if (page.items.length > 0) {
+            const mapped = page.items.filter((p) => p.inventoryUserId === inventoryId)
             return query ? this.filterLocally(mapped, query) : mapped
           }
         } catch {
@@ -439,64 +437,25 @@ export class ApiProductRepository implements ProductRepository {
       return []
     }
 
-    // Global search across all products/vendors:
-    // 1. Try /api/Products/search-product
+    // Global search across all products/vendors: one bounded server page,
+    // since this API has no way to stream the whole catalog.
     try {
-      const raw = await this.http.get<unknown>(PRODUCT_ROUTES.searchProduct({ search: query }), {
-        showFeedback: false,
-      })
-      const items = extractProductItems(raw)
-      if (items.length > 0) {
-        const mapped = items.map((p) => this.toProviderProduct(p))
-        return query ? this.filterLocally(mapped, query) : mapped
-      }
+      const page = await this.searchProductPaginated({ search: query, page: 1, pageSize: CATALOG_SCAN_SIZE })
+      if (page.items.length > 0) return page.items
     } catch {
       // Continue to category endpoint
     }
 
-    // 2. Try /api/Products/search-product-category
     try {
       const raw = await this.http.get<unknown>(PRODUCT_ROUTES.searchProductCategory(params), {
         showFeedback: false,
       })
       const items = extractProductItems(raw)
-      if (items.length > 0) {
-        const mapped = items.map((p) => this.toProviderProduct(p))
-        return query ? this.filterLocally(mapped, query) : mapped
-      }
+      const mapped = items.map((p) => this.toProviderProduct(p))
+      return query ? this.filterLocally(mapped, query) : mapped
     } catch {
-      // Continue
+      return []
     }
-
-    // 3. If query was supplied and returned 0 results, try fetching all without query and filter locally
-    if (query) {
-      try {
-        const allRaw = await this.http.get<unknown>(
-          PRODUCT_ROUTES.searchProduct({ search: undefined }),
-          { showFeedback: false },
-        )
-        const items = extractProductItems(allRaw)
-        if (items.length > 0) {
-          const mapped = items.map((p) => this.toProviderProduct(p))
-          return this.filterLocally(mapped, query)
-        }
-      } catch {
-        // Fallback to category endpoint without search
-        try {
-          const allRaw = await this.http.get<unknown>(
-            PRODUCT_ROUTES.searchProductCategory({ ...params, search: undefined }),
-            { showFeedback: false },
-          )
-          const items = extractProductItems(allRaw)
-          const mapped = items.map((p) => this.toProviderProduct(p))
-          return this.filterLocally(mapped, query)
-        } catch {
-          return []
-        }
-      }
-    }
-
-    return []
   }
 
   private filterLocally(products: ProviderProductDto[], query: string): ProviderProductDto[] {
@@ -595,7 +554,7 @@ export class ApiProductRepository implements ProductRepository {
     if (name) {
       try {
         const searchItems = await this.http.get<unknown[]>(
-          PRODUCT_ROUTES.searchProduct({ search: name }),
+          PRODUCT_ROUTES.searchProduct({ search: name, page: 1, pageSize: 50 }),
           { showFeedback: false },
         )
         const items = extractProductItems(searchItems)

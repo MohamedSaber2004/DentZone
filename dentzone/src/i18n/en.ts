@@ -118,6 +118,7 @@ export const en: Messages = {
     availableFromProviders: 'Available from {count} suppliers',
     singleProvider: 'Available from verified supplier',
     pageOf: 'Page {current} of {total}',
+    pageNumber: 'Page {current}',
     previousPage: 'Previous',
     nextPage: 'Next',
     noPaginatedProducts: 'No products found',
